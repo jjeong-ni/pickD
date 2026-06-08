@@ -1,12 +1,14 @@
 import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator,
+  View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Platform,
 } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
 import { router, useFocusEffect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { usePostStore } from '../../hooks/usePostStore';
+import { GlassCard } from '../../components/GlassCard';
 import { Post } from '../../types';
 
 const CATEGORIES = ['전체', '후기', '질문', '정보', '비교'];
@@ -76,11 +78,17 @@ export default function CommunityScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#FF6B9D', '#D473E8', '#9B6FE8']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <Text style={styles.title}>커뮤니티</Text>
         {user && (
-          <TouchableOpacity style={styles.writeBtn} onPress={() => router.push('/post/create')}>
-            <Text style={styles.writeBtnText}>✏️ 글쓰기</Text>
+          <TouchableOpacity onPress={() => router.push('/post/create' as any)} activeOpacity={0.85}>
+            <GlassCard style={styles.writeBtn} intensity="low">
+              <Text style={styles.writeBtnText}>✏️ 글쓰기</Text>
+            </GlassCard>
           </TouchableOpacity>
         )}
       </View>
@@ -233,11 +241,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 20, paddingTop: 60, backgroundColor: Colors.white,
+    padding: 20, paddingTop: Platform.OS === 'web' ? 60 : 56, paddingBottom: 16,
   },
-  title: { fontSize: 20, fontWeight: '800', color: Colors.text },
-  writeBtn: { backgroundColor: Colors.primary, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20 },
-  writeBtnText: { color: Colors.white, fontSize: 13, fontWeight: '700' },
+  title: { fontSize: 22, fontWeight: '900', color: '#fff' },
+  writeBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20 },
+  writeBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   filters: { paddingHorizontal: 20, paddingVertical: 12, gap: 8, backgroundColor: Colors.white },
   filter: {
     paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20,

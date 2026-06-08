@@ -1,7 +1,16 @@
 import {
   View, Text, TextInput, FlatList, StyleSheet,
-  TouchableOpacity, ActivityIndicator, Image,
+  TouchableOpacity, ActivityIndicator, Image, Platform,
 } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { supabase } from '../../lib/supabase';
+import { Colors } from '../../constants/colors';
+import { useAuth } from '../../hooks/useAuth';
+import { useCompare } from '../../hooks/useCompare';
+import { Treatment, Device } from '../../types';
 
 const TREATMENT_EMOJI: Record<string, string> = {
   '리프팅': '✨', '보톡스': '💉', '필러': '💫', '레이저': '⚡', '스킨케어': '🌿',
@@ -9,14 +18,6 @@ const TREATMENT_EMOJI: Record<string, string> = {
 const DEVICE_EMOJI: Record<string, string> = {
   '리프팅': '✨', '제모': '🪄', 'RF': '⚡', 'LED': '💡', '초음파': '🌊',
 };
-import { useState, useEffect, useRef } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
-import { supabase } from '../../lib/supabase';
-import { Colors } from '../../constants/colors';
-import { useAuth } from '../../hooks/useAuth';
-import { useCompare } from '../../hooks/useCompare';
-import { Treatment, Device } from '../../types';
 
 type Tab = 'treatment' | 'device';
 type CategoryOption = { label: string; value: string };
@@ -306,7 +307,7 @@ function ResultRow({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
-  searchWrap: { backgroundColor: Colors.white, padding: 16, paddingTop: 56 },
+  searchWrap: { backgroundColor: Colors.white, padding: 16, paddingTop: Platform.OS === 'web' ? 60 : 56 },
   searchBar: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: '#F2F2F7', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12,

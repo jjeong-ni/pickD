@@ -1,10 +1,12 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../hooks/useAuth';
 import { Colors } from '../../constants/colors';
+import { GlassCard } from '../../components/GlassCard';
 
 export default function MypageScreen() {
   const { user, profile, signOut } = useAuth();
@@ -14,21 +16,27 @@ export default function MypageScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* 프로필 */}
-      <View style={styles.profileSection}>
-        <View style={styles.avatar}>
-          <Text style={{ fontSize: 32 }}>👤</Text>
-        </View>
+      {/* 프로필 — 그라데이션 헤더 */}
+      <LinearGradient
+        colors={['#FF6B9D', '#D473E8', '#9B6FE8']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.profileSection}
+      >
+        <View style={styles.profileOrb} />
+        <GlassCard style={styles.avatarGlass} intensity="low">
+          <Text style={{ fontSize: 36 }}>👤</Text>
+        </GlassCard>
         <Text style={styles.nickname}>{displayName}</Text>
         <View style={styles.chips}>
           {profile?.skin_type && <Chip label={profile.skin_type} />}
           {profile?.face_shape && <Chip label={`${profile.face_shape} 얼굴형`} />}
           {profile?.age_group && <Chip label={profile.age_group} />}
         </View>
-        <View style={styles.pointBadge}>
+        <GlassCard style={styles.pointBadge} intensity="low">
           <Text style={styles.pointText}>🪙 {profile?.points ?? 0} pt</Text>
-        </View>
-      </View>
+        </GlassCard>
+      </LinearGradient>
 
       {/* 피부 프로필 설정 유도 */}
       {!profile?.skin_type && (
@@ -199,24 +207,30 @@ function MenuItem({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   profileSection: {
-    alignItems: 'center', padding: 28, paddingTop: 60, backgroundColor: Colors.white,
+    alignItems: 'center', padding: 28,
+    paddingTop: Platform.OS === 'web' ? 60 : 56,
+    overflow: 'hidden',
   },
-  avatar: {
-    width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.border,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+  profileOrb: {
+    position: 'absolute', width: 200, height: 200, borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.08)', top: -60, right: -40,
   },
-  nickname: { fontSize: 20, fontWeight: '700', color: Colors.text, marginBottom: 10 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 12 },
+  avatarGlass: {
+    width: 80, height: 80, borderRadius: 40,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 14,
+  },
+  nickname: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 12 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 14 },
   chip: {
     paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20,
-    backgroundColor: 'rgba(255,107,157,0.07)',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)',
   },
-  chipText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
+  chipText: { fontSize: 13, fontWeight: '600', color: '#fff' },
   pointBadge: {
-    paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12,
-    backgroundColor: Colors.primaryLight,
+    paddingVertical: 8, paddingHorizontal: 18, borderRadius: 20,
   },
-  pointText: { fontSize: 13, fontWeight: '700', color: Colors.primary },
+  pointText: { fontSize: 14, fontWeight: '800', color: '#fff' },
   profileSetupBanner: {
     margin: 16, padding: 16, backgroundColor: Colors.primaryLight,
     borderRadius: 14, gap: 4,

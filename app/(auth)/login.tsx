@@ -1,19 +1,19 @@
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Modal,
+  KeyboardAvoidingView, Platform, ActivityIndicator, Modal, ScrollView,
 } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
+import { GlassCard } from '../../components/GlassCard';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
-  // 비밀번호 찾기 모달
   const [showReset, setShowReset] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
@@ -47,71 +47,113 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <LinearGradient
+      colors={['#FF6B9D', '#D473E8', '#9B6FE8']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.gradient}
     >
-      <View style={styles.inner}>
-        <Text style={styles.logo}>Pick D</Text>
-        <Text style={styles.subtitle}>내 피부에 딱 맞는 AI의 선택</Text>
+      {/* 장식 오브 */}
+      <View style={styles.orb1} />
+      <View style={styles.orb2} />
 
-        <TextInput
-          style={styles.input}
-          placeholder="이메일"
-          placeholderTextColor={Colors.sub}
-          value={email}
-          onChangeText={(v) => { setEmail(v); setErrorMsg(''); }}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="비밀번호"
-          placeholderTextColor={Colors.sub}
-          value={password}
-          onChangeText={(v) => { setPassword(v); setErrorMsg(''); }}
-          secureTextEntry
-        />
-
-        {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
-
-        <TouchableOpacity
-          style={[styles.btn, (!email || !password) && styles.btnDisabled]}
-          onPress={handleLogin}
-          disabled={loading || !email || !password}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {loading
-            ? <ActivityIndicator color={Colors.white} />
-            : <Text style={styles.btnText}>로그인</Text>
-          }
-        </TouchableOpacity>
+          {/* 뒤로가기 */}
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Text style={styles.backText}>←</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.forgotLink}
-          onPress={() => { setShowReset(true); setResetEmail(email); setResetSent(false); }}
-        >
-          <Text style={styles.forgotLinkText}>비밀번호를 잊으셨나요?</Text>
-        </TouchableOpacity>
+          {/* 헤더 */}
+          <View style={styles.header}>
+            <Text style={styles.logo}>Pick D</Text>
+            <Text style={styles.subtitle}>다시 만나서 반가워요 🌸</Text>
+          </View>
 
-        <TouchableOpacity
-          style={styles.signupLink}
-          onPress={() => router.push('/(auth)/signup')}
-        >
-          <Text style={styles.signupLinkText}>
-            아직 계정이 없으신가요? <Text style={{ color: Colors.primary }}>회원가입</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
+          {/* 폼 카드 */}
+          <GlassCard style={styles.formCard} intensity="mid">
+            <Text style={styles.formTitle}>로그인</Text>
+
+            <View style={styles.inputWrap}>
+              <Text style={styles.inputLabel}>이메일</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="example@email.com"
+                placeholderTextColor="rgba(255,255,255,0.45)"
+                value={email}
+                onChangeText={(v) => { setEmail(v); setErrorMsg(''); }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.inputWrap}>
+              <Text style={styles.inputLabel}>비밀번호</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="비밀번호 입력"
+                placeholderTextColor="rgba(255,255,255,0.45)"
+                value={password}
+                onChangeText={(v) => { setPassword(v); setErrorMsg(''); }}
+                secureTextEntry
+              />
+            </View>
+
+            {errorMsg ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>⚠️ {errorMsg}</Text>
+              </View>
+            ) : null}
+
+            <TouchableOpacity
+              style={[styles.btn, (!email || !password || loading) && styles.btnDisabled]}
+              onPress={handleLogin}
+              disabled={loading || !email || !password}
+              activeOpacity={0.85}
+            >
+              {loading
+                ? <ActivityIndicator color="#FF6B9D" />
+                : <Text style={styles.btnText}>로그인</Text>
+              }
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.forgotLink}
+              onPress={() => { setShowReset(true); setResetEmail(email); setResetSent(false); }}
+            >
+              <Text style={styles.forgotText}>비밀번호를 잊으셨나요?</Text>
+            </TouchableOpacity>
+          </GlassCard>
+
+          {/* 회원가입 링크 */}
+          <TouchableOpacity
+            style={styles.signupLink}
+            onPress={() => router.push('/(auth)/signup')}
+          >
+            <Text style={styles.signupText}>
+              계정이 없으신가요?{'  '}
+              <Text style={styles.signupHighlight}>회원가입하기</Text>
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* 비밀번호 재설정 모달 */}
       <Modal visible={showReset} transparent animationType="fade" onRequestClose={() => setShowReset(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
+          <GlassCard style={styles.modalCard} intensity="high">
             {resetSent ? (
               <>
-                <Text style={styles.modalTitle}>✉️ 이메일을 보냈어요</Text>
+                <Text style={styles.modalTitle}>✉️ 이메일 전송 완료</Text>
                 <Text style={styles.modalDesc}>
-                  {resetEmail}으로{'\n'}비밀번호 재설정 링크를 보냈어요.{'\n'}받은 편지함을 확인해주세요.
+                  {resetEmail}으로{'\n'}비밀번호 재설정 링크를 보냈어요
                 </Text>
                 <TouchableOpacity style={styles.modalBtn} onPress={() => setShowReset(false)}>
                   <Text style={styles.modalBtnText}>확인</Text>
@@ -120,11 +162,11 @@ export default function LoginScreen() {
             ) : (
               <>
                 <Text style={styles.modalTitle}>비밀번호 찾기</Text>
-                <Text style={styles.modalDesc}>가입한 이메일 주소를 입력하면{'\n'}재설정 링크를 보내드려요</Text>
+                <Text style={styles.modalDesc}>가입한 이메일로 재설정 링크를 보내드려요</Text>
                 <TextInput
                   style={styles.modalInput}
                   placeholder="이메일 주소"
-                  placeholderTextColor={Colors.sub}
+                  placeholderTextColor="rgba(255,255,255,0.5)"
                   value={resetEmail}
                   onChangeText={setResetEmail}
                   keyboardType="email-address"
@@ -140,58 +182,76 @@ export default function LoginScreen() {
                     disabled={resetLoading || !resetEmail.includes('@')}
                   >
                     {resetLoading
-                      ? <ActivityIndicator color={Colors.white} size="small" />
+                      ? <ActivityIndicator color="#FF6B9D" size="small" />
                       : <Text style={styles.modalBtnText}>전송</Text>
                     }
                   </TouchableOpacity>
                 </View>
               </>
             )}
-          </View>
+          </GlassCard>
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.white },
-  inner: { flex: 1, padding: 24, justifyContent: 'center' },
-  logo: { fontSize: 40, fontWeight: '800', color: Colors.primary, marginBottom: 8, textAlign: 'center' },
-  subtitle: { fontSize: 15, color: Colors.sub, textAlign: 'center', marginBottom: 48 },
+  gradient: { flex: 1 },
+  scroll: { flexGrow: 1, padding: 24, paddingTop: Platform.OS === 'web' ? 60 : 56, paddingBottom: 40 },
+  orb1: {
+    position: 'absolute', width: 240, height: 240, borderRadius: 120,
+    backgroundColor: 'rgba(255,255,255,0.1)', top: -80, right: -60,
+  },
+  orb2: {
+    position: 'absolute', width: 180, height: 180, borderRadius: 90,
+    backgroundColor: 'rgba(155,111,232,0.2)', bottom: 60, left: -50,
+  },
+  backBtn: { marginBottom: 24 },
+  backText: { fontSize: 26, color: 'rgba(255,255,255,0.85)', fontWeight: '300' },
+  header: { marginBottom: 32 },
+  logo: { fontSize: 42, fontWeight: '900', color: '#fff', letterSpacing: -1.5, marginBottom: 6 },
+  subtitle: { fontSize: 18, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
+  formCard: { padding: 24, marginBottom: 24 },
+  formTitle: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 24 },
+  inputWrap: { marginBottom: 16 },
+  inputLabel: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.7)', marginBottom: 8, letterSpacing: 0.3 },
   input: {
-    borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12,
-    padding: 16, fontSize: 16, color: Colors.text, marginBottom: 12,
-    backgroundColor: Colors.white,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16,
+    fontSize: 16, color: '#fff',
   },
-  errorText: { fontSize: 13, color: Colors.danger, marginBottom: 8, textAlign: 'center' },
+  errorBox: {
+    backgroundColor: 'rgba(255,59,48,0.2)', borderRadius: 10,
+    padding: 12, marginBottom: 12,
+  },
+  errorText: { fontSize: 13, color: '#FFB3B0', fontWeight: '600' },
   btn: {
-    backgroundColor: Colors.primary, borderRadius: 12,
-    padding: 16, alignItems: 'center', marginTop: 4,
+    backgroundColor: '#fff', borderRadius: 14, paddingVertical: 17,
+    alignItems: 'center', marginTop: 8,
+    shadowColor: 'rgba(0,0,0,0.2)', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1, shadowRadius: 12, elevation: 6,
   },
-  btnDisabled: { backgroundColor: Colors.border },
-  btnText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
+  btnDisabled: { backgroundColor: 'rgba(255,255,255,0.3)' },
+  btnText: { fontSize: 16, fontWeight: '800', color: '#FF6B9D' },
   forgotLink: { marginTop: 16, alignItems: 'center' },
-  forgotLinkText: { fontSize: 13, color: Colors.sub },
-  signupLink: { marginTop: 12, alignItems: 'center' },
-  signupLinkText: { fontSize: 14, color: Colors.sub },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  modalSheet: {
-    backgroundColor: Colors.white, borderRadius: 20, padding: 24, width: '100%',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,
-  },
-  modalTitle: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: 10 },
-  modalDesc: { fontSize: 14, color: Colors.sub, lineHeight: 22, marginBottom: 20 },
+  forgotText: { fontSize: 13, color: 'rgba(255,255,255,0.65)' },
+  signupLink: { alignItems: 'center' },
+  signupText: { fontSize: 14, color: 'rgba(255,255,255,0.7)' },
+  signupHighlight: { color: '#fff', fontWeight: '700' },
+  // 모달
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalCard: { width: '100%', padding: 24 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 10 },
+  modalDesc: { fontSize: 14, color: 'rgba(255,255,255,0.75)', lineHeight: 22, marginBottom: 20 },
   modalInput: {
-    borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12,
-    padding: 14, fontSize: 15, color: Colors.text, marginBottom: 16,
+    backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 12, padding: 14, fontSize: 15, color: '#fff', marginBottom: 16,
   },
   modalBtns: { flexDirection: 'row', gap: 10 },
-  modalCancelBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 12,
-    borderWidth: 1.5, borderColor: Colors.border, alignItems: 'center',
-  },
-  modalCancelText: { fontSize: 15, fontWeight: '600', color: Colors.sub },
-  modalBtn: { backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  modalBtnText: { color: Colors.white, fontSize: 15, fontWeight: '700' },
+  modalCancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center' },
+  modalCancelText: { fontSize: 15, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
+  modalBtn: { backgroundColor: '#fff', borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  modalBtnText: { color: '#FF6B9D', fontSize: 15, fontWeight: '800' },
 });
