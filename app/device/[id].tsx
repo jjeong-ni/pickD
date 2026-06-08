@@ -5,6 +5,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
@@ -433,15 +434,22 @@ export default function DeviceDetailScreen() {
           <Text style={styles.compareBtnText}>{inCompare ? '비교함에 있음' : '비교함 추가'}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.coupangBtn}
+          style={styles.coupangBtnWrap}
           onPress={() => {
             const url = device.coupang_url
               ? device.coupang_url
               : `https://www.coupang.com/np/search?q=${encodeURIComponent(device.name)}`;
             Linking.openURL(url);
           }}
+          activeOpacity={0.85}
         >
-          <Text style={styles.coupangBtnText}>🛒 쿠팡 구매</Text>
+          <LinearGradient
+            colors={['#FF6000', '#FF9500']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={styles.coupangBtn}
+          >
+            <Text style={styles.coupangBtnText}>🛒 쿠팡 구매</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -616,7 +624,8 @@ const styles = StyleSheet.create({
   },
   compareBtnActive: { borderColor: Colors.border },
   compareBtnText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
-  coupangBtn: { flex: 2, paddingVertical: 14, borderRadius: 12, backgroundColor: '#FF6000', alignItems: 'center' },
+  coupangBtnWrap: { flex: 2 },
+  coupangBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   coupangBtnText: { fontSize: 14, fontWeight: '700', color: Colors.white },
   reviewModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   reviewSheet: {

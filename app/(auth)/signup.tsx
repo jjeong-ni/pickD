@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 
@@ -149,14 +150,20 @@ export default function SignupScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: Colors.white }}
+      style={{ flex: 1, backgroundColor: Colors.bg }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.nav}>
+      <LinearGradient
+        colors={['#FF6B9D', '#D473E8', '#9B6FE8']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={styles.navGradient}
+      >
         <TouchableOpacity onPress={() => step > 1 ? setStep((s) => s - 1) : router.back()}>
           <Text style={styles.backBtn}>←</Text>
         </TouchableOpacity>
-      </View>
+        <Text style={styles.navTitle}>회원가입</Text>
+        <View style={{ width: 32 }} />
+      </LinearGradient>
 
       <View style={styles.progressBar}>
         {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
@@ -171,21 +178,33 @@ export default function SignupScreen() {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: Colors.bg }}>
         {renderStep()}
       </ScrollView>
 
       <View style={styles.bottomAction}>
-        <TouchableOpacity
-          style={[styles.btn, !isStepValid() && styles.btnDisabled]}
-          onPress={handleNext}
-          disabled={!isStepValid() || loading}
-        >
-          {loading
-            ? <ActivityIndicator color={Colors.white} />
-            : <Text style={styles.btnText}>{step === TOTAL_STEPS ? '픽디 시작하기' : '다음'}</Text>
-          }
-        </TouchableOpacity>
+        {isStepValid() && !loading ? (
+          <TouchableOpacity onPress={handleNext} activeOpacity={0.85}>
+            <LinearGradient
+              colors={['#FF6B9D', '#D473E8']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={styles.btn}
+            >
+              <Text style={styles.btnText}>{step === TOTAL_STEPS ? '픽디 시작하기' : '다음'}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.btn, styles.btnDisabled]}
+            onPress={handleNext}
+            disabled={!isStepValid() || loading}
+          >
+            {loading
+              ? <ActivityIndicator color={Colors.white} />
+              : <Text style={styles.btnText}>{step === TOTAL_STEPS ? '픽디 시작하기' : '다음'}</Text>
+            }
+          </TouchableOpacity>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -197,22 +216,28 @@ function StepWrapper({
   title: string; desc?: string; step: number; total: number; children: React.ReactNode;
 }) {
   return (
-    <View style={{ padding: 24, flex: 1 }}>
-      <Text style={styles.stepIndicator}>STEP {step} / {total}</Text>
-      <Text style={styles.stepTitle}>{title}</Text>
-      {desc && <Text style={styles.stepDesc}>{desc}</Text>}
-      <View style={{ marginTop: 24 }}>{children}</View>
+    <View style={{ padding: 16, flex: 1 }}>
+      <View style={{ backgroundColor: Colors.white, borderRadius: 20, padding: 24, flex: 1 }}>
+        <Text style={styles.stepIndicator}>STEP {step} / {total}</Text>
+        <Text style={styles.stepTitle}>{title}</Text>
+        {desc && <Text style={styles.stepDesc}>{desc}</Text>}
+        <View style={{ marginTop: 24 }}>{children}</View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  nav: { paddingTop: 56, paddingHorizontal: 16, paddingBottom: 8 },
-  backBtn: { fontSize: 24, color: Colors.text },
-  progressBar: { flexDirection: 'row', gap: 4, paddingHorizontal: 20, paddingVertical: 8 },
+  navGradient: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'web' ? 60 : 56, paddingHorizontal: 16, paddingBottom: 16,
+  },
+  navTitle: { fontSize: 17, fontWeight: '700', color: Colors.white },
+  backBtn: { fontSize: 24, color: Colors.white, width: 32 },
+  progressBar: { flexDirection: 'row', gap: 4, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: Colors.white },
   progressStep: { flex: 1, height: 3, borderRadius: 2, backgroundColor: Colors.border },
   progressDone: { backgroundColor: Colors.primary },
-  progressCurrent: { backgroundColor: Colors.primaryLight },
+  progressCurrent: { backgroundColor: 'rgba(255,107,157,0.45)' },
   stepIndicator: { fontSize: 12, fontWeight: '700', color: Colors.primary, marginBottom: 8, letterSpacing: 0.5 },
   stepTitle: { fontSize: 24, fontWeight: '800', color: Colors.text, lineHeight: 32 },
   stepDesc: { fontSize: 14, color: Colors.sub, marginTop: 6, lineHeight: 20 },
@@ -232,7 +257,7 @@ const styles = StyleSheet.create({
   },
   welcomePointText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
   bottomAction: { padding: 20, paddingBottom: 40, backgroundColor: Colors.white },
-  btn: { backgroundColor: Colors.primary, borderRadius: 12, padding: 16, alignItems: 'center' },
+  btn: { borderRadius: 12, padding: 16, alignItems: 'center' },
   btnDisabled: { backgroundColor: Colors.border },
   btnText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
 });

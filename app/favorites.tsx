@@ -1,8 +1,9 @@
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image, Platform,
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/colors';
@@ -69,13 +70,17 @@ export default function FavoritesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#FF6B9D', '#D473E8', '#9B6FE8']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.back}>←</Text>
         </TouchableOpacity>
         <Text style={styles.title}>찜한 목록</Text>
         <View style={{ width: 32 }} />
-      </View>
+      </LinearGradient>
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>
@@ -136,11 +141,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 16, paddingTop: 56, backgroundColor: Colors.white,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+    padding: 16, paddingTop: Platform.OS === 'web' ? 60 : 56, paddingBottom: 16,
   },
-  back: { fontSize: 24, color: Colors.text, width: 32 },
-  title: { fontSize: 17, fontWeight: '700', color: Colors.text },
+  back: { fontSize: 24, color: Colors.white, width: 32 },
+  title: { fontSize: 17, fontWeight: '700', color: Colors.white },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyIcon: { fontSize: 52 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
