@@ -2,6 +2,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   ActivityIndicator, Alert, Modal,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
@@ -120,7 +121,7 @@ export default function CompareScreen() {
 
       {items.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.emptyIcon}>📦</Text>
+          <Ionicons name="layers-outline" size={56} color={Colors.border} />
           <Text style={styles.emptyTitle}>비교함이 비어있어요</Text>
           <Text style={styles.emptyDesc}>시술이나 기기를 추가해{'\n'}한눈에 비교해보세요 (최대 3개)</Text>
           <TouchableOpacity style={styles.goBtn} onPress={() => router.push('/search')}>
@@ -143,7 +144,7 @@ export default function CompareScreen() {
                     <Text style={styles.removeBtnText}>✕</Text>
                   </TouchableOpacity>
                   <View style={[styles.compareCardImage, !isTreatment && { backgroundColor: '#EEE8FF' }]}>
-                    <Text style={{ fontSize: 32 }}>{isTreatment ? '💉' : '⚡'}</Text>
+                    <Ionicons name={isTreatment ? 'medical-outline' : 'hardware-chip-outline'} size={30} color={isTreatment ? Colors.primary : '#9B6FE8'} />
                   </View>
                   <Text style={styles.compareCardType}>{isTreatment ? '시술' : '기기'}</Text>
                   <Text style={styles.compareCardName} numberOfLines={2}>{detail.name}</Text>
@@ -177,7 +178,7 @@ export default function CompareScreen() {
                 <Text style={styles.aiResultBannerScore}>호환성 {savedAiResult.score}점 · 탭하면 상세 보기</Text>
               </View>
               <View style={[styles.aiResultBannerImg, { backgroundColor: savedAiResult.isTreatment ? '#FFE8F0' : '#EEE8FF' }]}>
-                <Text style={{ fontSize: 28 }}>{savedAiResult.isTreatment ? '💉' : '⚡'}</Text>
+                <Ionicons name={savedAiResult.isTreatment ? 'medical-outline' : 'hardware-chip-outline'} size={26} color={savedAiResult.isTreatment ? Colors.primary : '#9B6FE8'} />
               </View>
             </TouchableOpacity>
           )}
@@ -186,7 +187,7 @@ export default function CompareScreen() {
           {visibleDetails.length >= 2 && (
             <TouchableOpacity style={styles.aiBtn} onPress={handleAIRecommend}>
               <View style={styles.aiBtnGradient}>
-                <Text style={styles.aiBtnIcon}>✨</Text>
+                <Ionicons name="color-wand-outline" size={24} color={Colors.white} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.aiBtnTitle}>
@@ -267,14 +268,14 @@ export default function CompareScreen() {
                 style={styles.consultBtn}
                 onPress={() => Alert.alert('전화 상담', '전화 상담 연결 준비 중이에요.\n베타 종료 후 오픈될 예정입니다.')}
               >
-                <Text style={styles.consultBtnIcon}>📞</Text>
+                <Ionicons name="call-outline" size={20} color={Colors.text} />
                 <Text style={styles.consultBtnText}>전화 상담</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.consultBtn, styles.consultBtnKakao]}
                 onPress={() => Alert.alert('카카오톡 상담', '카카오톡 상담 연결 준비 중이에요.\n베타 종료 후 오픈될 예정입니다.')}
               >
-                <Text style={styles.consultBtnIcon}>💬</Text>
+                <Ionicons name="chatbubble-ellipses-outline" size={20} color={Colors.text} />
                 <Text style={styles.consultBtnText}>카카오 톡톡</Text>
               </TouchableOpacity>
             </View>
@@ -328,7 +329,7 @@ export default function CompareScreen() {
                 <View style={styles.aiWinnerCard}>
                   <Text style={styles.aiWinnerBadge}>Pick D AI 추천</Text>
                   <View style={[styles.aiWinnerImg, { backgroundColor: displayResult!.isTreatment ? '#FFE8F0' : '#EEE8FF' }]}>
-                    <Text style={{ fontSize: 44 }}>{displayResult!.isTreatment ? '💉' : '⚡'}</Text>
+                    <Ionicons name={displayResult!.isTreatment ? 'medical-outline' : 'hardware-chip-outline'} size={44} color={displayResult!.isTreatment ? Colors.primary : '#9B6FE8'} />
                   </View>
                   <Text style={styles.aiWinnerName}>{displayResult!.item.name}</Text>
                   <Text style={styles.aiWinnerScore}>호환성 {displayResult!.score}점</Text>
@@ -526,7 +527,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '800', color: Colors.text },
   clearBtn: { fontSize: 14, color: Colors.danger, fontWeight: '600' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  emptyIcon: { fontSize: 56 },
+  emptyIcon: { marginBottom: 4 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
   emptyDesc: { fontSize: 14, color: Colors.sub, textAlign: 'center', lineHeight: 20 },
   goBtn: { marginTop: 8, backgroundColor: Colors.primary, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12 },
@@ -565,7 +566,7 @@ const styles = StyleSheet.create({
     width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center', justifyContent: 'center',
   },
-  aiBtnIcon: { fontSize: 24 },
+  aiBtnIcon: {},
   aiBtnTitle: { fontSize: 15, fontWeight: '700', color: Colors.white },
   aiBtnSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
   aiBtnArrow: { fontSize: 20, color: 'rgba(255,255,255,0.8)' },
@@ -655,6 +656,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg, borderWidth: 1.5, borderColor: Colors.border,
   },
   consultBtnKakao: { backgroundColor: '#FEE500', borderColor: '#FEE500' },
-  consultBtnIcon: { fontSize: 20 },
+  consultBtnIcon: {},
   consultBtnText: { fontSize: 14, fontWeight: '700', color: Colors.text },
 });

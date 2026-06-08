@@ -4,6 +4,7 @@ import {
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/colors';
@@ -86,7 +87,7 @@ export default function FavoritesScreen() {
         <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>
       ) : favorites.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.emptyIcon}>🤍</Text>
+          <Ionicons name="heart-outline" size={52} color={Colors.primary} />
           <Text style={styles.emptyTitle}>찜한 항목이 없어요</Text>
           <Text style={styles.emptyDesc}>마음에 드는 시술·기기를 찜해보세요</Text>
           <TouchableOpacity style={styles.goBtn} onPress={() => router.push('/(tabs)/search' as any)}>
@@ -110,7 +111,7 @@ export default function FavoritesScreen() {
                 <View style={[styles.cardImg, !isTreatment && { backgroundColor: '#EEE8FF' }]}>
                   {(item.item as any)?.image_url
                     ? <Image source={{ uri: (item.item as any).image_url }} style={{ width: '100%', height: '100%', borderRadius: 10 }} resizeMode="cover" />
-                    : <Text style={{ fontSize: 28 }}>{isTreatment ? '💆' : '⚡'}</Text>}
+                    : <Ionicons name={isTreatment ? 'medical-outline' : 'hardware-chip-outline'} size={28} color={isTreatment ? Colors.primary : '#9B6FE8'} />}
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={styles.typeBadge}>
@@ -146,7 +147,7 @@ const styles = StyleSheet.create({
   back: { fontSize: 24, color: Colors.white, width: 32 },
   title: { fontSize: 17, fontWeight: '700', color: Colors.white },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  emptyIcon: { fontSize: 52 },
+  emptyIcon: { marginBottom: 4 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
   emptyDesc: { fontSize: 14, color: Colors.sub },
   goBtn: { marginTop: 8, backgroundColor: Colors.primary, paddingVertical: 12, paddingHorizontal: 28, borderRadius: 12 },

@@ -3,6 +3,7 @@ import {
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/colors';
 
@@ -25,11 +26,11 @@ const DEFAULT_SETTINGS: NotifSettings = {
 };
 
 const ITEMS: { key: keyof NotifSettings; icon: string; title: string; desc: string }[] = [
-  { key: 'community', icon: '💬', title: '커뮤니티 알림', desc: '내 글에 댓글이 달렸을 때 알림' },
-  { key: 'review', icon: '⭐', title: '리뷰 알림', desc: '관심 시술·기기에 새 리뷰가 등록될 때' },
-  { key: 'point', icon: '🪙', title: '포인트 알림', desc: '포인트 적립·미션 완료 알림' },
-  { key: 'event', icon: '🎁', title: '이벤트·혜택 알림', desc: '픽디 이벤트 및 프로모션 소식' },
-  { key: 'newContent', icon: '✨', title: '신규 콘텐츠 알림', desc: '새 시술·기기 등록 알림' },
+  { key: 'community', icon: 'chatbubble-outline', title: '커뮤니티 알림', desc: '내 글에 댓글이 달렸을 때 알림' },
+  { key: 'review', icon: 'star-outline', title: '리뷰 알림', desc: '관심 시술·기기에 새 리뷰가 등록될 때' },
+  { key: 'point', icon: 'cash-outline', title: '포인트 알림', desc: '포인트 적립·미션 완료 알림' },
+  { key: 'event', icon: 'gift-outline', title: '이벤트·혜택 알림', desc: '픽디 이벤트 및 프로모션 소식' },
+  { key: 'newContent', icon: 'newspaper-outline', title: '신규 콘텐츠 알림', desc: '새 시술·기기 등록 알림' },
 ];
 
 export default function NotificationsScreen() {
@@ -97,7 +98,7 @@ export default function NotificationsScreen() {
         {ITEMS.map((item, index) => (
           <View key={item.key} style={[styles.row, index === ITEMS.length - 1 && styles.rowLast]}>
             <View style={styles.rowIcon}>
-              <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+              <Ionicons name={item.icon as any} size={20} color={Colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.rowTitle}>{item.title}</Text>
@@ -147,7 +148,7 @@ const styles = StyleSheet.create({
   },
   rowLast: { borderBottomWidth: 0 },
   rowIcon: {
-    width: 40, height: 40, borderRadius: 10, backgroundColor: Colors.bg,
+    width: 40, height: 40, borderRadius: 10, backgroundColor: Colors.primaryLight,
     alignItems: 'center', justifyContent: 'center',
   },
   rowTitle: { fontSize: 14, fontWeight: '700', color: Colors.text },
