@@ -205,6 +205,52 @@ export default function CompareScreen() {
             </TouchableOpacity>
           )}
 
+          {/* 비용 환산 비교 */}
+          {tableEntries.length >= 2 && tableEntries.some(({ ci }) => ci.item_type === 'treatment') && tableEntries.some(({ ci }) => ci.item_type === 'device') && (
+            <View style={styles.costCard}>
+              <Text style={styles.costTitle}>💰 비용 환산 비교</Text>
+              <Text style={styles.costSubtitle}>시술 vs 기기를 동일 기간으로 비교해봤어요</Text>
+              <View style={styles.costRows}>
+                {tableEntries.map(({ ci, detail: d }) => {
+                  const isTreatment = ci.item_type === 'treatment';
+                  const t = d as Treatment;
+                  const dv = d as Device;
+                  const sessionPrice = isTreatment ? t.price_min : null;
+                  const devicePrice = !isTreatment ? dv.price : null;
+                  // 기기: 주 2회 6개월(52회) 기준 1회당
+                  const devicePerSession = devicePrice ? Math.round(devicePrice / 52) : null;
+                  return (
+                    <View key={ci.item_id} style={styles.costRow}>
+                      <View style={styles.costRowLeft}>
+                        <View style={[styles.costBadge, { backgroundColor: isTreatment ? '#FFE8F0' : '#EEE8FF' }]}>
+                          <Text style={[styles.costBadgeText, { color: isTreatment ? Colors.primary : '#9B6FE8' }]}>
+                            {isTreatment ? '시술' : '기기'}
+                          </Text>
+                        </View>
+                        <Text style={styles.costItemName} numberOfLines={1}>{d.name}</Text>
+                      </View>
+                      <View style={styles.costRowRight}>
+                        {isTreatment ? (
+                          <>
+                            <Text style={styles.costAmount}>{sessionPrice!.toLocaleString()}원</Text>
+                            <Text style={styles.costNote}>1회 기준</Text>
+                          </>
+                        ) : (
+                          <>
+                            <Text style={styles.costAmount}>{devicePrice!.toLocaleString()}원</Text>
+                            <Text style={styles.costNote}>구입 후 1회당 {devicePerSession!.toLocaleString()}원</Text>
+                            <Text style={styles.costNoteDetail}>(주 2회·6개월 기준)</Text>
+                          </>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+              <Text style={styles.costDisclaimer}>* 기기는 소모품 비용 미포함, 시술은 1회 최저 비용 기준</Text>
+            </View>
+          )}
+
           {/* 상세 비교 테이블 */}
           {visibleDetails.length >= 2 && (
             <View style={styles.table}>
@@ -580,6 +626,30 @@ const styles = StyleSheet.create({
   tableValueHighlight: { color: '#555' },
   tableDisclaimer: { paddingTop: 12, borderTopWidth: 1, borderTopColor: Colors.border },
   tableDisclaimerText: { fontSize: 10, color: Colors.sub, lineHeight: 16 },
+
+  /* 비용 환산 비교 */
+  costCard: {
+    backgroundColor: Colors.white, borderRadius: 18, padding: 18, gap: 12,
+    borderWidth: 1, borderColor: Colors.border,
+    shadowColor: Colors.cardShadow,
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 12, elevation: 3,
+  },
+  costTitle: { fontSize: 16, fontWeight: '800', color: Colors.text },
+  costSubtitle: { fontSize: 12, color: Colors.sub, marginTop: -4 },
+  costRows: { gap: 10 },
+  costRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: Colors.bg, borderRadius: 12, padding: 12, gap: 10,
+  },
+  costRowLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  costBadge: { paddingVertical: 3, paddingHorizontal: 8, borderRadius: 8 },
+  costBadgeText: { fontSize: 11, fontWeight: '700' },
+  costItemName: { flex: 1, fontSize: 13, fontWeight: '700', color: Colors.text },
+  costRowRight: { alignItems: 'flex-end', gap: 2 },
+  costAmount: { fontSize: 15, fontWeight: '800', color: Colors.primary },
+  costNote: { fontSize: 11, color: Colors.sub, fontWeight: '600' },
+  costNoteDetail: { fontSize: 10, color: Colors.sub },
+  costDisclaimer: { fontSize: 10, color: Colors.sub, lineHeight: 16 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalSheet: {
     backgroundColor: Colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
