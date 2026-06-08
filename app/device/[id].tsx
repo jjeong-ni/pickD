@@ -1,36 +1,26 @@
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Image, FlatList, Modal, TextInput, Linking, Alert, Platform, Share,
+  ActivityIndicator, Image, FlatList, Linking, Alert, Platform,
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 import { APP_URL } from '../../constants/app';
 import { useAuth } from '../../hooks/useAuth';
 import { useCompare } from '../../hooks/useCompare';
-import { Device, Treatment, Review } from '../../types';
+import { Device, Treatment } from '../../types';
 import MediaGallery from '../../components/MediaGallery';
 
 export default function DeviceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user, fetchProfile } = useAuth();
+  const { user } = useAuth();
   const { items, add } = useCompare();
   const [device, setDevice] = useState<Device | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
   const [relatedTreatments, setRelatedTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [newRating, setNewRating] = useState(5);
-  const [newBody, setNewBody] = useState('');
-  const [reviewImageUri, setReviewImageUri] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
-  const [reviewPage, setReviewPage] = useState(1);
-  const [reviewTotal, setReviewTotal] = useState(0);
-  const REVIEW_PAGE_SIZE = 30;
 
   useEffect(() => {
     fetchData();
@@ -51,42 +41,10 @@ export default function DeviceDetailScreen() {
     }
   }, [user?.id, id]);
 
-  const fetchReviews = async (page = 1) => {
-    const from = (page - 1) * REVIEW_PAGE_SIZE;
-    const { data: reviewRows, count } = await supabase
-      .from('reviews')
-      .select('*', { count: 'exact' })
-      .eq('item_id', id)
-      .eq('item_type', 'device')
-      .order('created_at', { ascending: false })
-      .range(from, from + REVIEW_PAGE_SIZE - 1);
-    if (!reviewRows || reviewRows.length === 0) {
-      if (page === 1) setReviews([]);
-      setReviewTotal(count ?? 0);
-      return;
-    }
-    const userIds = [...new Set(reviewRows.map((r: any) => r.user_id))];
-    const { data: profileRows } = await supabase
-      .from('profiles')
-      .select('user_id, nickname')
-      .in('user_id', userIds);
-    const profileMap = Object.fromEntries(
-      (profileRows ?? []).map((p: any) => [p.user_id, p])
-    );
-    const merged = reviewRows.map((r: any) => ({
-      ...r,
-      profile: profileMap[r.user_id] ?? null,
-    }));
-    setReviews((prev) => page === 1 ? merged : [...prev, ...merged]);
-    setReviewTotal(count ?? 0);
-    setReviewPage(page);
-  };
-
   const fetchData = async () => {
     try {
       const { data: d } = await supabase.from('devices').select('*').eq('id', id).maybeSingle();
       setDevice(d);
-      await fetchReviews(1);
       if (d) {
         const { data: treats } = await supabase
           .from('treatments')
@@ -116,92 +74,28 @@ export default function DeviceDetailScreen() {
     await add(user.id, device.id, 'device');
   };
 
-  const handlePickReviewImage = async () => {
-    if (Platform.OS !== 'web') {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('권한 필요', '사진 접근 권한이 필요합니다.');
-        return;
-      }
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.7,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setReviewImageUri(result.assets[0].uri);
-    }
-  };
-
-  const uploadReviewImage = async (uri: string): Promise<string | null> => {
-    try {
-      const ext = uri.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const fileName = `review-${user!.id}-${Date.now()}.${ext}`;
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const { error } = await supabase.storage
-        .from('review-images')
-        .upload(fileName, blob, { contentType: `image/${ext}`, upsert: false });
-      if (error) return null;
-      const { data } = supabase.storage.from('review-images').getPublicUrl(fileName);
-      return data.publicUrl;
-    } catch {
-      return null;
-    }
-  };
-
-  const handleSubmitReview = async () => {
-    if (!user || !device || !newBody.trim()) return;
-    setSubmitting(true);
-    let imageUrl: string | null = null;
-    if (reviewImageUri) {
-      imageUrl = await uploadReviewImage(reviewImageUri);
-    }
-    await supabase.from('reviews').insert({
-      user_id: user.id,
-      item_id: device.id,
-      item_type: 'device',
-      rating: newRating,
-      body: newBody.trim(),
-      image_url: imageUrl,
-    });
-    // review_count 즉시 반영
-    const newCount = device.review_count + 1;
-    await supabase.from('devices').update({ review_count: newCount }).eq('id', device.id);
-    setDevice({ ...device, review_count: newCount });
-    // 리뷰 50pt (아이템당 1회)
-    const reviewReason = `리뷰:${device.id}`;
-    const { data: existingLog } = await supabase
-      .from('point_logs').select('id').eq('user_id', user.id).eq('reason', reviewReason).limit(1);
-    if (!existingLog || existingLog.length === 0) {
-      const { data: p } = await supabase.from('profiles').select('points').eq('user_id', user.id).maybeSingle();
-      await supabase.from('point_logs').insert({ user_id: user.id, amount: 50, reason: reviewReason });
-      await supabase.from('profiles').update({ points: (p?.points ?? 0) + 50 }).eq('user_id', user.id);
-      await fetchProfile(user.id);
-      Alert.alert('✅ 리뷰 등록 완료', '50pt가 적립됐어요!');
-    }
-    await fetchReviews(1);
-    setNewBody('');
-    setNewRating(5);
-    setReviewImageUri(null);
-    setSubmitting(false);
-    setShowReviewModal(false);
-  };
-
   const handleShare = async () => {
     const url = `${APP_URL}/device/${device?.id}`;
     const msg = `${device?.name} | 픽디에서 확인해보세요 🌸\n${url}`;
     try {
       if (Platform.OS === 'web') {
-        await navigator.clipboard.writeText(msg);
-        Alert.alert('복사 완료!', '링크가 클립보드에 복사됐어요.');
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          await navigator.clipboard.writeText(url);
+        } else {
+          const el = (document as any).createElement('textarea');
+          el.value = url;
+          (document as any).body.appendChild(el);
+          el.select();
+          (document as any).execCommand('copy');
+          (document as any).body.removeChild(el);
+        }
+        Alert.alert('🔗 링크 복사 완료!', '클립보드에 복사됐어요.');
       } else {
+        const { Share } = require('react-native');
         await Share.share({ message: msg });
       }
     } catch {
-      Alert.alert('공유 링크', url);
+      Alert.alert('링크', url);
     }
   };
 
@@ -233,7 +127,6 @@ export default function DeviceDetailScreen() {
   );
 
   const inCompare = items.some((i) => i.item_id === device.id);
-  const userAlreadyReviewed = reviews.some((r) => r.user_id === user?.id);
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bg }}>
@@ -250,10 +143,10 @@ export default function DeviceDetailScreen() {
             <Text style={styles.backBtnText}>←</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
-            <Text style={styles.shareBtnText}>↑</Text>
+            <Text style={styles.shareBtnText}>📤</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.heartBtn} onPress={handleToggleFavorite}>
-            <Text style={styles.heartBtnText}>{favoriteId ? '♥' : '♡'}</Text>
+            <Text style={styles.heartBtnText}>{favoriteId ? '🩷' : '🤍'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -261,10 +154,17 @@ export default function DeviceDetailScreen() {
         <View style={styles.infoCard}>
           <Text style={styles.brand}>{device.brand}</Text>
           <Text style={styles.name}>{device.name}</Text>
-          <View style={styles.ratingRow}>
+          <TouchableOpacity
+            style={styles.ratingRow}
+            onPress={() => router.push({
+              pathname: '/reviews',
+              params: { itemId: id, itemType: 'device', itemName: device.name }
+            } as any)}
+            activeOpacity={0.7}
+          >
             <Text style={styles.rating}>⭐ {(device.rating ?? 0).toFixed(1)}</Text>
-            <Text style={styles.reviewCount}>리뷰 {device.review_count ?? 0}개</Text>
-          </View>
+            <Text style={styles.reviewCount}>리뷰 {device.review_count ?? 0}개 ›</Text>
+          </TouchableOpacity>
 
           <View style={styles.priceRow}>
             <View>
@@ -340,39 +240,18 @@ export default function DeviceDetailScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 리뷰 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>리뷰 ({reviews.length})</Text>
-          {reviews.length === 0 ? (
-            <Text style={styles.noReview}>아직 리뷰가 없어요</Text>
-          ) : (
-            reviews.map((r) => (
-              <View key={r.id} style={styles.reviewCard}>
-                <View style={styles.reviewHeader}>
-                  <Text style={styles.reviewNickname}>{(r as any).profile?.nickname ?? '익명'}</Text>
-                  <Text style={styles.reviewRating}>{'⭐'.repeat(r.rating)}</Text>
-                </View>
-                <Text style={styles.reviewBody}>{r.body}</Text>
-                {r.image_url && (
-                  <Image source={{ uri: r.image_url }} style={styles.reviewImage} resizeMode="cover" />
-                )}
-              </View>
-            ))
-          )}
-          {user ? (
-            userAlreadyReviewed ? (
-              <Text style={styles.alreadyReviewed}>✓ 내 리뷰가 포함되어 있어요</Text>
-            ) : (
-              <TouchableOpacity style={styles.writeReviewBtn} onPress={() => setShowReviewModal(true)}>
-                <Text style={styles.writeReviewBtnText}>✍️ 리뷰 쓰기</Text>
-              </TouchableOpacity>
-            )
-          ) : (
-            <TouchableOpacity style={styles.writeReviewBtn} onPress={() => router.push('/(auth)/login')}>
-              <Text style={styles.writeReviewBtnText}>로그인하고 리뷰 쓰기</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        {/* 리뷰 — 별도 페이지로 분리 */}
+        <TouchableOpacity
+          style={styles.reviewLinkRow}
+          onPress={() => router.push({ pathname: '/reviews', params: { itemId: id, itemType: 'device', itemName: device.name } } as any)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.reviewLinkLeft}>
+            <Text style={styles.reviewLinkTitle}>리뷰</Text>
+            <Text style={styles.reviewLinkCount}>총 {device.review_count ?? 0}개</Text>
+          </View>
+          <Text style={styles.reviewLinkArrow}>›</Text>
+        </TouchableOpacity>
 
         {/* 관련 시술 */}
         {relatedTreatments.length > 0 && (
@@ -467,65 +346,6 @@ export default function DeviceDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 리뷰 작성 모달 */}
-      <Modal visible={showReviewModal} transparent animationType="slide" onRequestClose={() => setShowReviewModal(false)}>
-        <View style={styles.reviewModalOverlay}>
-          <View style={styles.reviewSheet}>
-            <Text style={styles.reviewSheetTitle}>리뷰 작성</Text>
-            <Text style={styles.reviewSheetItem}>{device.name}</Text>
-            <View style={styles.starRow}>
-              {[1, 2, 3, 4, 5].map((s) => (
-                <TouchableOpacity key={s} onPress={() => setNewRating(s)}>
-                  <Text style={[styles.star, s <= newRating && styles.starActive]}>★</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TextInput
-              style={styles.reviewInput}
-              placeholder="기기 사용 후기를 솔직하게 작성해주세요 (최대 500자)"
-              placeholderTextColor={Colors.sub}
-              multiline
-              value={newBody}
-              onChangeText={setNewBody}
-              maxLength={500}
-            />
-            <Text style={styles.charCount}>{newBody.length}/500</Text>
-
-            {/* 이미지 첨부 */}
-            <TouchableOpacity style={styles.imagePickerBtn} onPress={handlePickReviewImage}>
-              {reviewImageUri ? (
-                <View style={styles.imagePickerPreviewWrap}>
-                  <Image source={{ uri: reviewImageUri }} style={styles.imagePickerPreview} resizeMode="cover" />
-                  <TouchableOpacity
-                    style={styles.imagePickerRemove}
-                    onPress={() => setReviewImageUri(null)}
-                  >
-                    <Text style={styles.imagePickerRemoveText}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.imagePickerEmpty}>
-                  <Text style={styles.imagePickerIcon}>📷</Text>
-                  <Text style={styles.imagePickerLabel}>사진 첨부 (선택)</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.reviewSubmitBtn, (!newBody.trim() || submitting) && styles.reviewSubmitBtnDisabled]}
-              onPress={handleSubmitReview}
-              disabled={!newBody.trim() || submitting}
-            >
-              {submitting
-                ? <ActivityIndicator color={Colors.white} />
-                : <Text style={styles.reviewSubmitBtnText}>등록하기</Text>}
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.reviewCancelBtn} onPress={() => { setShowReviewModal(false); setReviewImageUri(null); }}>
-              <Text style={styles.reviewCancelBtnText}>취소</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -592,18 +412,15 @@ const styles = StyleSheet.create({
   section: { backgroundColor: Colors.white, padding: 20, marginTop: 8 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
   description: { fontSize: 14, color: Colors.sub, lineHeight: 22 },
-  noReview: { fontSize: 14, color: Colors.sub },
-  reviewCard: { paddingVertical: 12, borderTopWidth: 1, borderTopColor: Colors.border },
-  reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  reviewNickname: { fontSize: 13, fontWeight: '700', color: Colors.text },
-  reviewRating: { fontSize: 12 },
-  reviewBody: { fontSize: 14, color: Colors.sub, lineHeight: 20 },
-  alreadyReviewed: { fontSize: 13, color: Colors.success, fontWeight: '600', marginTop: 12 },
-  writeReviewBtn: {
-    marginTop: 12, borderWidth: 1.5, borderColor: Colors.primary,
-    borderRadius: 10, paddingVertical: 12, alignItems: 'center',
+  reviewLinkRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: Colors.white, paddingHorizontal: 20, paddingVertical: 18,
+    borderTopWidth: 1, borderBottomWidth: 1, borderColor: Colors.border, marginVertical: 8,
   },
-  writeReviewBtnText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+  reviewLinkLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  reviewLinkTitle: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  reviewLinkCount: { fontSize: 14, color: Colors.sub },
+  reviewLinkArrow: { fontSize: 20, color: Colors.sub },
   priceLabelNote: { fontSize: 10, color: Colors.sub, fontWeight: '400' },
   sectionSubtitle: { fontSize: 12, color: Colors.sub, marginTop: -8 },
   relatedCard: { width: 130, backgroundColor: Colors.bg, borderRadius: 12, padding: 10, gap: 4 },
@@ -641,45 +458,4 @@ const styles = StyleSheet.create({
   coupangBtnWrap: { flex: 2 },
   coupangBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   coupangBtnText: { fontSize: 14, fontWeight: '700', color: Colors.white },
-  reviewModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  reviewSheet: {
-    backgroundColor: Colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: 48,
-  },
-  reviewSheetTitle: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: 4 },
-  reviewSheetItem: { fontSize: 13, color: Colors.sub, marginBottom: 16 },
-  starRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginBottom: 16 },
-  star: { fontSize: 36, color: Colors.border },
-  starActive: { color: '#FFD700' },
-  reviewInput: {
-    borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12,
-    padding: 14, fontSize: 14, color: Colors.text, minHeight: 120,
-    textAlignVertical: 'top',
-  },
-  charCount: { fontSize: 11, color: Colors.sub, textAlign: 'right', marginTop: 4, marginBottom: 12 },
-  reviewImage: { width: '100%', height: 180, borderRadius: 10, marginTop: 10 },
-  imagePickerBtn: { marginBottom: 16 },
-  imagePickerEmpty: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    borderWidth: 1.5, borderColor: Colors.border, borderStyle: 'dashed',
-    borderRadius: 12, padding: 14, justifyContent: 'center',
-  },
-  imagePickerIcon: { fontSize: 22 },
-  imagePickerLabel: { fontSize: 14, color: Colors.sub, fontWeight: '600' },
-  imagePickerPreviewWrap: { position: 'relative' },
-  imagePickerPreview: { width: '100%', height: 160, borderRadius: 12 },
-  imagePickerRemove: {
-    position: 'absolute', top: 8, right: 8,
-    backgroundColor: 'rgba(0,0,0,0.55)', width: 28, height: 28,
-    borderRadius: 14, alignItems: 'center', justifyContent: 'center',
-  },
-  imagePickerRemoveText: { color: Colors.white, fontSize: 13, fontWeight: '700' },
-  reviewSubmitBtn: {
-    backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 14,
-    alignItems: 'center', marginBottom: 10,
-  },
-  reviewSubmitBtnDisabled: { backgroundColor: Colors.border },
-  reviewSubmitBtnText: { color: Colors.white, fontSize: 15, fontWeight: '700' },
-  reviewCancelBtn: { alignItems: 'center', paddingVertical: 8 },
-  reviewCancelBtnText: { fontSize: 14, color: Colors.sub },
 });
