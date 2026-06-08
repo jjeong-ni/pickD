@@ -54,14 +54,15 @@ export default function SignupScreen() {
   const requestCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status === 'granted') {
-      return; // 권한 승인 → 사용자가 직접 촬영 버튼 누름
+      await launchCamera();
+      return;
     }
     Alert.alert(
       '얼굴형 정밀분석',
-      '얼굴형 정밀분석을 하지 않으시겠습니까?',
+      '카메라 권한이 필요해요. 얼굴형 정밀분석을 건너뛰시겠습니까?',
       [
         {
-          text: '아니오',
+          text: '다시 시도',
           style: 'cancel',
           onPress: () => {
             cameraRequested.current = false;
@@ -69,7 +70,7 @@ export default function SignupScreen() {
           },
         },
         {
-          text: '네',
+          text: '나중에 하기',
           onPress: () => setSkipFace(true),
         },
       ],
@@ -83,6 +84,7 @@ export default function SignupScreen() {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
+        cameraType: ImagePicker.CameraType.front,
       });
       if (!result.canceled) {
         setFacePhotoUri(result.assets[0].uri);
