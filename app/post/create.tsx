@@ -17,22 +17,61 @@ const CATEGORIES: { label: string; desc: string }[] = [
   { label: '질문', desc: '궁금한 점을 자유롭게 물어보세요' },
   { label: '정보', desc: '유용한 뷰티·피부 정보를 나눠요' },
   { label: '비교', desc: '시술이나 제품을 직접 비교해봐요' },
+  { label: '퀴즈', desc: '100pt로 퀴즈를 만들어요' },
 ];
 
 export default function CreatePostScreen() {
-  const { user, fetchProfile } = useAuth();
+  const { user, fetchProfile, profile, setProfile } = useAuth();
   const { triggerRefresh } = usePostStore();
   const [category, setCategory] = useState('후기');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [optionA, setOptionA] = useState('');
+  const [optionB, setOptionB] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = title.trim().length >= 2 && body.trim().length >= 10 && !loading;
+  const isQuiz = category === '퀴즈';
+  const canSubmit = isQuiz
+    ? title.trim().length >= 2 && optionA.trim().length >= 1 && optionB.trim().length >= 1 && !loading
+    : title.trim().length >= 2 && body.trim().length >= 10 && !loading;
   const selectedCatDesc = CATEGORIES.find((c) => c.label === category)?.desc ?? '';
 
   const handleSubmit = async () => {
     if (!canSubmit || !user) return;
     setLoading(true);
+
+    if (isQuiz) {
+      // Quiz creation: costs 100pt
+      const currentPoints = profile?.points ?? 0;
+      if (currentPoints < 100) {
+        Alert.alert('포인트 부족', '퀴즈 생성에 100pt가 필요해요');
+        setLoading(false);
+        return;
+      }
+      // Deduct 100pt
+      await supabase.from('profiles').update({ points: currentPoints - 100 }).eq('user_id', user.id);
+      await supabase.from('point_logs').insert({ user_id: user.id, amount: -100, reason: '퀴즈 생성' });
+      // Insert quiz post
+      const { error } = await supabase.from('posts').insert({
+        user_id: user.id,
+        title: title.trim(),
+        body: JSON.stringify({ options: [optionA.trim(), optionB.trim()] }),
+        category,
+      });
+      if (error) {
+        Alert.alert('오류', '퀴즈 작성 중 오류가 발생했어요');
+        setLoading(false);
+        return;
+      }
+      // Update Zustand profile
+      if (profile) setProfile({ ...profile, points: currentPoints - 100 });
+      setLoading(false);
+      triggerRefresh();
+      router.back();
+      return;
+    }
+
+    // Normal post
     const { error } = await supabase.from('posts').insert({
       user_id: user.id, title: title.trim(), body: body.trim(), category,
     });
@@ -112,35 +151,92 @@ export default function CreatePostScreen() {
           />
         </View>
 
-        {/* 내용 */}
-        <View>
-          <View style={styles.fieldHeader}>
-            <Text style={styles.sectionLabel}>내용</Text>
-            <Text style={[styles.charCount, body.length >= BODY_MAX && styles.charCountOver]}>
-              {body.length}/{BODY_MAX}
+        {/* 퀴즈 안내 배너 */}
+        {isQuiz && (
+          <View style={styles.quizNoticeBanner}>
+            <Text style={styles.quizNoticeText}>
+              🗳️ 퀴즈 생성 비용: 100pt • 4명 투표 시 마감 • 다수 투표자 50pt 지급
             </Text>
           </View>
-          <TextInput
-            style={styles.bodyInput}
-            placeholder="내용을 입력하세요 (10자 이상)"
-            placeholderTextColor={Colors.sub}
-            value={body}
-            onChangeText={(t) => setBody(t.slice(0, BODY_MAX))}
-            multiline
-            textAlignVertical="top"
-          />
-        </View>
+        )}
+
+        {/* 내용 / 퀴즈 선택지 */}
+        {isQuiz ? (
+          <View style={{ gap: 16 }}>
+            <View>
+              <View style={styles.fieldHeader}>
+                <Text style={styles.sectionLabel}>선택지 A</Text>
+                <Text style={[styles.charCount, optionA.length >= 30 && styles.charCountOver]}>
+                  {optionA.length}/30
+                </Text>
+              </View>
+              <TextInput
+                style={styles.titleInput}
+                placeholder="선택지 A를 입력하세요"
+                placeholderTextColor={Colors.sub}
+                value={optionA}
+                onChangeText={(t) => setOptionA(t.slice(0, 30))}
+                maxLength={30}
+              />
+            </View>
+            <View>
+              <View style={styles.fieldHeader}>
+                <Text style={styles.sectionLabel}>선택지 B</Text>
+                <Text style={[styles.charCount, optionB.length >= 30 && styles.charCountOver]}>
+                  {optionB.length}/30
+                </Text>
+              </View>
+              <TextInput
+                style={styles.titleInput}
+                placeholder="선택지 B를 입력하세요"
+                placeholderTextColor={Colors.sub}
+                value={optionB}
+                onChangeText={(t) => setOptionB(t.slice(0, 30))}
+                maxLength={30}
+              />
+            </View>
+          </View>
+        ) : (
+          <View>
+            <View style={styles.fieldHeader}>
+              <Text style={styles.sectionLabel}>내용</Text>
+              <Text style={[styles.charCount, body.length >= BODY_MAX && styles.charCountOver]}>
+                {body.length}/{BODY_MAX}
+              </Text>
+            </View>
+            <TextInput
+              style={styles.bodyInput}
+              placeholder="내용을 입력하세요 (10자 이상)"
+              placeholderTextColor={Colors.sub}
+              value={body}
+              onChangeText={(t) => setBody(t.slice(0, BODY_MAX))}
+              multiline
+              textAlignVertical="top"
+            />
+          </View>
+        )}
 
         {/* 등록 조건 안내 */}
-        {!canSubmit && (title.length > 0 || body.length > 0) && (
+        {!canSubmit && (title.length > 0 || body.length > 0 || optionA.length > 0 || optionB.length > 0) && (
           <View style={styles.conditionBox}>
             <Text style={styles.conditionTitle}>등록 조건</Text>
             <Text style={[styles.conditionItem, title.trim().length >= 2 && styles.conditionOk]}>
               {title.trim().length >= 2 ? '✓' : '○'} 제목 2자 이상
             </Text>
-            <Text style={[styles.conditionItem, body.trim().length >= 10 && styles.conditionOk]}>
-              {body.trim().length >= 10 ? '✓' : '○'} 내용 10자 이상
-            </Text>
+            {isQuiz ? (
+              <>
+                <Text style={[styles.conditionItem, optionA.trim().length >= 1 && styles.conditionOk]}>
+                  {optionA.trim().length >= 1 ? '✓' : '○'} 선택지 A 1자 이상
+                </Text>
+                <Text style={[styles.conditionItem, optionB.trim().length >= 1 && styles.conditionOk]}>
+                  {optionB.trim().length >= 1 ? '✓' : '○'} 선택지 B 1자 이상
+                </Text>
+              </>
+            ) : (
+              <Text style={[styles.conditionItem, body.trim().length >= 10 && styles.conditionOk]}>
+                {body.trim().length >= 10 ? '✓' : '○'} 내용 10자 이상
+              </Text>
+            )}
           </View>
         )}
 
@@ -200,4 +296,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg, borderRadius: 10, padding: 14,
   },
   guideText: { fontSize: 12, color: Colors.sub, lineHeight: 20 },
+  quizNoticeBanner: {
+    backgroundColor: 'rgba(124,92,235,0.08)', borderRadius: 10, padding: 14,
+    borderLeftWidth: 3, borderLeftColor: '#7C5CEB',
+  },
+  quizNoticeText: { fontSize: 13, color: '#7C5CEB', fontWeight: '600', lineHeight: 20 },
 });

@@ -1,5 +1,5 @@
 import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Platform,
+  View, Text, FlatList, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Platform,
 } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
 import { router, useFocusEffect } from 'expo-router';
@@ -12,7 +12,9 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
 import { Post } from '../../types';
 
-const CATEGORIES = ['전체', '후기', '질문', '정보', '비교'];
+type PostWithVoteCount = Post & { quizVoteCount?: number };
+
+const CATEGORIES = ['전체', '후기', '질문', '정보', '비교', '퀴즈'];
 
 const NOTICES = [
   {
@@ -47,7 +49,7 @@ export default function CommunityScreen() {
   const { refreshKey } = usePostStore();
   const { hPad } = useResponsive();
   const [category, setCategory] = useState('전체');
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<PostWithVoteCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
 
@@ -61,7 +63,30 @@ export default function CommunityScreen() {
         .limit(30);
       if (category !== '전체') q = q.eq('category', category);
       const { data } = await q;
-      setPosts(data ?? []);
+      const fetchedPosts: PostWithVoteCount[] = data ?? [];
+
+      // For quiz posts, fetch vote counts
+      const quizPosts = fetchedPosts.filter((p) => p.category === '퀴즈');
+      if (quizPosts.length > 0) {
+        const quizIds = quizPosts.map((p) => p.id);
+        const { data: votes } = await supabase
+          .from('quiz_votes')
+          .select('post_id')
+          .in('post_id', quizIds);
+        if (votes) {
+          const countMap: Record<string, number> = {};
+          for (const v of votes) {
+            countMap[v.post_id] = (countMap[v.post_id] ?? 0) + 1;
+          }
+          for (const post of fetchedPosts) {
+            if (post.category === '퀴즈') {
+              post.quizVoteCount = countMap[post.id] ?? 0;
+            }
+          }
+        }
+      }
+
+      setPosts(fetchedPosts);
     } catch {
       setPosts([]);
     } finally {
@@ -100,14 +125,14 @@ export default function CommunityScreen() {
         )}
       </LinearGradient>
 
-      <FlatList
+      <ScrollView
         horizontal
-        data={CATEGORIES}
-        keyExtractor={(i) => i}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filters}
-        renderItem={({ item }) => (
+      >
+        {CATEGORIES.map((item) => (
           <TouchableOpacity
+            key={item}
             style={[styles.filter, item === category && styles.filterActive]}
             onPress={() => setCategory(item)}
           >
@@ -115,8 +140,8 @@ export default function CommunityScreen() {
               {item}
             </Text>
           </TouchableOpacity>
-        )}
-      />
+        ))}
+      </ScrollView>
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>
@@ -141,6 +166,45 @@ export default function CommunityScreen() {
           renderItem={({ item }) => {
             const spam = isSpamPost(item.title, item.body);
             const revealed = revealedIds.has(item.id);
+            const isQuizPost = item.category === '퀴즈';
+
+            if (isQuizPost) {
+              const voteCount = item.quizVoteCount ?? 0;
+              const quizClosed = voteCount >= 4;
+              return (
+                <TouchableOpacity
+                  style={styles.quizCard}
+                  onPress={() => router.push(`/post/${item.id}`)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.quizCardHeader}>
+                    <View style={styles.quizBadge}>
+                      <Text style={styles.quizBadgeText}>🗳️ 퀴즈</Text>
+                    </View>
+                    <Text style={styles.postDate}>
+                      {new Date(item.created_at).toLocaleDateString('ko-KR')}
+                    </Text>
+                  </View>
+                  <Text style={styles.postTitle} numberOfLines={2}>{item.title}</Text>
+                  <View style={styles.quizStatusRow}>
+                    <View style={[styles.quizStatusBadge, quizClosed && styles.quizStatusBadgeClosed]}>
+                      <Text style={[styles.quizStatusText, quizClosed && styles.quizStatusTextClosed]}>
+                        {quizClosed ? '✅ 마감됨' : `투표 진행중 (${voteCount}/4명)`}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.postFooter}>
+                    <Text style={styles.postAuthor}>
+                      👤 {(item as any).profile?.nickname ?? '익명'}
+                    </Text>
+                    <View style={styles.postMeta}>
+                      <Text style={styles.postMetaText}>💬 {item.comment_count}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            }
+
             return (
               <TouchableOpacity
                 style={styles.postCard}
@@ -253,7 +317,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '900', color: '#fff' },
   writeBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20 },
   writeBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  filters: { paddingHorizontal: 20, paddingVertical: 12, gap: 8, backgroundColor: Colors.white },
+  filters: { paddingHorizontal: 20, paddingVertical: 12, gap: 8, backgroundColor: Colors.white, flexDirection: 'row', alignItems: 'center' },
   filter: {
     paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20,
     borderWidth: 1, borderColor: Colors.border,
@@ -299,4 +363,23 @@ const styles = StyleSheet.create({
   },
   loginBannerText: { fontSize: 13, color: Colors.sub },
   loginBannerBtn: { fontSize: 13, fontWeight: '700', color: Colors.primary },
+  quizCard: {
+    padding: 20, backgroundColor: '#F0F4FF', overflow: 'hidden',
+    borderLeftWidth: 4, borderLeftColor: '#7C5CEB',
+  },
+  quizCardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  quizBadge: {
+    backgroundColor: '#7C5CEB', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12,
+  },
+  quizBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.white },
+  quizStatusRow: { flexDirection: 'row', marginBottom: 10, marginTop: 4 },
+  quizStatusBadge: {
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12,
+    backgroundColor: 'rgba(124,92,235,0.12)', borderWidth: 1, borderColor: '#7C5CEB',
+  },
+  quizStatusBadgeClosed: {
+    backgroundColor: 'rgba(39,174,96,0.12)', borderColor: '#27AE60',
+  },
+  quizStatusText: { fontSize: 12, fontWeight: '600', color: '#7C5CEB' },
+  quizStatusTextClosed: { color: '#27AE60' },
 });
