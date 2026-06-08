@@ -200,7 +200,16 @@ function WebKakaoMap({ keyword }: { keyword: string }) {
 
     const script = document.createElement('script');
     script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&libraries=services&autoload=false`;
-    script.onload = () => (window as any).kakao.maps.load(initMap);
+    script.onload = () => {
+      try { (window as any).kakao.maps.load(initMap); } catch (e) {
+        const badge = document.getElementById('web-map-badge');
+        if (badge) badge.textContent = '⚠️ 지도를 불러오지 못했어요 (API 키 도메인 확인 필요)';
+      }
+    };
+    script.onerror = () => {
+      const badge = document.getElementById('web-map-badge');
+      if (badge) badge.textContent = '⚠️ 카카오맵 SDK를 불러오지 못했어요';
+    };
     document.head.appendChild(script);
   }, [webCoords, webLoading]);
 
@@ -232,7 +241,7 @@ function WebKakaoMap({ keyword }: { keyword: string }) {
       {/* @ts-ignore */}
       <div
         ref={mapDivRef}
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%', height: 'calc(100vh - 130px)', minHeight: 400 }}
       />
     </View>
   );

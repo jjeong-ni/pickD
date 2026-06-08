@@ -153,7 +153,7 @@ export default function SignupScreen() {
 
     setLoading(true);
 
-    const { error: signUpError } = await supabase.auth.signUp({ email, password });
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
     if (signUpError) {
       if (signUpError.message.includes('already registered') || signUpError.message.includes('already been registered')) {
         Alert.alert('이미 가입된 이메일', '해당 이메일로 이미 계정이 있어요. 로그인해주세요.');
@@ -166,66 +166,63 @@ export default function SignupScreen() {
       return;
     }
 
-    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-    if (loginError) {
-      const msg = loginError.message.includes('Email not confirmed')
-        ? '가입 확인 이메일을 발송했어요.\n받은 편지함에서 인증 후 로그인해주세요.'
-        : '가입은 완료됐어요. 로그인 화면에서 로그인해주세요.';
-      Alert.alert('안내', msg);
+    // Supabase returns session immediately when email confirmation is disabled.
+    // If session is null, email confirmation is required.
+    const session = signUpData?.session;
+    if (!session) {
+      Alert.alert(
+        '이메일 인증 필요',
+        '가입 확인 이메일을 발송했어요.\n받은 편지함에서 인증 후 로그인해주세요.'
+      );
       router.replace('/(auth)/login');
       setLoading(false);
       return;
     }
 
-    if (loginData.session) {
-      let facePhotoUrl: string | null = null;
-      if (facePhotoUri) {
-        try {
-          const response = await fetch(facePhotoUri);
-          const blob = await response.blob();
-          const filePath = `${loginData.session.user.id}.jpg`;
-          const { error: uploadError } = await supabase.storage
+    const userId = session.user.id;
+    let facePhotoUrl: string | null = null;
+    if (facePhotoUri) {
+      try {
+        const response = await fetch(facePhotoUri);
+        const blob = await response.blob();
+        const filePath = `${userId}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from('face-photos')
+          .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
             .from('face-photos')
-            .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
-          if (!uploadError) {
-            const { data: urlData } = supabase.storage
-              .from('face-photos')
-              .getPublicUrl(filePath);
-            facePhotoUrl = urlData.publicUrl;
-          }
-        } catch {
-          // 업로드 실패 시 설문 기반으로 진행
+            .getPublicUrl(filePath);
+          facePhotoUrl = urlData.publicUrl;
         }
+      } catch {
+        // 업로드 실패 시 설문 기반으로 진행
       }
-
-      const newProfile = {
-        id: loginData.session.user.id,
-        user_id: loginData.session.user.id,
-        nickname,
-        gender: gender || null,
-        age_group: ageGroup || null,
-        skin_type: skinType || null,
-        face_shape: faceShape || null,
-        concerns,
-        points: 1000,
-        face_photo_url: facePhotoUrl,
-        skin_age: null,
-        moisture_score: null,
-        oil_score: null,
-        baumann_code: null,
-        skin_metrics: null,
-        skin_dehydration: null,
-        created_at: new Date().toISOString(),
-      };
-      await supabase.from('profiles').upsert(newProfile, { onConflict: 'user_id' });
-      await supabase.from('point_logs').insert({ user_id: loginData.session.user.id, amount: 1000, reason: '신규 가입' });
-      setProfile(newProfile as any);
-      await AsyncStorage.setItem('signup_popup', JSON.stringify({ nickname }));
-      setLoading(false);
-      router.replace('/(tabs)');
-      return;
     }
 
+    const newProfile = {
+      id: userId,
+      user_id: userId,
+      nickname,
+      gender: gender || null,
+      age_group: ageGroup || null,
+      skin_type: skinType || null,
+      face_shape: faceShape || null,
+      concerns,
+      points: 1000,
+      face_photo_url: facePhotoUrl,
+      skin_age: null,
+      moisture_score: null,
+      oil_score: null,
+      baumann_code: null,
+      skin_metrics: null,
+      skin_dehydration: null,
+      created_at: new Date().toISOString(),
+    };
+    await supabase.from('profiles').upsert(newProfile, { onConflict: 'user_id' });
+    await supabase.from('point_logs').insert({ user_id: userId, amount: 1000, reason: '신규 가입' });
+    setProfile(newProfile as any);
+    await AsyncStorage.setItem('signup_popup', JSON.stringify({ nickname }));
     setLoading(false);
     router.replace('/(tabs)');
   };
