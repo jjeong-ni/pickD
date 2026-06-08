@@ -99,6 +99,24 @@ export default function MypageScreen() {
         </TouchableOpacity>
       )}
 
+      {/* 얼굴형 정밀분석 유도 배너 (face_shape 미설정 시) */}
+      {user && !profile?.face_shape && (
+        <TouchableOpacity
+          style={styles.faceAnalysisBanner}
+          onPress={() => router.push('/face-analysis' as any)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.faceAnalysisBannerLeft}>
+            <Ionicons name="camera-outline" size={22} color={Colors.primary} style={{ marginBottom: 4 }} />
+            <Text style={styles.faceAnalysisBannerTitle}>얼굴형 정밀분석하기</Text>
+            <Text style={styles.faceAnalysisBannerDesc}>얼굴 사진으로 내 얼굴형을 분석해보세요 →</Text>
+          </View>
+          <View style={styles.faceAnalysisBannerBadge}>
+            <Text style={styles.faceAnalysisBannerBadgeText}>미완료</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
       {/* AI 피부 분석 */}
       <View style={styles.aiSection}>
         <View style={styles.aiSectionHeader}>
@@ -109,10 +127,10 @@ export default function MypageScreen() {
         </View>
         <Text style={styles.aiSectionDesc}>진단 질문에 답하고 맞춤 솔루션을 받아보세요</Text>
         <View style={styles.aiCards}>
-          <TouchableOpacity style={styles.aiCard} onPress={() => router.push('/face-analysis' as any)} activeOpacity={0.8}>
+          <TouchableOpacity style={[styles.aiCard, !profile?.face_shape && styles.aiCardHighlight]} onPress={() => router.push('/face-analysis' as any)} activeOpacity={0.8}>
             <Ionicons name="scan-outline" size={30} color={Colors.primary} />
             <Text style={styles.aiCardLabel}>얼굴형 분석</Text>
-            <Text style={styles.aiCardDesc}>6가지 유형 진단</Text>
+            <Text style={styles.aiCardDesc}>{profile?.face_shape ? `${profile.face_shape} ✓` : '6가지 유형 진단'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.aiCard} onPress={() => router.push('/skin-analysis' as any)} activeOpacity={0.8}>
             <Ionicons name="analytics-outline" size={30} color={Colors.primary} />
@@ -305,6 +323,23 @@ const styles = StyleSheet.create({
   missionBannerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   missionBannerPts: { fontSize: 16, fontWeight: '800', color: Colors.primary },
   missionBannerArrow: { fontSize: 18, color: Colors.sub },
+
+  /* 얼굴형 정밀분석 배너 */
+  faceAnalysisBanner: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: '#FFF5F9', marginHorizontal: 16, marginTop: 12,
+    borderRadius: 14, padding: 16,
+    borderWidth: 1.5, borderColor: Colors.primaryLight,
+  },
+  faceAnalysisBannerLeft: { gap: 2 },
+  faceAnalysisBannerTitle: { fontSize: 15, fontWeight: '700', color: Colors.primary },
+  faceAnalysisBannerDesc: { fontSize: 12, color: Colors.primary },
+  faceAnalysisBannerBadge: {
+    backgroundColor: Colors.primary, borderRadius: 20,
+    paddingVertical: 4, paddingHorizontal: 10,
+  },
+  faceAnalysisBannerBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.white },
+  aiCardHighlight: { borderColor: Colors.primary, borderWidth: 1.5 },
 
   /* AI 피부 분석 */
   aiSection: {
