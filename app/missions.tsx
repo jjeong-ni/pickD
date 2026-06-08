@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/colors';
+import { APP_URL } from '../constants/app';
 
 // ─── 미션 목록 ─────────────────────────────────────────────────────────────
 
@@ -184,7 +185,7 @@ export default function MissionsScreen() {
 
   const handleReferral = async () => {
     const code = user?.id?.slice(0, 8) ?? 'PICKDI';
-    const url = `https://pickdi.netlify.app?ref=${code}`;
+    const url = `${APP_URL}?ref=${code}`;
     const msg = `픽디에서 AI 피부 분석 받아보세요 🌸\n가입하면 둘 다 500pt!\n${url}`;
     try {
       if (Platform.OS === 'web') {
