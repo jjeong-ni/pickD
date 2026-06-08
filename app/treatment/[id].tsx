@@ -84,18 +84,23 @@ export default function TreatmentDetailScreen() {
   };
 
   const fetchData = async () => {
-    const { data: t } = await supabase.from('treatments').select('*').eq('id', id).single();
-    setTreatment(t);
-    await fetchReviews(1);
-    if (t) {
-      const { data: devs } = await supabase
-        .from('devices')
-        .select('*')
-        .eq('category', t.category)
-        .limit(4);
-      setRelatedDevices(devs ?? []);
+    try {
+      const { data: t } = await supabase.from('treatments').select('*').eq('id', id).maybeSingle();
+      setTreatment(t);
+      await fetchReviews(1);
+      if (t) {
+        const { data: devs } = await supabase
+          .from('devices')
+          .select('*')
+          .eq('category', t.category)
+          .limit(4);
+        setRelatedDevices(devs ?? []);
+      }
+    } catch (e) {
+      // network error — leave treatment null, show not-found UI
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleAddCompare = async () => {
@@ -212,13 +217,21 @@ export default function TreatmentDetailScreen() {
         .from('favorites')
         .insert({ user_id: user.id, item_id: treatment.id, item_type: 'treatment' })
         .select('id')
-        .single();
+        .maybeSingle();
       setFavoriteId(data?.id ?? null);
     }
   };
 
-  if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>;
-  if (!treatment) return <View style={styles.center}><Text>시술을 찾을 수 없어요</Text></View>;
+  if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.primary} size="large" /></View>;
+  if (!treatment) return (
+    <View style={styles.center}>
+      <Text style={{ fontSize: 48 }}>😢</Text>
+      <Text style={{ fontSize: 16, color: Colors.sub, marginTop: 12 }}>시술을 찾을 수 없어요</Text>
+      <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: Colors.primary, borderRadius: 12 }}>
+        <Text style={{ color: '#fff', fontWeight: '700' }}>돌아가기</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   const inCompare = items.some((i) => i.item_id === treatment.id);
   const userAlreadyReviewed = reviews.some((r) => r.user_id === user?.id);
@@ -253,25 +266,25 @@ export default function TreatmentDetailScreen() {
           <Text style={styles.category}>{treatment.category}</Text>
           <Text style={styles.name}>{treatment.name}</Text>
           <View style={styles.ratingRow}>
-            <Text style={styles.rating}>⭐ {treatment.rating.toFixed(1)}</Text>
-            <Text style={styles.reviewCount}>리뷰 {treatment.review_count}개</Text>
+            <Text style={styles.rating}>⭐ {(treatment.rating ?? 0).toFixed(1)}</Text>
+            <Text style={styles.reviewCount}>리뷰 {treatment.review_count ?? 0}개</Text>
           </View>
 
           <View style={styles.priceRow}>
             <View>
               <Text style={styles.priceLabel}>예상 비용 <Text style={styles.priceLabelNote}>*지역·병원별 상이</Text></Text>
               <Text style={styles.price}>
-                {treatment.price_min.toLocaleString()}~{treatment.price_max.toLocaleString()}원
+                {(treatment.price_min ?? 0).toLocaleString()}~{(treatment.price_max ?? 0).toLocaleString()}원
               </Text>
             </View>
             <View>
               <Text style={styles.priceLabel}>시술 시간</Text>
-              <Text style={styles.price}>{treatment.duration_min}~{treatment.duration_max}분</Text>
+              <Text style={styles.price}>{treatment.duration_min ?? '-'}~{treatment.duration_max ?? '-'}분</Text>
             </View>
           </View>
 
           <View style={styles.tags}>
-            {treatment.tags.map((tag) => (
+            {(treatment.tags ?? []).map((tag) => (
               <View key={tag} style={styles.tag}>
                 <Text style={styles.tagText}># {tag}</Text>
               </View>

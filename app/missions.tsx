@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { Colors } from '../constants/colors';
+import { Colors, HEADER_TOP } from '../constants/colors';
 import { APP_URL } from '../constants/app';
 
 // ─── 미션 목록 ─────────────────────────────────────────────────────────────
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'web' ? 60 : 56, paddingHorizontal: 16, paddingBottom: 16,
+    paddingTop: HEADER_TOP, paddingHorizontal: 16, paddingBottom: 16,
   },
   back: { fontSize: 24, color: Colors.white, width: 32 },
   title: { fontSize: 17, fontWeight: '700', color: Colors.white },

@@ -232,13 +232,13 @@ export default function CompareScreen() {
                       <View style={styles.costRowRight}>
                         {isTreatment ? (
                           <>
-                            <Text style={styles.costAmount}>{sessionPrice!.toLocaleString()}원</Text>
+                            <Text style={styles.costAmount}>{(sessionPrice ?? 0).toLocaleString()}원</Text>
                             <Text style={styles.costNote}>1회 기준</Text>
                           </>
                         ) : (
                           <>
-                            <Text style={styles.costAmount}>{devicePrice!.toLocaleString()}원</Text>
-                            <Text style={styles.costNote}>구입 후 1회당 {devicePerSession!.toLocaleString()}원</Text>
+                            <Text style={styles.costAmount}>{(devicePrice ?? 0).toLocaleString()}원</Text>
+                            <Text style={styles.costNote}>구입 후 1회당 {(devicePerSession ?? 0).toLocaleString()}원</Text>
                             <Text style={styles.costNoteDetail}>(주 2회·6개월 기준)</Text>
                           </>
                         )}

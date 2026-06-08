@@ -30,7 +30,7 @@ export const useAuth = create<AuthState>((set) => ({
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     if (data) set({ profile: data });
   },
 

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
-import { Colors } from '../../constants/colors';
+import { Colors, HEADER_TOP } from '../../constants/colors';
 import { GlassCard } from '../../components/GlassCard';
 
 export default function MypageScreen() {
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   profileSection: {
     alignItems: 'center', padding: 28,
-    paddingTop: Platform.OS === 'web' ? 60 : 56,
+    paddingTop: HEADER_TOP,
     overflow: 'hidden',
   },
   profileOrb: {
