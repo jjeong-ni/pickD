@@ -47,8 +47,10 @@ export default function MypageScreen() {
         .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('face-photos').getPublicUrl(fileName);
-      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('user_id', user.id);
-      setProfile({ ...profile!, avatar_url: publicUrl });
+      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
+      const { error: dbErr } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('user_id', user.id);
+      if (dbErr) throw dbErr;
+      setProfile({ ...profile!, avatar_url: cacheBustedUrl });
     } catch {
       Alert.alert('오류', '프로필 사진 업로드에 실패했어요.');
     } finally {
@@ -61,8 +63,17 @@ export default function MypageScreen() {
       router.push('/(auth)/login' as any);
       return;
     }
+    setReportLoading(true);
+    const { data: existing } = await supabase.from('point_logs')
+      .select('id').eq('user_id', user.id).eq('reason', '맞춤 피부 분석 보고서').limit(1);
+    if (existing && existing.length > 0) {
+      setReportLoading(false);
+      router.push('/skin-report' as any);
+      return;
+    }
     const currentPoints = profile.points ?? 0;
     if (currentPoints < REPORT_COST) {
+      setReportLoading(false);
       Alert.alert(
         '포인트 부족',
         `보고서를 받으려면 ${REPORT_COST}pt가 필요해요.\n현재 보유: ${currentPoints}pt`,
@@ -70,7 +81,6 @@ export default function MypageScreen() {
       );
       return;
     }
-    setReportLoading(true);
     const newPoints = currentPoints - REPORT_COST;
     await supabase.from('profiles').update({ points: newPoints }).eq('user_id', user.id);
     await supabase.from('point_logs').insert({ user_id: user.id, amount: -REPORT_COST, reason: '맞춤 피부 분석 보고서' });

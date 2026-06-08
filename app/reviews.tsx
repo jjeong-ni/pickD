@@ -12,6 +12,12 @@ import { Review } from '../types';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const REVIEW_PAGE_SIZE = 20;
+const VIRTUAL_NAMES = ['피부미인', '뷰티고수', '피부천재', '스킨케어러', '미용러버', '피부요정', '뷰티스타', '관리러버', '피부빛나', '뷰티천재', '피부사랑', '미용전문'];
+function virtualNick(uid: string): string {
+  let n = 0;
+  for (let i = 0; i < uid.length; i++) n = (n * 31 + uid.charCodeAt(i)) >>> 0;
+  return VIRTUAL_NAMES[n % VIRTUAL_NAMES.length];
+}
 
 export default function ReviewsScreen() {
   const { itemId, itemType, itemName } = useLocalSearchParams<{
@@ -59,7 +65,10 @@ export default function ReviewsScreen() {
         .in('user_id', userIds);
       profileMap = Object.fromEntries((profileRows ?? []).map((p: any) => [p.user_id, p]));
     }
-    const merged = (reviewRows ?? []).map((r: any) => ({ ...r, profile: profileMap[r.user_id] ?? null }));
+    const merged = (reviewRows ?? []).map((r: any) => ({
+      ...r,
+      profile: profileMap[r.user_id] ?? { nickname: virtualNick(r.user_id) },
+    }));
     setReviews(prev => page === 1 ? merged : [...prev, ...merged]);
     setReviewTotal(count ?? 0);
     setReviewPage(page);
@@ -236,7 +245,7 @@ export default function ReviewsScreen() {
               <View key={r.id} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
                   <Text style={styles.reviewNickname}>
-                    {(r as any).profile?.nickname ?? '익명'}
+                    {(r as any).profile?.nickname || virtualNick((r as any).user_id)}
                   </Text>
                   <View style={styles.reviewMeta}>
                     <Text style={styles.reviewRating}>{'⭐'.repeat(r.rating)}</Text>

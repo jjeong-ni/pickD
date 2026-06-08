@@ -81,10 +81,11 @@ export default function SearchScreen() {
         const table = tab === 'treatment' ? 'treatments' : 'devices';
         let req = supabase.from(table).select('*');
         if (query.trim()) {
+          const q = query.trim();
           if (tab === 'device') {
-            req = (req as any).or(`name.ilike.%${query.trim()}%,brand.ilike.%${query.trim()}%`);
+            req = (req as any).or(`name.ilike.%${q}%,brand.ilike.%${q}%,description.ilike.%${q}%`);
           } else {
-            req = req.ilike('name', `%${query.trim()}%`);
+            req = (req as any).or(`name.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`);
           }
         }
         if (category !== '전체') req = (req as any).eq('category', category);

@@ -68,19 +68,19 @@ export default function PostDetailScreen() {
 
   const fetchData = async () => {
     const [p, c] = await Promise.all([
-      supabase
-        .from('posts')
-        .select('*, profile:profiles(nickname)')
-        .eq('id', id)
-        .single(),
-      supabase
-        .from('comments')
-        .select('*, profile:profiles(nickname)')
-        .eq('post_id', id)
-        .order('created_at', { ascending: true }),
+      supabase.from('posts').select('*').eq('id', id).single(),
+      supabase.from('comments').select('*').eq('post_id', id).order('created_at', { ascending: true }),
     ]);
-    setPost(p.data);
-    setComments(c.data ?? []);
+    if (!p.data) { setLoading(false); return; }
+
+    // Collect all user_ids and fetch nicknames in one query
+    const userIds = [p.data.user_id, ...(c.data ?? []).map((cm: any) => cm.user_id)];
+    const { data: profiles } = await supabase.from('profiles').select('user_id, nickname').in('user_id', [...new Set(userIds)]);
+    const nickMap: Record<string, string> = {};
+    (profiles ?? []).forEach((pr: any) => { nickMap[pr.user_id] = pr.nickname; });
+
+    setPost({ ...p.data, profile: { nickname: nickMap[p.data.user_id] ?? null } } as any);
+    setComments((c.data ?? []).map((cm: any) => ({ ...cm, profile: { nickname: nickMap[cm.user_id] ?? null } })));
     setLoading(false);
   };
 

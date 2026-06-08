@@ -158,8 +158,18 @@ export default function HomeScreen() {
       router.push('/(auth)/login' as any);
       return;
     }
+    setReportLoading(true);
+    // 이미 구매한 경우 포인트 차감 없이 바로 열기
+    const { data: existing } = await supabase.from('point_logs')
+      .select('id').eq('user_id', user.id).eq('reason', '맞춤 피부 분석 보고서').limit(1);
+    if (existing && existing.length > 0) {
+      setReportLoading(false);
+      router.push('/skin-report' as any);
+      return;
+    }
     const currentPoints = profile.points ?? 0;
     if (currentPoints < REPORT_COST) {
+      setReportLoading(false);
       Alert.alert(
         '포인트 부족',
         `보고서를 받으려면 ${REPORT_COST}pt가 필요해요.\n현재 보유: ${currentPoints}pt`,
@@ -167,7 +177,6 @@ export default function HomeScreen() {
       );
       return;
     }
-    setReportLoading(true);
     const newPoints = currentPoints - REPORT_COST;
     await supabase.from('profiles').update({ points: newPoints }).eq('user_id', user.id);
     await supabase.from('point_logs').insert({ user_id: user.id, amount: -REPORT_COST, reason: '맞춤 피부 분석 보고서' });
