@@ -62,6 +62,7 @@ export default function RootLayout() {
         <Stack.Screen name="terms" options={{ presentation: 'card' }} />
         <Stack.Screen name="privacy" options={{ presentation: 'card' }} />
         <Stack.Screen name="clinic-map" options={{ presentation: 'card' }} />
+        <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
       </Stack>
     </>
   );

@@ -1,7 +1,7 @@
 # 픽디 핸드오프 문서
 
 > 새 채팅에서 이어서 작업할 때 이 파일을 먼저 읽고 시작하세요.
-> 마지막 업데이트: 2026-06-08 (2차)
+> 마지막 업데이트: 2026-06-08 (3차)
 
 ---
 
@@ -134,6 +134,16 @@ reviews.user_id → profiles.id
 - `app/(tabs)/search.tsx` — 카테고리 필터 우측에 "📍" 지도 버튼 추가 (treatment 탭)
 - `app/_layout.tsx` — `clinic-map` 라우트 등록
 
+### ✅ 포인트 자동 지급 통합 + 알림설정 화면 (2026-06-08 3차)
+- `post/create.tsx` — 첫 게시물 작성 시 500pt 자동 지급 + 알림
+- `post/[id].tsx` — 댓글 작성 시 10pt/일 자동 지급
+- `treatment/[id].tsx` — 리뷰 작성 시 50pt 자동 지급 (아이템당 1회), review_count 즉시 반영, 공유 버튼 추가
+- `device/[id].tsx` — 리뷰 작성 시 50pt 자동 지급 (아이템당 1회), review_count 즉시 반영, 공유 버튼 추가
+- `app/notifications.tsx` 신규 — 알림 설정 화면 (AsyncStorage 토글)
+- `app/_layout.tsx` — notifications 라우트 등록
+- `app/(tabs)/mypage.tsx` — 알림 설정 → coming-soon 대신 실제 화면 연결
+- `app/my-posts.tsx` — 게시글 삭제 기능 추가 (확인 다이얼로그)
+
 ### ✅ 구매내역 화면 신규 구현 (P1-6)
 - `app/purchases.tsx` 신규 생성
   - `payments` 테이블 조회 (user_id 기반, created_at DESC)
@@ -198,8 +208,8 @@ WHERE points = 1000;
 | SQL 004/005 실행 | ⚠️ 필요 | Supabase SQL Editor에서 004, 005 마이그레이션 실행 |
 | 실제 상품 이미지 | ❌ 미완 | 이미지 파일 구해서 Supabase Storage 업로드 필요 |
 | 쿠팡파트너스 URL | ❌ 미완 | 쿠팡파트너스 가입 후 device별 coupang_url DB 업데이트 |
-| 포인트내역 화면 | ❌ 미구현 | P1-1 SQL 실행 후 구현 가능 |
-| 알림설정 화면 | ❌ 미구현 | 기획 결정 필요 |
+| 포인트내역 화면 | ✅ 구현됨 | P1-1 SQL 실행 필요 (point_logs 테이블) |
+| 알림설정 화면 | ✅ 구현됨 | AsyncStorage 토글 (완성) |
 | 토스페이먼츠 실결제 | ❌ 미구현 | 클라이언트 키 필요 |
 | EAS Build (앱스토어) | ❌ 미구현 | 웹 먼저 완성 후 |
 
