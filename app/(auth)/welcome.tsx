@@ -1,12 +1,21 @@
 import {
   View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform,
 } from 'react-native';
+import { useEffect } from 'react';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GlassCard } from '../../components/GlassCard';
 import { Gradient } from '../../constants/colors';
+import { ONBOARDING_KEY } from './onboarding';
 
 export default function WelcomeScreen() {
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY).then((done) => {
+      if (!done) router.replace('/(auth)/onboarding' as any);
+    });
+  }, []);
+
   return (
     <LinearGradient
       colors={['#FF6B9D', '#D473E8', '#9B6FE8']}

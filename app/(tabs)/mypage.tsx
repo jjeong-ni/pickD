@@ -39,51 +39,93 @@ export default function MypageScreen() {
         </GlassCard>
       </LinearGradient>
 
-      {/* 피부 프로필 설정 유도 */}
-      {!profile?.skin_type && (
-        <TouchableOpacity style={styles.profileSetupBanner} onPress={() => router.push('/profile-setup' as any)}>
-          <Text style={styles.profileSetupTitle}>✨ 피부 프로필을 완성해보세요</Text>
-          <Text style={styles.profileSetupDesc}>맞춤 시술·기기 추천을 받을 수 있어요 →</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* 내 피부 정보 */}
-      {(profile?.skin_type || profile?.concerns?.length) ? (
-        <View style={styles.skinSummary}>
-          <Text style={styles.sectionLabel}>내 피부 정보</Text>
-          {profile?.concerns && profile.concerns.length > 0 && (
-            <View style={styles.concernRow}>
-              {profile.concerns.map((c: string) => (
-                <View key={c} style={styles.concernChip}>
-                  <Text style={styles.concernText}>{c}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-          {(profile?.skin_age || profile?.moisture_score) ? (
-            <View style={styles.scoreRow}>
-              {profile?.skin_age && (
-                <View style={styles.scoreBox}>
-                  <Text style={styles.scoreNum}>{profile.skin_age}</Text>
-                  <Text style={styles.scoreLabel}>피부나이</Text>
-                </View>
-              )}
-              {profile?.moisture_score && (
-                <View style={styles.scoreBox}>
-                  <Text style={styles.scoreNum}>{profile.moisture_score}</Text>
-                  <Text style={styles.scoreLabel}>수분도</Text>
-                </View>
-              )}
-              {profile?.oil_score && (
-                <View style={styles.scoreBox}>
-                  <Text style={styles.scoreNum}>{profile.oil_score}</Text>
-                  <Text style={styles.scoreLabel}>유분도</Text>
-                </View>
-              )}
-            </View>
-          ) : null}
+      {/* 피부 프로필 카드 */}
+      <View style={styles.skinProfileCard}>
+        <View style={styles.skinProfileHeader}>
+          <View style={styles.skinProfileTitleRow}>
+            <Ionicons name="leaf-outline" size={18} color={Colors.primary} />
+            <Text style={styles.skinProfileTitle}>내 피부 프로필</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.skinProfileEditBtn}
+            onPress={() => router.push('/profile-setup' as any)}
+          >
+            <Ionicons name="create-outline" size={14} color={Colors.primary} />
+            <Text style={styles.skinProfileEditText}>수정</Text>
+          </TouchableOpacity>
         </View>
-      ) : null}
+
+        {profile?.skin_type || profile?.face_shape || profile?.age_group || profile?.concerns?.length ? (
+          <>
+            <View style={styles.skinProfileGrid}>
+              {profile?.skin_type && (
+                <View style={styles.skinProfileItem}>
+                  <Text style={styles.skinProfileItemLabel}>피부 타입</Text>
+                  <Text style={styles.skinProfileItemValue}>{profile.skin_type}</Text>
+                </View>
+              )}
+              {profile?.face_shape && (
+                <View style={styles.skinProfileItem}>
+                  <Text style={styles.skinProfileItemLabel}>얼굴형</Text>
+                  <Text style={styles.skinProfileItemValue}>{profile.face_shape}</Text>
+                </View>
+              )}
+              {profile?.age_group && (
+                <View style={styles.skinProfileItem}>
+                  <Text style={styles.skinProfileItemLabel}>연령대</Text>
+                  <Text style={styles.skinProfileItemValue}>{profile.age_group}</Text>
+                </View>
+              )}
+              {profile?.gender && (
+                <View style={styles.skinProfileItem}>
+                  <Text style={styles.skinProfileItemLabel}>성별</Text>
+                  <Text style={styles.skinProfileItemValue}>{profile.gender}</Text>
+                </View>
+              )}
+            </View>
+            {profile?.concerns && profile.concerns.length > 0 && (
+              <View style={styles.skinProfileConcerns}>
+                <Text style={styles.skinProfileItemLabel}>주요 고민</Text>
+                <View style={styles.concernRow}>
+                  {profile.concerns.map((c: string) => (
+                    <View key={c} style={styles.concernChip}>
+                      <Text style={styles.concernText}>{c}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </>
+        ) : (
+          <TouchableOpacity onPress={() => router.push('/profile-setup' as any)} style={styles.skinProfileEmpty}>
+            <Ionicons name="add-circle-outline" size={28} color={Colors.primary} />
+            <Text style={styles.skinProfileEmptyText}>피부 프로필을 완성하면{'\n'}맞춤 추천을 받을 수 있어요</Text>
+          </TouchableOpacity>
+        )}
+
+        {(profile?.skin_age || profile?.moisture_score) ? (
+          <View style={styles.scoreRow}>
+            {profile?.skin_age && (
+              <View style={styles.scoreBox}>
+                <Text style={styles.scoreNum}>{profile.skin_age}</Text>
+                <Text style={styles.scoreLabel}>피부나이</Text>
+              </View>
+            )}
+            {profile?.moisture_score && (
+              <View style={styles.scoreBox}>
+                <Text style={styles.scoreNum}>{profile.moisture_score}</Text>
+                <Text style={styles.scoreLabel}>수분도</Text>
+              </View>
+            )}
+            {profile?.oil_score && (
+              <View style={styles.scoreBox}>
+                <Text style={styles.scoreNum}>{profile.oil_score}</Text>
+                <Text style={styles.scoreLabel}>유분도</Text>
+              </View>
+            )}
+          </View>
+        ) : null}
+      </View>
 
       {/* 미션 & 포인트 */}
       {user && (
@@ -260,11 +302,43 @@ const styles = StyleSheet.create({
   },
   profileSetupTitle: { fontSize: 14, fontWeight: '700', color: Colors.primary },
   profileSetupDesc: { fontSize: 12, color: Colors.primary },
+
+  /* 피부 프로필 카드 */
+  skinProfileCard: {
+    backgroundColor: Colors.white, marginHorizontal: 16, marginTop: 12,
+    borderRadius: 18, padding: 18, gap: 14,
+    shadowColor: Colors.cardShadow,
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 12, elevation: 3,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  skinProfileHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  skinProfileTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  skinProfileTitle: { fontSize: 15, fontWeight: '800', color: Colors.text },
+  skinProfileEditBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingVertical: 5, paddingHorizontal: 10,
+    borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primaryLight,
+    backgroundColor: '#FFF5F9',
+  },
+  skinProfileEditText: { fontSize: 12, fontWeight: '700', color: Colors.primary },
+  skinProfileGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 10,
+  },
+  skinProfileItem: {
+    flex: 1, minWidth: '45%', backgroundColor: Colors.bg,
+    borderRadius: 12, padding: 12, gap: 4,
+  },
+  skinProfileItemLabel: { fontSize: 11, color: Colors.sub, fontWeight: '600' },
+  skinProfileItemValue: { fontSize: 15, fontWeight: '800', color: Colors.text },
+  skinProfileConcerns: { gap: 8 },
+  skinProfileEmpty: { alignItems: 'center', gap: 10, paddingVertical: 14 },
+  skinProfileEmptyText: { fontSize: 13, color: Colors.sub, textAlign: 'center', lineHeight: 20 },
+
   skinSummary: {
     backgroundColor: Colors.white, marginTop: 8, padding: 16, paddingHorizontal: 20,
   },
   sectionLabel: { fontSize: 12, fontWeight: '700', color: Colors.sub, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  concernRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  concernRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   concernChip: {
     paddingVertical: 4, paddingHorizontal: 12, borderRadius: 20,
     backgroundColor: '#FFF0F5', borderWidth: 1, borderColor: Colors.primaryLight,

@@ -41,11 +41,11 @@ const CATEGORY_OPTIONS: Record<Tab, CategoryOption[]> = {
   ],
   device: [
     { label: '전체', value: '전체' },
-    { label: '✨ 리프팅', value: '리프팅' },
+    { label: '✨ 리프팅·탄력', value: '리프팅' },
+    { label: '💪 모공·피지', value: 'RF' },
+    { label: '🌟 미백·잡티', value: 'LED' },
+    { label: '💧 수분·보습', value: '초음파' },
     { label: '🪄 제모', value: '제모' },
-    { label: '⚡ RF', value: 'RF' },
-    { label: '💡 LED', value: 'LED' },
-    { label: '🌊 초음파', value: '초음파' },
   ],
 };
 
@@ -149,7 +149,7 @@ export default function SearchScreen() {
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.searchInput}
-            placeholder="시술 또는 기기를 검색하세요"
+            placeholder={tab === 'treatment' ? '피부 고민을 검색하세요 (예: 모공, 주름)' : '기기명 또는 브랜드를 검색하세요'}
             placeholderTextColor={Colors.sub}
             value={query}
             onChangeText={setQuery}
