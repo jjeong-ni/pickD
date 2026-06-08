@@ -1,5 +1,5 @@
 import {
-  View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform,
+  View, Text, TouchableOpacity, StyleSheet, Platform,
 } from 'react-native';
 import { useEffect } from 'react';
 import { router } from 'expo-router';
@@ -28,7 +28,7 @@ export default function WelcomeScreen() {
       <View style={styles.orb2} />
       <View style={styles.orb3} />
 
-      <SafeAreaView style={styles.safe}>
+      <View style={styles.safe}>
         {/* 로고 */}
         <View style={styles.top}>
           <GlassCard style={styles.logoBadge} intensity="low">
@@ -70,7 +70,7 @@ export default function WelcomeScreen() {
             <Text style={styles.loginBtnText}>이미 계정이 있어요</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     </LinearGradient>
   );
 }
