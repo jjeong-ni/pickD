@@ -1,7 +1,7 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Share, Platform,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
@@ -348,14 +348,23 @@ function buildRoadmap(
 
 // ─── 보고서 화면 ────────────────────────────────────────────────────────────────
 
+const DEMO_PROFILES: Record<string, { face_shape: string; skin_type: string; age_group: string; concerns: string[]; nickname: string }> = {
+  '둥근형-지성': { face_shape: '둥근형', skin_type: '지성', age_group: '30대', concerns: ['색소침착', '모공', '리프팅'], nickname: '데모 회원' },
+  '하트형-건성': { face_shape: '하트형', skin_type: '건성', age_group: '20대', concerns: ['수분', '리프팅'], nickname: '데모 회원' },
+  '계란형-복합성': { face_shape: '계란형', skin_type: '복합성', age_group: '40대', concerns: ['주름', '탄력'], nickname: '데모 회원' },
+};
+
 export default function SkinReportScreen() {
   const { user, profile } = useAuth();
+  const { demo } = useLocalSearchParams<{ demo?: string }>();
 
-  const faceShape = profile?.face_shape ?? '';
-  const skinType = profile?.skin_type ?? '';
-  const ageGroup = profile?.age_group ?? '';
-  const concerns: string[] = profile?.concerns ?? [];
-  const displayName = profile?.nickname || user?.email?.split('@')[0] || '회원';
+  const demoProfile = demo ? DEMO_PROFILES[demo] ?? DEMO_PROFILES['둥근형-지성'] : null;
+
+  const faceShape = demoProfile?.face_shape ?? profile?.face_shape ?? '';
+  const skinType = demoProfile?.skin_type ?? profile?.skin_type ?? '';
+  const ageGroup = demoProfile?.age_group ?? profile?.age_group ?? '';
+  const concerns: string[] = demoProfile?.concerns ?? profile?.concerns ?? [];
+  const displayName = demoProfile?.nickname ?? profile?.nickname ?? user?.email?.split('@')[0] ?? '회원';
   const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const face = FACE_REPORT[faceShape];

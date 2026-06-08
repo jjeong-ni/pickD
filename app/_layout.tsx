@@ -9,12 +9,13 @@ export default function RootLayout() {
   const { setSession, fetchProfile } = useAuth();
 
   useEffect(() => {
-    // 초기 세션: 상태만 설정, 강제 리다이렉트 없음 (직접 URL 진입 유지)
+    // 초기 세션: demo 파라미터가 있으면 리다이렉트 없음
+    const isDemoUrl = Platform.OS === 'web' && typeof window !== 'undefined' && window.location.href.includes('demo=');
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
         fetchProfile(session.user.id);
-      } else {
+      } else if (!isDemoUrl) {
         router.replace('/(auth)/welcome');
       }
     });
