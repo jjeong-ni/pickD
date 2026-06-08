@@ -45,7 +45,7 @@ export default function CreatePostScreen() {
     const { data: existingLog } = await supabase
       .from('point_logs').select('id').eq('user_id', user.id).eq('reason', '첫 게시물').limit(1);
     if (!existingLog || existingLog.length === 0) {
-      const { data: p } = await supabase.from('profiles').select('points').eq('user_id', user.id).single();
+      const { data: p } = await supabase.from('profiles').select('points').eq('user_id', user.id).maybeSingle();
       await supabase.from('point_logs').insert({ user_id: user.id, amount: 500, reason: '첫 게시물' });
       await supabase.from('profiles').update({ points: (p?.points ?? 0) + 500 }).eq('user_id', user.id);
       await fetchProfile(user.id);
