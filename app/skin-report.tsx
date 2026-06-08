@@ -292,6 +292,35 @@ const SKIN_REPORT: Record<string, {
     avoidIngredients: ['미네랄오일 (T존)', '강한 알코올 (U존)'],
     mustIngredients: ['나이아신아마이드', '히알루론산', 'BHA (T존)', '세라마이드 (U존)'],
   },
+  민감성: {
+    emoji: '🌸', typeLabel: '민감성 피부',
+    keyChars: ['외부 자극에 즉각 반응·홍조', '피부 장벽 약화·얇은 각질층', '화장품 성분에 트러블·가려움', '온도·계절 변화에 민감'],
+    morningRoutine: [
+      { step: '클렌징', product: '무향·무알코올 저자극 크림 클렌저' },
+      { step: '토너', product: '센텔라·판테놀 진정 토너' },
+      { step: '세럼', product: '마데카소사이드·베타글루칸 장벽 세럼' },
+      { step: '크림', product: '무향 세라마이드 진정 크림' },
+      { step: '선크림', product: '무기자차 (물리적) 선크림 SPF 30+' },
+    ],
+    eveningRoutine: [
+      { step: '클렌징', product: '저자극 오일·밀크 클렌저 (이중 세안 최소화)' },
+      { step: '토너', product: '센텔라·시카 진정 토너' },
+      { step: '세럼', product: '히알루론산·나이아신아마이드 수분 세럼' },
+      { step: '크림', product: '세라마이드·알란토인 배리어 크림' },
+      { step: '수면팩', product: '시카·병풀 수분 수면팩 (주 2~3회)' },
+    ],
+    topTreatments: [
+      { name: 'IPL (저출력)', effect: '홍조·실핏줄 개선', interval: '1~2개월 간격' },
+      { name: '스킨부스터 (리쥬란)', effect: '피부 장벽 강화·재생', interval: '6개월' },
+      { name: '물광주사', effect: '수분 공급·진정 케어', interval: '3~4개월' },
+    ],
+    topDevices: [
+      { name: 'LED 적색광 (630nm)', schedule: '주 3~4회 / 10~15분', focus: '진정·장벽 강화·재생' },
+      { name: '초음파 미스트', schedule: '매일 / 5~10분', focus: '수분 공급·진정' },
+    ],
+    avoidIngredients: ['알코올(에탄올)', '향료·색소', 'AHA/BHA 강산성', '고농도 레티놀', '멘톨'],
+    mustIngredients: ['센텔라아시아티카', '마데카소사이드', '세라마이드', '판테놀', '베타글루칸'],
+  },
 };
 
 // ─── AI 분석 텍스트 ────────────────────────────────────────────────────────────
@@ -339,6 +368,10 @@ const SKIN_ANALYSIS_TEXT: Record<string, { opening: string; detail: string }> = 
   복합성: {
     opening: 'T존은 피지 과다로 번들거리고 U존(볼·턱)은 건조한 복합성 피부로 측정되었습니다.',
     detail: 'T존 부위에서 모공 확장과 번들거림이 관찰되며, U존에서는 건조함과 가벼운 각질이 동시에 나타납니다. 부위별로 다른 케어를 적용하는 분리 관리가 필수입니다.',
+  },
+  민감성: {
+    opening: '피부 장벽이 약화되어 외부 자극에 즉각적으로 반응하는 민감성 피부로 측정되었습니다. 홍조와 따가움이 잦게 나타납니다.',
+    detail: '볼·이마 부위에서 홍조와 피부결 불균일이 관찰되며, 강한 성분이나 온도 변화에 예민하게 반응합니다. 피부 장벽 회복과 진정 케어가 최우선 목표입니다.',
   },
 };
 
@@ -403,6 +436,11 @@ const SKIN_TYPE_MARKS: Record<string, FaceMark[]> = {
     { x: 50, y: 22, size: 44, type: 'zone', color: 'rgba(255,107,157,0.25)', label: 'T존 지성', labelSide: 'left' },
     { x: 22, y: 58, size: 36, type: 'zone', color: 'rgba(91,155,213,0.25)', label: 'U존 건성', labelSide: 'left' },
     { x: 78, y: 58, size: 36, type: 'zone', color: 'rgba(91,155,213,0.25)', labelSide: 'right' },
+  ],
+  민감성: [
+    { x: 28, y: 40, size: 32, type: 'zone', color: 'rgba(255,107,157,0.2)', label: '홍조', labelSide: 'left' },
+    { x: 72, y: 40, size: 32, type: 'zone', color: 'rgba(255,107,157,0.2)', labelSide: 'right' },
+    { x: 50, y: 55, size: 50, type: 'zone', color: 'rgba(212,115,232,0.15)', label: '민감 부위', labelSide: 'right' },
   ],
 };
 
