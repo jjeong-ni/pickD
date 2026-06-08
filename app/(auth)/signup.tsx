@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
-import { Colors } from '../../constants/colors';
+import { Colors, HEADER_TOP } from '../../constants/colors';
 
 const TOTAL_STEPS = 3;
 
@@ -418,7 +418,7 @@ function CheckItem({ label, checked, onPress }: { label: string; checked: boolea
 const styles = StyleSheet.create({
   navGradient: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'web' ? 60 : 56, paddingHorizontal: 16, paddingBottom: 16,
+    paddingTop: HEADER_TOP, paddingHorizontal: 16, paddingBottom: 16,
   },
   navTitle: { fontSize: 17, fontWeight: '700', color: Colors.white },
   backBtn: { fontSize: 24, color: Colors.white, width: 32 },

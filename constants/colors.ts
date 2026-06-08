@@ -1,3 +1,7 @@
+import { Platform } from 'react-native';
+
+export const HEADER_TOP = Platform.OS === 'web' ? 60 : 56;
+
 export const Colors = {
   // 핵심 컬러
   primary: '#FF6B9D',

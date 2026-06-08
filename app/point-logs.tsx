@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { Colors } from '../constants/colors';
+import { Colors, HEADER_TOP } from '../constants/colors';
 
 type PointLog = {
   id: string;
@@ -91,7 +91,7 @@ export default function PointLogsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   header: {
-    paddingTop: Platform.OS === 'web' ? 60 : 56, paddingBottom: 24,
+    paddingTop: HEADER_TOP, paddingBottom: 24,
     paddingHorizontal: 16,
   },
   headerNav: {

@@ -8,7 +8,7 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
-import { Colors } from '../../constants/colors';
+import { Colors, HEADER_TOP } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useCompare } from '../../hooks/useCompare';
 import { Treatment, Device } from '../../types';
@@ -75,20 +75,23 @@ export default function SearchScreen() {
 
     const run = async () => {
       setLoading(true);
-      const table = tab === 'treatment' ? 'treatments' : 'devices';
-      let req = supabase.from(table).select('*');
-      if (query.trim()) {
-        if (tab === 'device') {
-          req = (req as any).or(`name.ilike.%${query.trim()}%,brand.ilike.%${query.trim()}%`);
-        } else {
-          req = req.ilike('name', `%${query.trim()}%`);
+      try {
+        const table = tab === 'treatment' ? 'treatments' : 'devices';
+        let req = supabase.from(table).select('*');
+        if (query.trim()) {
+          if (tab === 'device') {
+            req = (req as any).or(`name.ilike.%${query.trim()}%,brand.ilike.%${query.trim()}%`);
+          } else {
+            req = req.ilike('name', `%${query.trim()}%`);
+          }
         }
-      }
-      if (category !== '전체') req = (req as any).eq('category', category);
-      const { data } = await req.order('rating', { ascending: false }).limit(20);
-      if (!cancelled) {
-        setResults(data ?? []);
-        setLoading(false);
+        if (category !== '전체') req = (req as any).eq('category', category);
+        const { data } = await req.order('rating', { ascending: false }).limit(20);
+        if (!cancelled) setResults(data ?? []);
+      } catch {
+        if (!cancelled) setResults([]);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
 
@@ -302,10 +305,10 @@ function ResultRow({
         <Text style={styles.rowTitle}>{item.name}</Text>
         <Text style={styles.rowSub}>
           {type === 'treatment'
-            ? `${treatment.price_min.toLocaleString()}~${treatment.price_max.toLocaleString()}원`
-            : `${device.price.toLocaleString()}원`}
+            ? `${(treatment.price_min ?? 0).toLocaleString()}~${(treatment.price_max ?? 0).toLocaleString()}원`
+            : `${(device.price ?? 0).toLocaleString()}원`}
         </Text>
-        <Text style={styles.rowRating}>⭐ {item.rating.toFixed(1)} ({item.review_count})</Text>
+        <Text style={styles.rowRating}>⭐ {(item.rating ?? 0).toFixed(1)} ({item.review_count ?? 0})</Text>
       </View>
       <TouchableOpacity
         style={[styles.compareBtn, inCompare && styles.compareBtnActive]}
@@ -322,7 +325,7 @@ function ResultRow({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
-  searchWrap: { backgroundColor: Colors.white, padding: 16, paddingTop: Platform.OS === 'web' ? 60 : 56 },
+  searchWrap: { backgroundColor: Colors.white, padding: 16, paddingTop: HEADER_TOP },
   searchBar: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: '#F2F2F7', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12,

@@ -83,18 +83,23 @@ export default function DeviceDetailScreen() {
   };
 
   const fetchData = async () => {
-    const { data: d } = await supabase.from('devices').select('*').eq('id', id).single();
-    setDevice(d);
-    await fetchReviews(1);
-    if (d) {
-      const { data: treats } = await supabase
-        .from('treatments')
-        .select('*')
-        .eq('category', d.category)
-        .limit(4);
-      setRelatedTreatments(treats ?? []);
+    try {
+      const { data: d } = await supabase.from('devices').select('*').eq('id', id).maybeSingle();
+      setDevice(d);
+      await fetchReviews(1);
+      if (d) {
+        const { data: treats } = await supabase
+          .from('treatments')
+          .select('*')
+          .eq('category', d.category)
+          .limit(4);
+        setRelatedTreatments(treats ?? []);
+      }
+    } catch (e) {
+      // network error — leave device null, show not-found UI
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleAddCompare = async () => {
@@ -211,13 +216,21 @@ export default function DeviceDetailScreen() {
         .from('favorites')
         .insert({ user_id: user.id, item_id: device.id, item_type: 'device' })
         .select('id')
-        .single();
+        .maybeSingle();
       setFavoriteId(data?.id ?? null);
     }
   };
 
-  if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>;
-  if (!device) return <View style={styles.center}><Text>기기를 찾을 수 없어요</Text></View>;
+  if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.primary} size="large" /></View>;
+  if (!device) return (
+    <View style={styles.center}>
+      <Text style={{ fontSize: 48 }}>😢</Text>
+      <Text style={{ fontSize: 16, color: Colors.sub, marginTop: 12 }}>기기를 찾을 수 없어요</Text>
+      <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: Colors.primary, borderRadius: 12 }}>
+        <Text style={{ color: '#fff', fontWeight: '700' }}>돌아가기</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   const inCompare = items.some((i) => i.item_id === device.id);
   const userAlreadyReviewed = reviews.some((r) => r.user_id === user?.id);
@@ -249,14 +262,14 @@ export default function DeviceDetailScreen() {
           <Text style={styles.brand}>{device.brand}</Text>
           <Text style={styles.name}>{device.name}</Text>
           <View style={styles.ratingRow}>
-            <Text style={styles.rating}>⭐ {device.rating.toFixed(1)}</Text>
-            <Text style={styles.reviewCount}>리뷰 {device.review_count}개</Text>
+            <Text style={styles.rating}>⭐ {(device.rating ?? 0).toFixed(1)}</Text>
+            <Text style={styles.reviewCount}>리뷰 {device.review_count ?? 0}개</Text>
           </View>
 
           <View style={styles.priceRow}>
             <View>
               <Text style={styles.priceLabel}>가격 <Text style={styles.priceLabelNote}>*판매처별 상이</Text></Text>
-              <Text style={styles.price}>{device.price.toLocaleString()}원</Text>
+              <Text style={styles.price}>{(device.price ?? 0).toLocaleString()}원</Text>
             </View>
             <View>
               <Text style={styles.priceLabel}>카테고리</Text>
@@ -265,7 +278,7 @@ export default function DeviceDetailScreen() {
           </View>
 
           <View style={styles.tags}>
-            {device.tags.map((tag) => (
+            {(device.tags ?? []).map((tag) => (
               <View key={tag} style={styles.tag}>
                 <Text style={styles.tagText}># {tag}</Text>
               </View>

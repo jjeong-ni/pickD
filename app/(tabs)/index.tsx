@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
-import { Colors } from '../../constants/colors';
+import { Colors, HEADER_TOP } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
@@ -250,9 +250,9 @@ function TreatmentCard({ item, width, onPress }: { item: Treatment; width?: numb
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
         <Text style={styles.cardPrice}>
-          {item.price_min.toLocaleString()}~{item.price_max.toLocaleString()}원
+          {(item.price_min ?? 0).toLocaleString()}~{(item.price_max ?? 0).toLocaleString()}원
         </Text>
-        <Text style={styles.cardRating}>⭐ {item.rating.toFixed(1)} ({item.review_count})</Text>
+        <Text style={styles.cardRating}>⭐ {(item.rating ?? 0).toFixed(1)} ({item.review_count ?? 0})</Text>
       </View>
     </TouchableOpacity>
   );
@@ -321,8 +321,8 @@ function DeviceCard({ item, width, onPress }: { item: Device; width?: number; on
       </View>
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.cardPrice}>{item.price.toLocaleString()}원</Text>
-        <Text style={styles.cardRating}>⭐ {item.rating.toFixed(1)} ({item.review_count})</Text>
+        <Text style={styles.cardPrice}>{(item.price ?? 0).toLocaleString()}원</Text>
+        <Text style={styles.cardRating}>⭐ {(item.rating ?? 0).toFixed(1)} ({item.review_count ?? 0})</Text>
       </View>
     </TouchableOpacity>
   );
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
 
   // 헤더 (그라데이션)
   header: {
-    paddingTop: Platform.OS === 'web' ? 60 : 56,
+    paddingTop: HEADER_TOP,
     paddingHorizontal: 20, paddingBottom: 24,
     overflow: 'hidden',
   },

@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
-import { Colors } from '../../constants/colors';
+import { Colors, HEADER_TOP } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { usePostStore } from '../../hooks/usePostStore';
 import { GlassCard } from '../../components/GlassCard';
@@ -61,15 +61,20 @@ export default function CommunityScreen() {
 
   const fetchPosts = async () => {
     setLoading(true);
-    let q = supabase
-      .from('posts')
-      .select('*, profile:profiles(nickname)')
-      .order('created_at', { ascending: false })
-      .limit(30);
-    if (category !== '전체') q = q.eq('category', category);
-    const { data } = await q;
-    setPosts(data ?? []);
-    setLoading(false);
+    try {
+      let q = supabase
+        .from('posts')
+        .select('*, profile:profiles(nickname)')
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (category !== '전체') q = q.eq('category', category);
+      const { data } = await q;
+      setPosts(data ?? []);
+    } catch {
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const revealPost = (id: string) => {
@@ -241,7 +246,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 20, paddingTop: Platform.OS === 'web' ? 60 : 56, paddingBottom: 16,
+    padding: 20, paddingTop: HEADER_TOP, paddingBottom: 16,
   },
   title: { fontSize: 22, fontWeight: '900', color: '#fff' },
   writeBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20 },

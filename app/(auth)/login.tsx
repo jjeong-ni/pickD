@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
-import { Colors } from '../../constants/colors';
+import { Colors, HEADER_TOP } from '../../constants/colors';
 import { GlassCard } from '../../components/GlassCard';
 
 export default function LoginScreen() {
@@ -198,7 +198,7 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  scroll: { flexGrow: 1, padding: 24, paddingTop: Platform.OS === 'web' ? 60 : 56, paddingBottom: 40 },
+  scroll: { flexGrow: 1, padding: 24, paddingTop: HEADER_TOP, paddingBottom: 40 },
   orb1: {
     position: 'absolute', width: 240, height: 240, borderRadius: 120,
     backgroundColor: 'rgba(255,255,255,0.1)', top: -80, right: -60,

@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { Colors } from '../constants/colors';
+import { Colors, HEADER_TOP } from '../constants/colors';
 import { Payment } from '../types';
 
 const STATUS_LABEL: Record<Payment['status'], string> = {
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 16, paddingTop: Platform.OS === 'web' ? 60 : 56, paddingBottom: 16,
+    padding: 16, paddingTop: HEADER_TOP, paddingBottom: 16,
   },
   back: { fontSize: 24, color: Colors.white, width: 32 },
   title: { fontSize: 17, fontWeight: '700', color: Colors.white },
