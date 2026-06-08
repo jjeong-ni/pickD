@@ -184,6 +184,23 @@ export default function MypageScreen() {
         </View>
       </View>
 
+      {/* 맞춤 보고서 CTA */}
+      <TouchableOpacity
+        style={[styles.reportBanner, { marginHorizontal: hPad }]}
+        onPress={() => router.push('/payment?itemName=맞춤+분석+보고서&amount=990&returnTo=skin-report' as any)}
+        activeOpacity={0.85}
+      >
+        <View style={styles.reportBannerLeft}>
+          <Text style={styles.reportBannerBadge}>NEW</Text>
+          <Text style={styles.reportBannerTitle}>📋 맞춤 피부 분석 보고서</Text>
+          <Text style={styles.reportBannerDesc}>얼굴형·피부타입·로드맵 종합 리포트</Text>
+        </View>
+        <View style={styles.reportBannerRight}>
+          <Text style={styles.reportBannerPrice}>990원</Text>
+          <Text style={styles.reportBannerArrow}>›</Text>
+        </View>
+      </TouchableOpacity>
+
       {/* 내 활동 */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>내 활동</Text>
@@ -385,6 +402,25 @@ const styles = StyleSheet.create({
   confirmCancelText: { fontSize: 15, fontWeight: '600', color: Colors.sub },
   confirmOk: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: Colors.danger, alignItems: 'center' },
   confirmOkText: { fontSize: 15, fontWeight: '700', color: Colors.white },
+
+  /* 보고서 배너 */
+  reportBanner: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginTop: 12, borderRadius: 16, padding: 16, overflow: 'hidden',
+    backgroundColor: '#1A1A2E',
+    borderWidth: 1, borderColor: '#9B6FE8',
+  },
+  reportBannerLeft: { gap: 4 },
+  reportBannerBadge: {
+    alignSelf: 'flex-start', fontSize: 10, fontWeight: '900', color: '#9B6FE8',
+    backgroundColor: 'rgba(155,111,232,0.15)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6,
+    letterSpacing: 1, marginBottom: 2,
+  },
+  reportBannerTitle: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  reportBannerDesc: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
+  reportBannerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  reportBannerPrice: { fontSize: 18, fontWeight: '900', color: '#FF6B9D' },
+  reportBannerArrow: { fontSize: 18, color: 'rgba(255,255,255,0.5)' },
 
   /* 미션 배너 */
   missionBanner: {
