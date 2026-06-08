@@ -5,6 +5,7 @@ import {
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/colors';
@@ -24,7 +25,7 @@ interface Mission {
 const MISSIONS: Mission[] = [
   {
     id: 'signup',
-    icon: '🎉',
+    icon: 'gift-outline',
     title: '신규 가입 보너스',
     desc: '픽디 가입만 해도 바로 1,000pt!',
     points: 1000,
@@ -32,7 +33,7 @@ const MISSIONS: Mission[] = [
   },
   {
     id: 'daily_attendance',
-    icon: '📅',
+    icon: 'calendar-outline',
     title: '매일 출석체크',
     desc: '매일 앱에 접속하고 출석 체크하세요',
     points: 10,
@@ -40,7 +41,7 @@ const MISSIONS: Mission[] = [
   },
   {
     id: 'weekly_attendance',
-    icon: '🗓️',
+    icon: 'flame-outline',
     title: '7일 연속 출석 보너스',
     desc: '일주일 연속 출석 시 100pt 추가 지급!',
     points: 100,
@@ -48,7 +49,7 @@ const MISSIONS: Mission[] = [
   },
   {
     id: 'first_post',
-    icon: '✍️',
+    icon: 'create-outline',
     title: '첫 게시물 등록',
     desc: '커뮤니티에 처음 글을 써보세요',
     points: 500,
@@ -56,7 +57,7 @@ const MISSIONS: Mission[] = [
   },
   {
     id: 'referral',
-    icon: '👥',
+    icon: 'people-outline',
     title: '친구 초대',
     desc: '친구가 가입하면 둘 모두에게 500pt!',
     points: 500,
@@ -64,7 +65,7 @@ const MISSIONS: Mission[] = [
   },
   {
     id: 'comment',
-    icon: '💬',
+    icon: 'chatbubble-outline',
     title: '댓글 쓰기',
     desc: '게시물에 댓글을 달아보세요 (일 1회)',
     points: 10,
@@ -72,7 +73,7 @@ const MISSIONS: Mission[] = [
   },
   {
     id: 'vote',
-    icon: '🗳️',
+    icon: 'checkmark-circle-outline',
     title: '퀴즈·찬반투표 참여',
     desc: '커뮤니티 투표에 참여하면 pt 지급',
     points: 10,
@@ -80,7 +81,7 @@ const MISSIONS: Mission[] = [
   },
   {
     id: 'share',
-    icon: '📤',
+    icon: 'share-social-outline',
     title: '공유하기',
     desc: '시술·기기 정보를 친구에게 공유 (일 1회)',
     points: 10,
@@ -238,7 +239,7 @@ export default function MissionsScreen() {
           <View style={{ width: 32 }} />
         </LinearGradient>
         <View style={styles.center}>
-          <Text style={{ fontSize: 48, marginBottom: 12 }}>🪙</Text>
+          <Ionicons name="cash-outline" size={52} color={Colors.primary} style={{ marginBottom: 12 }} />
           <Text style={styles.loginTitle}>로그인하고 포인트 받기</Text>
           <Text style={styles.loginDesc}>미션을 완료하고 포인트를 모아보세요</Text>
           <TouchableOpacity style={styles.loginBtn} onPress={() => router.push('/(auth)/login' as any)}>
@@ -324,7 +325,7 @@ export default function MissionsScreen() {
                 activeOpacity={isDone ? 1 : 0.8}
               >
                 <View style={styles.missionIcon}>
-                  <Text style={{ fontSize: 26 }}>{m.icon}</Text>
+                  <Ionicons name={m.icon as any} size={26} color={Colors.primary} />
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <View style={styles.missionTitleRow}>

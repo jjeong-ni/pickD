@@ -4,6 +4,7 @@ import {
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { Colors } from '../../constants/colors';
 import { GlassCard } from '../../components/GlassCard';
@@ -25,7 +26,7 @@ export default function MypageScreen() {
       >
         <View style={styles.profileOrb} />
         <GlassCard style={styles.avatarGlass} intensity="low">
-          <Text style={{ fontSize: 36 }}>👤</Text>
+          <Ionicons name="person" size={38} color="rgba(255,255,255,0.92)" />
         </GlassCard>
         <Text style={styles.nickname}>{displayName}</Text>
         <View style={styles.chips}>
@@ -109,12 +110,12 @@ export default function MypageScreen() {
         <Text style={styles.aiSectionDesc}>진단 질문에 답하고 맞춤 솔루션을 받아보세요</Text>
         <View style={styles.aiCards}>
           <TouchableOpacity style={styles.aiCard} onPress={() => router.push('/face-analysis' as any)} activeOpacity={0.8}>
-            <Text style={styles.aiCardEmoji}>🪞</Text>
+            <Ionicons name="scan-outline" size={30} color={Colors.primary} />
             <Text style={styles.aiCardLabel}>얼굴형 분석</Text>
             <Text style={styles.aiCardDesc}>6가지 유형 진단</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.aiCard} onPress={() => router.push('/skin-analysis' as any)} activeOpacity={0.8}>
-            <Text style={styles.aiCardEmoji}>🧬</Text>
+            <Ionicons name="analytics-outline" size={30} color={Colors.primary} />
             <Text style={styles.aiCardLabel}>피부타입 분석</Text>
             <Text style={styles.aiCardDesc}>4가지 타입 진단</Text>
           </TouchableOpacity>
@@ -126,10 +127,10 @@ export default function MypageScreen() {
         <Text style={styles.sectionTitle}>내 활동</Text>
       </View>
       <View style={styles.section}>
-        <MenuItem icon="✍️" label="내가 쓴 글" onPress={() => router.push('/my-posts' as any)} />
-        <MenuItem icon="🤍" label="찜한 목록" onPress={() => router.push('/favorites' as any)} />
-        <MenuItem icon="🛒" label="구매 내역" onPress={() => router.push('/purchases' as any)} />
-        <MenuItem icon="🪙" label="포인트 내역" onPress={() => router.push('/point-logs' as any)} />
+        <MenuItem icon="create-outline" label="내가 쓴 글" onPress={() => router.push('/my-posts' as any)} />
+        <MenuItem icon="heart-outline" label="찜한 목록" onPress={() => router.push('/favorites' as any)} />
+        <MenuItem icon="bag-outline" label="구매 내역" onPress={() => router.push('/purchases' as any)} />
+        <MenuItem icon="cash-outline" label="포인트 내역" onPress={() => router.push('/point-logs' as any)} />
       </View>
 
       <View style={styles.divider} />
@@ -139,8 +140,8 @@ export default function MypageScreen() {
         <Text style={styles.sectionTitle}>계정</Text>
       </View>
       <View style={styles.section}>
-        <MenuItem icon="👤" label="계정 정보" onPress={() => router.push('/account')} />
-        <MenuItem icon="🔔" label="알림 설정" onPress={() => router.push('/notifications' as any)} />
+        <MenuItem icon="person-outline" label="계정 정보" onPress={() => router.push('/account')} />
+        <MenuItem icon="notifications-outline" label="알림 설정" onPress={() => router.push('/notifications' as any)} />
       </View>
 
       <View style={styles.divider} />
@@ -150,10 +151,10 @@ export default function MypageScreen() {
         <Text style={styles.sectionTitle}>서비스 정보</Text>
       </View>
       <View style={styles.section}>
-        <MenuItem icon="📋" label="이용약관" onPress={() => router.push('/terms')} />
-        <MenuItem icon="🔒" label="개인정보처리방침" onPress={() => router.push('/privacy')} />
-        <MenuItem icon="ℹ️" label="앱 버전" sub="v1.0.0 (베타)" onPress={() => {}} />
-        <MenuItem icon="🚪" label="로그아웃" onPress={() => setShowLogoutConfirm(true)} danger />
+        <MenuItem icon="document-text-outline" label="이용약관" onPress={() => router.push('/terms')} />
+        <MenuItem icon="shield-checkmark-outline" label="개인정보처리방침" onPress={() => router.push('/privacy')} />
+        <MenuItem icon="information-circle-outline" label="앱 버전" sub="v1.0.0 (베타)" onPress={() => {}} />
+        <MenuItem icon="log-out-outline" label="로그아웃" onPress={() => setShowLogoutConfirm(true)} danger />
       </View>
 
       <View style={{ height: 40 }} />
@@ -192,8 +193,12 @@ function MenuItem({
 }: { icon: string; label: string; onPress: () => void; danger?: boolean; sub?: string }) {
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.menuIcon}>
-        <Text style={{ fontSize: 18 }}>{icon}</Text>
+      <View style={[styles.menuIcon, danger && styles.menuIconDanger]}>
+        <Ionicons
+          name={icon as any}
+          size={20}
+          color={danger ? Colors.danger : Colors.primary}
+        />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.menuLabel, danger && { color: Colors.danger }]}>{label}</Text>
@@ -264,9 +269,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   menuIcon: {
-    width: 40, height: 40, borderRadius: 10, backgroundColor: '#F2F2F7',
+    width: 40, height: 40, borderRadius: 10, backgroundColor: Colors.primaryLight,
     alignItems: 'center', justifyContent: 'center',
   },
+  menuIconDanger: { backgroundColor: '#FFF0F0' },
   menuLabel: { fontSize: 15, fontWeight: '600', color: Colors.text },
   menuSub: { fontSize: 12, color: Colors.sub, marginTop: 2 },
   menuArrow: { fontSize: 18, color: Colors.sub },
