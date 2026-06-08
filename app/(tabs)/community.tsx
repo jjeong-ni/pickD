@@ -91,7 +91,7 @@ export default function CommunityScreen() {
             </GlassCard>
           </TouchableOpacity>
         )}
-      </View>
+      </LinearGradient>
 
       <FlatList
         horizontal

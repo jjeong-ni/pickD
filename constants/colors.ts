@@ -1,12 +1,13 @@
 export const Colors = {
   // 핵심 컬러
   primary: '#FF6B9D',
-  primaryLight: 'rgba(255, 107, 157, 0.15)',
+  primaryLight: 'rgba(255, 107, 157, 0.12)',
   secondary: '#C084FC',
+  purple: '#C084FC',       // 하위 호환성 유지
   bg: '#FBF0F8',
   text: '#1A1A2E',
   sub: '#8B7B8E',
-  border: 'rgba(255, 255, 255, 0.35)',
+  border: '#EDD6E8',       // solid 테두리용
   borderLight: '#EED6E8',
   white: '#FFFFFF',
   danger: '#FF3B30',
