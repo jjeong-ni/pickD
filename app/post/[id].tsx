@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
@@ -40,9 +41,10 @@ export default function PostDetailScreen() {
 
   useEffect(() => {
     fetchData();
-    if (typeof window !== 'undefined' && id) {
-      const key = `liked_post_${id}`;
-      if (localStorage.getItem(key) === '1') setLiked(true);
+    if (id) {
+      AsyncStorage.getItem(`liked_post_${id}`).then((val) => {
+        if (val === '1') setLiked(true);
+      });
     }
   }, [id]);
 
@@ -90,8 +92,12 @@ export default function PostDetailScreen() {
     await supabase.from('posts').update({ likes: newLikes }).eq('id', id);
     setPost({ ...post, likes: newLikes });
     setLiked(true);
-    if (typeof window !== 'undefined' && id) {
-      localStorage.setItem(`liked_post_${id}`, '1');
+    await AsyncStorage.setItem(`liked_post_${id}`, '1');
+    // Append to liked posts list (for "하트 누른 게시물" tab)
+    const raw = await AsyncStorage.getItem('liked_posts');
+    const ids: string[] = raw ? JSON.parse(raw) : [];
+    if (!ids.includes(id as string)) {
+      await AsyncStorage.setItem('liked_posts', JSON.stringify([...ids, id as string]));
     }
   };
 
@@ -101,10 +107,11 @@ export default function PostDetailScreen() {
     const { data } = await supabase
       .from('comments')
       .insert({ post_id: id, user_id: user.id, body: commentText.trim() })
-      .select('*, profile:profiles(nickname)')
+      .select('*')
       .single();
     if (data) {
-      setComments((prev) => [...prev, data]);
+      const { data: prof } = await supabase.from('profiles').select('nickname').eq('user_id', user.id).maybeSingle();
+      setComments((prev) => [...prev, { ...data, profile: { nickname: prof?.nickname ?? null } }]);
       setCommentText('');
       if (post) {
         await supabase.from('posts').update({ comment_count: post.comment_count + 1 }).eq('id', id);

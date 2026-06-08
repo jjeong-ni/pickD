@@ -1,11 +1,12 @@
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  FlatList, ActivityIndicator, Image, Platform, Alert,
+  FlatList, ActivityIndicator, Image, Platform, Alert, Modal,
 } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../lib/supabase';
 import { Colors, HEADER_TOP } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
@@ -118,9 +119,18 @@ export default function HomeScreen() {
   const [pairs, setPairs] = useState<PairBundle[]>([]);
   const [loading, setLoading] = useState(true);
   const [reportLoading, setReportLoading] = useState(false);
+  const [signupPopup, setSignupPopup] = useState<{ nickname: string } | null>(null);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); checkSignupPopup(); }, []);
   useEffect(() => { if (profile?.skin_type) fetchRecommended(); }, [profile]);
+
+  const checkSignupPopup = async () => {
+    const raw = await AsyncStorage.getItem('signup_popup');
+    if (raw) {
+      await AsyncStorage.removeItem('signup_popup');
+      try { setSignupPopup(JSON.parse(raw)); } catch {}
+    }
+  };
 
   const fetchData = async () => {
     const [t, d] = await Promise.all([
@@ -194,6 +204,7 @@ export default function HomeScreen() {
   }
 
   return (
+    <>
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* 그라데이션 헤더 */}
       <LinearGradient
@@ -406,6 +417,37 @@ export default function HomeScreen() {
 
       <View style={{ height: 32 }} />
     </ScrollView>
+
+    {/* 회원가입 완료 1000pt 팝업 */}
+    <Modal
+      visible={!!signupPopup}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+    >
+      <LinearGradient
+        colors={['#FF6B9D', '#D473E8', '#9B6FE8']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.popupOverlay}
+      >
+        <View style={styles.popupCard}>
+          <Text style={styles.popupEmoji}>🎉</Text>
+          <View style={styles.popupMissionBadge}>
+            <Text style={styles.popupMissionText}>✅ 회원가입 미션달성!</Text>
+          </View>
+          <Text style={styles.popupTitle}>환영해요, {signupPopup?.nickname}님!</Text>
+          <View style={styles.popupPointBadge}>
+            <Text style={styles.popupPointText}>🪙 1,000 pt 지급!</Text>
+          </View>
+          <Text style={styles.popupSub}>포인트로 AI 피부 분석 보고서를 받아보세요</Text>
+          <TouchableOpacity style={styles.popupBtn} onPress={() => setSignupPopup(null)}>
+            <Text style={styles.popupBtnText}>픽디 시작하기 →</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+    </Modal>
+    </>
   );
 }
 
@@ -666,4 +708,29 @@ const styles = StyleSheet.create({
   },
   pairDividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
   pairDividerText: { fontSize: 10, color: Colors.sub, fontWeight: '600' },
+
+  // 회원가입 완료 팝업
+  popupOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
+  popupCard: {
+    backgroundColor: '#fff', borderRadius: 28, padding: 36,
+    alignItems: 'center', width: '100%', maxWidth: 360,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18, shadowRadius: 24, elevation: 10,
+  },
+  popupEmoji: { fontSize: 64, marginBottom: 16 },
+  popupTitle: { fontSize: 26, fontWeight: '900', color: Colors.text, marginBottom: 6, textAlign: 'center' },
+  popupMissionBadge: {
+    backgroundColor: '#E8F8EF', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 20, marginBottom: 12,
+  },
+  popupMissionText: { fontSize: 15, fontWeight: '800', color: '#27AE60' },
+  popupPointBadge: {
+    backgroundColor: '#FFF5E0', borderRadius: 50, paddingVertical: 14, paddingHorizontal: 32, marginBottom: 12,
+  },
+  popupPointText: { fontSize: 24, fontWeight: '900', color: '#E8A000' },
+  popupSub: { fontSize: 13, color: Colors.sub, marginBottom: 28, textAlign: 'center' },
+  popupBtn: {
+    backgroundColor: Colors.primary, borderRadius: 14,
+    paddingVertical: 16, paddingHorizontal: 40, width: '100%', alignItems: 'center',
+  },
+  popupBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
 });

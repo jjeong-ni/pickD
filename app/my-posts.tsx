@@ -1,32 +1,61 @@
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';
 import { Post } from '../types';
 
+type Tab = 'my' | 'liked';
+
 export default function MyPostsScreen() {
   const { user } = useAuth();
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [activeTab, setActiveTab] = useState<Tab>('my');
+  const [myPosts, setMyPosts] = useState<Post[]>([]);
+  const [likedPosts, setLikedPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [likedLoading, setLikedLoading] = useState(false);
 
   useEffect(() => {
-    if (user) fetchPosts();
-    else setLoading(false);
+    if (user) {
+      fetchMyPosts();
+      fetchLikedPosts();
+    } else {
+      setLoading(false);
+    }
   }, [user]);
 
-  const fetchPosts = async () => {
+  const fetchMyPosts = async () => {
+    setLoading(true);
     const { data } = await supabase
       .from('posts')
       .select('*')
       .eq('user_id', user!.id)
       .order('created_at', { ascending: false });
-    setPosts(data ?? []);
+    setMyPosts(data ?? []);
     setLoading(false);
+  };
+
+  const fetchLikedPosts = async () => {
+    setLikedLoading(true);
+    const raw = await AsyncStorage.getItem('liked_posts');
+    const ids: string[] = raw ? JSON.parse(raw) : [];
+    if (ids.length === 0) {
+      setLikedPosts([]);
+      setLikedLoading(false);
+      return;
+    }
+    const { data } = await supabase
+      .from('posts')
+      .select('*')
+      .in('id', ids)
+      .order('created_at', { ascending: false });
+    setLikedPosts(data ?? []);
+    setLikedLoading(false);
   };
 
   const handleDelete = (postId: string, title: string) => {
@@ -37,11 +66,14 @@ export default function MyPostsScreen() {
         style: 'destructive',
         onPress: async () => {
           await supabase.from('posts').delete().eq('id', postId).eq('user_id', user!.id);
-          setPosts((prev) => prev.filter((p) => p.id !== postId));
+          setMyPosts((prev) => prev.filter((p) => p.id !== postId));
         },
       },
     ]);
   };
+
+  const isLoading = activeTab === 'my' ? loading : likedLoading;
+  const data = activeTab === 'my' ? myPosts : likedPosts;
 
   return (
     <View style={styles.container}>
@@ -57,20 +89,46 @@ export default function MyPostsScreen() {
         <View style={{ width: 32 }} />
       </LinearGradient>
 
-      {loading ? (
+      {/* 탭 */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'my' && styles.tabActive]}
+          onPress={() => setActiveTab('my')}
+        >
+          <Text style={[styles.tabText, activeTab === 'my' && styles.tabTextActive]}>
+            ✍️ 작성한 게시물
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'liked' && styles.tabActive]}
+          onPress={() => setActiveTab('liked')}
+        >
+          <Text style={[styles.tabText, activeTab === 'liked' && styles.tabTextActive]}>
+            ❤️ 하트 누른 게시물
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {isLoading ? (
         <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>
-      ) : posts.length === 0 ? (
+      ) : data.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.emptyIcon}>✍️</Text>
-          <Text style={styles.emptyTitle}>작성한 글이 없어요</Text>
-          <Text style={styles.emptyDesc}>커뮤니티에서 첫 글을 남겨보세요</Text>
-          <TouchableOpacity style={styles.goBtn} onPress={() => router.push('/(tabs)/community' as any)}>
-            <Text style={styles.goBtnText}>커뮤니티 보러가기</Text>
-          </TouchableOpacity>
+          <Text style={styles.emptyIcon}>{activeTab === 'my' ? '✍️' : '❤️'}</Text>
+          <Text style={styles.emptyTitle}>
+            {activeTab === 'my' ? '작성한 글이 없어요' : '하트 누른 글이 없어요'}
+          </Text>
+          <Text style={styles.emptyDesc}>
+            {activeTab === 'my' ? '커뮤니티에서 첫 글을 남겨보세요' : '게시물에서 하트를 눌러보세요'}
+          </Text>
+          {activeTab === 'my' && (
+            <TouchableOpacity style={styles.goBtn} onPress={() => router.push('/(tabs)/community' as any)}>
+              <Text style={styles.goBtnText}>커뮤니티 보러가기</Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
         <FlatList
-          data={posts}
+          data={data}
           keyExtractor={(i) => i.id}
           contentContainerStyle={{ padding: 16, gap: 10 }}
           renderItem={({ item }) => (
@@ -87,12 +145,14 @@ export default function MyPostsScreen() {
                   <Text style={styles.date}>
                     {new Date(item.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                   </Text>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(item.id, item.title)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text style={styles.deleteBtn}>삭제</Text>
-                  </TouchableOpacity>
+                  {activeTab === 'my' && (
+                    <TouchableOpacity
+                      onPress={() => handleDelete(item.id, item.title)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={styles.deleteBtn}>삭제</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
               <Text style={styles.postTitle} numberOfLines={2}>{item.title}</Text>
@@ -117,12 +177,26 @@ const styles = StyleSheet.create({
   },
   back: { fontSize: 24, color: Colors.white, width: 32 },
   title: { fontSize: 17, fontWeight: '700', color: Colors.white },
+
+  tabBar: {
+    flexDirection: 'row', backgroundColor: Colors.white,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  tab: {
+    flex: 1, paddingVertical: 14, alignItems: 'center',
+    borderBottomWidth: 2, borderBottomColor: 'transparent',
+  },
+  tabActive: { borderBottomColor: Colors.primary },
+  tabText: { fontSize: 13, fontWeight: '600', color: Colors.sub },
+  tabTextActive: { color: Colors.primary, fontWeight: '800' },
+
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyIcon: { fontSize: 52 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
   emptyDesc: { fontSize: 14, color: Colors.sub },
   goBtn: { marginTop: 8, backgroundColor: Colors.primary, paddingVertical: 12, paddingHorizontal: 28, borderRadius: 12 },
   goBtnText: { color: Colors.white, fontWeight: '700', fontSize: 15 },
+
   card: {
     backgroundColor: Colors.white, borderRadius: 14, padding: 16, gap: 8,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },

@@ -5,6 +5,7 @@ import {
   ActivityIndicator, Image,
 } from 'react-native';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -24,7 +25,6 @@ export default function SignupScreen() {
   const { setProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [showPointsPopup, setShowPointsPopup] = useState(false);
 
   // Page 1
   const [email, setEmail] = useState('');
@@ -153,7 +153,7 @@ export default function SignupScreen() {
 
     setLoading(true);
 
-    const { error: signUpError } = await supabase.auth.signUp({ email, password });
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
     if (signUpError) {
       if (signUpError.message.includes('already registered') || signUpError.message.includes('already been registered')) {
         Alert.alert('이미 가입된 이메일', '해당 이메일로 이미 계정이 있어요. 로그인해주세요.');
@@ -166,98 +166,66 @@ export default function SignupScreen() {
       return;
     }
 
-    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-    if (loginError) {
-      const msg = loginError.message.includes('Email not confirmed')
-        ? '가입 확인 이메일을 발송했어요.\n받은 편지함에서 인증 후 로그인해주세요.'
-        : '가입은 완료됐어요. 로그인 화면에서 로그인해주세요.';
-      Alert.alert('안내', msg);
+    // Supabase returns session immediately when email confirmation is disabled.
+    // If session is null, email confirmation is required.
+    const session = signUpData?.session;
+    if (!session) {
+      Alert.alert(
+        '이메일 인증 필요',
+        '가입 확인 이메일을 발송했어요.\n받은 편지함에서 인증 후 로그인해주세요.'
+      );
       router.replace('/(auth)/login');
       setLoading(false);
       return;
     }
 
-    if (loginData.session) {
-      let facePhotoUrl: string | null = null;
-      if (facePhotoUri) {
-        try {
-          const response = await fetch(facePhotoUri);
-          const blob = await response.blob();
-          const filePath = `${loginData.session.user.id}.jpg`;
-          const { error: uploadError } = await supabase.storage
+    const userId = session.user.id;
+    let facePhotoUrl: string | null = null;
+    if (facePhotoUri) {
+      try {
+        const response = await fetch(facePhotoUri);
+        const blob = await response.blob();
+        const filePath = `${userId}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from('face-photos')
+          .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
             .from('face-photos')
-            .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
-          if (!uploadError) {
-            const { data: urlData } = supabase.storage
-              .from('face-photos')
-              .getPublicUrl(filePath);
-            facePhotoUrl = urlData.publicUrl;
-          }
-        } catch {
-          // 업로드 실패 시 설문 기반으로 진행
+            .getPublicUrl(filePath);
+          facePhotoUrl = urlData.publicUrl;
         }
+      } catch {
+        // 업로드 실패 시 설문 기반으로 진행
       }
-
-      const newProfile = {
-        id: loginData.session.user.id,
-        user_id: loginData.session.user.id,
-        nickname,
-        gender: gender || null,
-        age_group: ageGroup || null,
-        skin_type: skinType || null,
-        face_shape: faceShape || null,
-        concerns,
-        points: 1000,
-        face_photo_url: facePhotoUrl,
-        skin_age: null,
-        moisture_score: null,
-        oil_score: null,
-        baumann_code: null,
-        skin_metrics: null,
-        skin_dehydration: null,
-        created_at: new Date().toISOString(),
-      };
-      await supabase.from('profiles').upsert(newProfile, { onConflict: 'user_id' });
-      await supabase.from('point_logs').insert({ user_id: loginData.session.user.id, amount: 1000, reason: '신규 가입' });
-      setProfile(newProfile as any);
-      setShowPointsPopup(true);
-      return;
     }
 
+    const newProfile = {
+      id: userId,
+      user_id: userId,
+      nickname,
+      gender: gender || null,
+      age_group: ageGroup || null,
+      skin_type: skinType || null,
+      face_shape: faceShape || null,
+      concerns,
+      points: 1000,
+      face_photo_url: facePhotoUrl,
+      skin_age: null,
+      moisture_score: null,
+      oil_score: null,
+      baumann_code: null,
+      skin_metrics: null,
+      skin_dehydration: null,
+      created_at: new Date().toISOString(),
+    };
+    await supabase.from('profiles').upsert(newProfile, { onConflict: 'user_id' });
+    await supabase.from('point_logs').insert({ user_id: userId, amount: 1000, reason: '신규 가입' });
+    setProfile(newProfile as any);
+    await AsyncStorage.setItem('signup_popup', JSON.stringify({ nickname }));
     setLoading(false);
     router.replace('/(tabs)');
   };
-
-  if (showPointsPopup) {
-    return (
-      <LinearGradient
-        colors={['#FF6B9D', '#D473E8', '#9B6FE8']}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
-      >
-        <View style={styles.popupCard}>
-          <Text style={styles.popupEmoji}>🎉</Text>
-          <View style={styles.popupMissionBadge}>
-            <Text style={styles.popupMissionText}>✅ 회원가입 미션달성!</Text>
-          </View>
-          <Text style={styles.popupTitle}>환영해요, {nickname}님!</Text>
-          <View style={styles.popupPointBadge}>
-            <Text style={styles.popupPointText}>🪙 1,000 pt 지급!</Text>
-          </View>
-          <Text style={styles.popupSub}>포인트로 AI 피부 분석 보고서를 받아보세요</Text>
-          <TouchableOpacity
-            style={styles.popupBtn}
-            onPress={() => {
-              setLoading(false);
-              router.replace('/(tabs)');
-            }}
-          >
-            <Text style={styles.popupBtnText}>픽디 시작하기 →</Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-    );
-  }
 
   return (
     <KeyboardAvoidingView
@@ -649,28 +617,4 @@ const styles = StyleSheet.create({
   btnDisabled: { backgroundColor: Colors.border },
   btnText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
 
-  // Points popup
-  popupCard: {
-    backgroundColor: '#fff', borderRadius: 28, padding: 36,
-    alignItems: 'center', width: '100%', maxWidth: 360,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18, shadowRadius: 24, elevation: 10,
-  },
-  popupEmoji: { fontSize: 64, marginBottom: 16 },
-  popupTitle: { fontSize: 26, fontWeight: '900', color: Colors.text, marginBottom: 6, textAlign: 'center' },
-  popupDesc: { fontSize: 16, color: Colors.sub, marginBottom: 20, textAlign: 'center' },
-  popupMissionBadge: {
-    backgroundColor: '#E8F8EF', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 20, marginBottom: 12,
-  },
-  popupMissionText: { fontSize: 15, fontWeight: '800', color: '#27AE60' },
-  popupPointBadge: {
-    backgroundColor: '#FFF5E0', borderRadius: 50, paddingVertical: 14, paddingHorizontal: 32, marginBottom: 12,
-  },
-  popupPointText: { fontSize: 24, fontWeight: '900', color: '#E8A000' },
-  popupSub: { fontSize: 13, color: Colors.sub, marginBottom: 28, textAlign: 'center' },
-  popupBtn: {
-    backgroundColor: Colors.primary, borderRadius: 14,
-    paddingVertical: 16, paddingHorizontal: 40, width: '100%', alignItems: 'center',
-  },
-  popupBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
 });
