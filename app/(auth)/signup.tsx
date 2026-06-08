@@ -45,7 +45,8 @@ export default function SignupScreen() {
   const cameraRequested = useRef(false);
 
   useEffect(() => {
-    if (step === 3 && !cameraRequested.current) {
+    // 네이티브에서만 step 3 진입 시 카메라 자동 실행 (웹은 파일 다이얼로그로 열려 혼란)
+    if (Platform.OS !== 'web' && step === 3 && !cameraRequested.current) {
       cameraRequested.current = true;
       requestCamera();
     }
@@ -94,6 +95,27 @@ export default function SignupScreen() {
       }
     } catch {
       Alert.alert('오류', '카메라를 열 수 없어요. 설정에서 카메라 권한을 확인해주세요.');
+    }
+  };
+
+  const launchGallery = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('권한 필요', '갤러리 접근 권한이 필요해요.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'] as any,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled) {
+        setFacePhotoUri(result.assets[0].uri);
+      }
+    } catch {
+      Alert.alert('오류', '갤러리를 열 수 없어요.');
     }
   };
 
@@ -369,10 +391,16 @@ export default function SignupScreen() {
           {facePhotoUri ? (
             <View style={styles.photoPreviewWrap}>
               <Image source={{ uri: facePhotoUri }} style={styles.photoPreview} />
-              <TouchableOpacity style={styles.retakeBtn} onPress={launchCamera}>
-                <Ionicons name="camera-outline" size={16} color={Colors.primary} />
-                <Text style={styles.retakeBtnText}>다시 찍기</Text>
-              </TouchableOpacity>
+              <View style={styles.retakeRow}>
+                <TouchableOpacity style={styles.retakeBtn} onPress={launchCamera}>
+                  <Ionicons name="camera-outline" size={16} color={Colors.primary} />
+                  <Text style={styles.retakeBtnText}>다시 찍기</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.retakeBtn} onPress={launchGallery}>
+                  <Ionicons name="images-outline" size={16} color={Colors.primary} />
+                  <Text style={styles.retakeBtnText}>앨범 변경</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.photoConfirm}>
                 <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
                 <Text style={styles.photoConfirmText}>사진 촬영 완료! 가입 후 AI가 분석해드릴게요</Text>
@@ -392,7 +420,7 @@ export default function SignupScreen() {
               <View style={styles.faceOutline}>
                 <Ionicons name="person-outline" size={80} color="rgba(255,107,157,0.4)" />
               </View>
-              <Text style={styles.cameraHint}>전면 카메라를 사용해 정면 사진을 찍어주세요</Text>
+              <Text style={styles.cameraHint}>정면 사진을 찍거나 앨범에서 선택해주세요</Text>
               <TouchableOpacity style={styles.cameraBtn} onPress={launchCamera}>
                 <LinearGradient
                   colors={['#FF6B9D', '#D473E8']}
@@ -402,6 +430,10 @@ export default function SignupScreen() {
                   <Ionicons name="camera-outline" size={22} color="#fff" />
                   <Text style={styles.cameraBtnText}>카메라로 촬영하기</Text>
                 </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.galleryBtn} onPress={launchGallery}>
+                <Ionicons name="images-outline" size={20} color={Colors.primary} />
+                <Text style={styles.galleryBtnText}>앨범에서 선택하기</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setSkipFace(true)} style={styles.skipLink}>
                 <Text style={styles.skipLinkText}>나중에 하기</Text>
@@ -553,11 +585,14 @@ const styles = StyleSheet.create({
   cameraBtn: { width: '100%', borderRadius: 14, overflow: 'hidden' },
   cameraBtnGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16 },
   cameraBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  galleryBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%', borderRadius: 14, borderWidth: 1.5, borderColor: Colors.primary, paddingVertical: 14, paddingHorizontal: 20, justifyContent: 'center' },
+  galleryBtnText: { fontSize: 16, fontWeight: '600', color: Colors.primary },
   skipLink: { paddingVertical: 8 },
   skipLinkText: { fontSize: 14, color: Colors.sub, textDecorationLine: 'underline' },
 
   photoPreviewWrap: { width: '100%', alignItems: 'center', gap: 14 },
   photoPreview: { width: 180, height: 180, borderRadius: 90, borderWidth: 3, borderColor: Colors.primary },
+  retakeRow: { flexDirection: 'row', gap: 10 },
   retakeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primary },
   retakeBtnText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
   photoConfirm: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8F8EF', borderRadius: 12, padding: 12 },
