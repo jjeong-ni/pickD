@@ -9,12 +9,13 @@ export default function RootLayout() {
   const { setSession, fetchProfile } = useAuth();
 
   useEffect(() => {
-    // 초기 세션: 상태만 설정, 강제 리다이렉트 없음 (직접 URL 진입 유지)
+    // 초기 세션: demo 파라미터가 있으면 리다이렉트 없음
+    const isDemoUrl = Platform.OS === 'web' && typeof window !== 'undefined' && window.location.href.includes('demo=');
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
         fetchProfile(session.user.id);
-      } else {
+      } else if (!isDemoUrl) {
         router.replace('/(auth)/welcome');
       }
     });
@@ -63,15 +64,34 @@ export default function RootLayout() {
         <Stack.Screen name="privacy" options={{ presentation: 'card' }} />
         <Stack.Screen name="clinic-map" options={{ presentation: 'card' }} />
         <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
+        <Stack.Screen name="skin-report" options={{ presentation: 'card' }} />
       </Stack>
     </>
   );
 
-  // 데스크톱 웹: 중앙 정렬 + max-width로 모바일 앱 프레임 연출
+  // 웹: 중앙 정렬 + 유동 max-width (모바일 앱 프레임)
   if (Platform.OS === 'web') {
     return (
-      <View style={{ flex: 1, backgroundColor: '#E8E8ED', alignItems: 'center' }}>
-        <View style={{ flex: 1, width: '100%', maxWidth: 430, backgroundColor: '#fff', overflow: 'hidden' }}>
+      <View style={{ flex: 1, backgroundColor: '#E0D6EC', alignItems: 'center', justifyContent: 'center' }}>
+        {/* 배경 데코 */}
+        <View style={{
+          position: 'absolute', width: 400, height: 400, borderRadius: 200,
+          backgroundColor: 'rgba(255,107,157,0.07)', top: -80, right: -60,
+        }} />
+        <View style={{
+          position: 'absolute', width: 300, height: 300, borderRadius: 150,
+          backgroundColor: 'rgba(155,111,232,0.06)', bottom: -60, left: -40,
+        }} />
+        <View style={{
+          flex: 1,
+          width: '100%',
+          // @ts-ignore
+          maxWidth: 680,
+          backgroundColor: '#fff',
+          overflow: 'hidden',
+          // @ts-ignore
+          boxShadow: '0 0 60px rgba(180,80,140,0.12)',
+        }}>
           {stack}
         </View>
       </View>

@@ -7,10 +7,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../../constants/colors';
+import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
 
 export default function MypageScreen() {
   const { user, profile, signOut } = useAuth();
+  const { hPad } = useResponsive();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const displayName = profile?.nickname || user?.email?.split('@')[0] || '-';
@@ -40,7 +42,7 @@ export default function MypageScreen() {
       </LinearGradient>
 
       {/* 피부 프로필 카드 */}
-      <View style={styles.skinProfileCard}>
+      <View style={[styles.skinProfileCard, { marginHorizontal: hPad }]}>
         <View style={styles.skinProfileHeader}>
           <View style={styles.skinProfileTitleRow}>
             <Ionicons name="leaf-outline" size={18} color={Colors.primary} />
@@ -129,7 +131,7 @@ export default function MypageScreen() {
 
       {/* 미션 & 포인트 */}
       {user && (
-        <TouchableOpacity style={styles.missionBanner} onPress={() => router.push('/missions' as any)} activeOpacity={0.85}>
+        <TouchableOpacity style={[styles.missionBanner, { marginHorizontal: hPad }]} onPress={() => router.push('/missions' as any)} activeOpacity={0.85}>
           <View style={styles.missionBannerLeft}>
             <Text style={styles.missionBannerTitle}>🎯 미션 & 포인트</Text>
             <Text style={styles.missionBannerDesc}>출석체크·댓글·공유로 포인트 쌓기</Text>
@@ -144,7 +146,7 @@ export default function MypageScreen() {
       {/* 얼굴형 정밀분석 유도 배너 (face_shape 미설정 시) */}
       {user && !profile?.face_shape && (
         <TouchableOpacity
-          style={styles.faceAnalysisBanner}
+          style={[styles.faceAnalysisBanner, { marginHorizontal: hPad }]}
           onPress={() => router.push('/face-analysis' as any)}
           activeOpacity={0.85}
         >
@@ -160,7 +162,7 @@ export default function MypageScreen() {
       )}
 
       {/* AI 피부 분석 */}
-      <View style={styles.aiSection}>
+      <View style={[styles.aiSection, { marginHorizontal: hPad }]}>
         <View style={styles.aiSectionHeader}>
           <Text style={styles.aiSectionTitle}>AI 피부 분석</Text>
           <TouchableOpacity onPress={() => router.push('/analysis-report' as any)}>
@@ -181,6 +183,23 @@ export default function MypageScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* 맞춤 보고서 CTA */}
+      <TouchableOpacity
+        style={[styles.reportBanner, { marginHorizontal: hPad }]}
+        onPress={() => router.push('/payment?itemName=맞춤+분석+보고서&amount=990&returnTo=skin-report' as any)}
+        activeOpacity={0.85}
+      >
+        <View style={styles.reportBannerLeft}>
+          <Text style={styles.reportBannerBadge}>NEW</Text>
+          <Text style={styles.reportBannerTitle}>📋 맞춤 피부 분석 보고서</Text>
+          <Text style={styles.reportBannerDesc}>얼굴형·피부타입·로드맵 종합 리포트</Text>
+        </View>
+        <View style={styles.reportBannerRight}>
+          <Text style={styles.reportBannerPrice}>990원</Text>
+          <Text style={styles.reportBannerArrow}>›</Text>
+        </View>
+      </TouchableOpacity>
 
       {/* 내 활동 */}
       <View style={styles.sectionHeader}>
@@ -305,7 +324,7 @@ const styles = StyleSheet.create({
 
   /* 피부 프로필 카드 */
   skinProfileCard: {
-    backgroundColor: Colors.white, marginHorizontal: 16, marginTop: 12,
+    backgroundColor: Colors.white, marginTop: 12,
     borderRadius: 18, padding: 18, gap: 14,
     shadowColor: Colors.cardShadow,
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 12, elevation: 3,
@@ -384,10 +403,29 @@ const styles = StyleSheet.create({
   confirmOk: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: Colors.danger, alignItems: 'center' },
   confirmOkText: { fontSize: 15, fontWeight: '700', color: Colors.white },
 
+  /* 보고서 배너 */
+  reportBanner: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginTop: 12, borderRadius: 16, padding: 16, overflow: 'hidden',
+    backgroundColor: '#1A1A2E',
+    borderWidth: 1, borderColor: '#9B6FE8',
+  },
+  reportBannerLeft: { gap: 4 },
+  reportBannerBadge: {
+    alignSelf: 'flex-start', fontSize: 10, fontWeight: '900', color: '#9B6FE8',
+    backgroundColor: 'rgba(155,111,232,0.15)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6,
+    letterSpacing: 1, marginBottom: 2,
+  },
+  reportBannerTitle: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  reportBannerDesc: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
+  reportBannerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  reportBannerPrice: { fontSize: 18, fontWeight: '900', color: '#FF6B9D' },
+  reportBannerArrow: { fontSize: 18, color: 'rgba(255,255,255,0.5)' },
+
   /* 미션 배너 */
   missionBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: Colors.white, marginHorizontal: 16, marginTop: 12,
+    backgroundColor: Colors.white, marginTop: 12,
     borderRadius: 14, padding: 16,
     borderWidth: 1.5, borderColor: Colors.primaryLight,
   },
@@ -401,7 +439,7 @@ const styles = StyleSheet.create({
   /* 얼굴형 정밀분석 배너 */
   faceAnalysisBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#FFF5F9', marginHorizontal: 16, marginTop: 12,
+    backgroundColor: '#FFF5F9', marginTop: 12,
     borderRadius: 14, padding: 16,
     borderWidth: 1.5, borderColor: Colors.primaryLight,
   },
@@ -417,7 +455,7 @@ const styles = StyleSheet.create({
 
   /* AI 피부 분석 */
   aiSection: {
-    backgroundColor: Colors.white, margin: 16, borderRadius: 18,
+    backgroundColor: Colors.white, marginTop: 12, marginBottom: 0, borderRadius: 18,
     padding: 18, gap: 14,
     shadowColor: '#FF6B9D', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,

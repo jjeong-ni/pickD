@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useCompare } from '../../hooks/useCompare';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Treatment, Device, CompareItem } from '../../types';
 
 const FACE_SHAPE_CATEGORIES: Record<string, string[]> = {
@@ -26,6 +27,7 @@ const FACE_SHAPE_CATEGORIES: Record<string, string[]> = {
 export default function CompareScreen() {
   const { user, profile } = useAuth();
   const { items, fetch, remove, clear, loading } = useCompare();
+  const { hPad } = useResponsive();
   // item_id 기반 맵: 삭제해도 나머지 카드는 그대로 유지
   const [detailMap, setDetailMap] = useState<Record<string, Treatment | Device>>({});
   const [initialLoad, setInitialLoad] = useState(false);
@@ -129,7 +131,7 @@ export default function CompareScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: hPad, paddingVertical: 20, gap: 16 }}>
           {/* 아이템 카드들 */}
           <View style={styles.compareRow}>
             {items.map((ci) => {

@@ -1,45 +1,73 @@
-/**
- * useResponsive.ts
- * 모바일/웹 반응형 레이아웃 유틸리티
- *
- * 픽디는 모바일 앱 + Netlify 웹(최대 430px 제한) 이중 지원
- * 웹에서 브라우저 창이 넓어질 때 컬럼 수와 여백을 자동 조정합니다.
- */
-import { Dimensions, Platform } from 'react-native';
+import { Dimensions, Platform, PixelRatio } from 'react-native';
 import { useState, useEffect } from 'react';
 
-const APP_MAX_WIDTH = 430; // _layout.tsx와 동일
+// Web breakpoints (matching common screen sizes)
+export const BREAKPOINTS = {
+  sm: 390,   // iPhone SE / small phone
+  md: 430,   // iPhone 15 Pro Max
+  lg: 768,   // tablet / iPad
+  xl: 1024,  // desktop
+} as const;
+
+export const WEB_MAX_WIDTH = 680; // web frame max width (wider than before for better demo)
+
+function getWindowWidth() {
+  const w = Dimensions.get('window').width;
+  return Platform.OS === 'web' ? Math.min(w, WEB_MAX_WIDTH) : w;
+}
 
 export function useResponsive() {
-  const [windowWidth, setWindowWidth] = useState(
-    Math.min(Dimensions.get('window').width, APP_MAX_WIDTH),
-  );
+  const [windowWidth, setWindowWidth] = useState(getWindowWidth);
+  const [windowHeight, setWindowHeight] = useState(Dimensions.get('window').height);
 
   useEffect(() => {
     const sub = Dimensions.addEventListener('change', ({ window }) => {
-      setWindowWidth(Math.min(window.width, APP_MAX_WIDTH));
+      setWindowWidth(Platform.OS === 'web' ? Math.min(window.width, WEB_MAX_WIDTH) : window.width);
+      setWindowHeight(window.height);
     });
     return () => sub?.remove();
   }, []);
 
   const isWeb = Platform.OS === 'web';
-  const isWide = windowWidth >= 400; // 웹 넓은 화면
+  const isSmall = windowWidth < BREAKPOINTS.sm;       // tiny phones
+  const isMedium = windowWidth < BREAKPOINTS.lg;      // phones & small tablets
+  const isLarge = windowWidth >= BREAKPOINTS.lg;      // tablets & desktop
+  const isWide = windowWidth >= BREAKPOINTS.md;       // wide phone or above
 
-  // 카드 컬럼 수 (좁으면 2열, 넓으면 3열)
-  const cardColumns = isWide ? 3 : 2;
+  // Horizontal padding — scales with screen
+  const hPad = isLarge ? 28 : isWide ? 20 : 16;
 
-  // 카드 너비 (패딩 16px × 2, gap 10px 고려)
-  const cardWidth = (windowWidth - 32 - (cardColumns - 1) * 10) / cardColumns;
+  // Card grid columns
+  const cardColumns = isLarge ? 4 : isWide ? 3 : 2;
 
-  // 수평 패딩
-  const hPad = isWide ? 20 : 16;
+  // Card width — fills available space based on columns
+  const gapBetweenCards = 12;
+  const cardWidth = Math.floor(
+    (windowWidth - hPad * 2 - gapBetweenCards * (cardColumns - 1)) / cardColumns
+  );
+
+  // Font scale factor relative to base 390px screen
+  const fontScale = Math.min(Math.max(windowWidth / 390, 0.85), 1.25);
+
+  // Responsive font size helper
+  const rfs = (size: number) => Math.round(size * fontScale);
+
+  // Content max width (for non-FlatList content)
+  const contentWidth = windowWidth - hPad * 2;
 
   return {
     windowWidth,
+    windowHeight,
     isWeb,
+    isSmall,
+    isMedium,
+    isLarge,
     isWide,
+    hPad,
     cardColumns,
     cardWidth,
-    hPad,
+    fontScale,
+    rfs,
+    contentWidth,
   };
 }

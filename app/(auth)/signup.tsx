@@ -138,6 +138,26 @@ export default function SignupScreen() {
     }
 
     if (loginData.session) {
+      let facePhotoUrl: string | null = null;
+      if (facePhotoUri) {
+        try {
+          const response = await fetch(facePhotoUri);
+          const blob = await response.blob();
+          const filePath = `${loginData.session.user.id}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from('face-photos')
+            .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage
+              .from('face-photos')
+              .getPublicUrl(filePath);
+            facePhotoUrl = urlData.publicUrl;
+          }
+        } catch {
+          // 업로드 실패 시 설문 기반으로 진행
+        }
+      }
+
       await supabase.from('profiles').upsert({
         id: loginData.session.user.id,
         user_id: loginData.session.user.id,
@@ -148,6 +168,7 @@ export default function SignupScreen() {
         face_shape: faceShape || null,
         concerns,
         points: 1000,
+        face_photo_url: facePhotoUrl,
       }, { onConflict: 'user_id' });
     }
 

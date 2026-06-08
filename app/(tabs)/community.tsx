@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { Colors, HEADER_TOP } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { usePostStore } from '../../hooks/usePostStore';
+import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
 import { Post } from '../../types';
 
@@ -44,6 +45,7 @@ function isSpamPost(title: string, body: string): boolean {
 export default function CommunityScreen() {
   const { user } = useAuth();
   const { refreshKey } = usePostStore();
+  const { hPad } = useResponsive();
   const [category, setCategory] = useState('전체');
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,7 +124,7 @@ export default function CommunityScreen() {
         <FlatList
           data={posts}
           keyExtractor={(i) => i.id}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 0 }}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListHeaderComponent={<NoticeSection />}
           ListEmptyComponent={() => (
