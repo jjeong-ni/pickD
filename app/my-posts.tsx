@@ -1,5 +1,5 @@
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
@@ -26,6 +26,20 @@ export default function MyPostsScreen() {
       .order('created_at', { ascending: false });
     setPosts(data ?? []);
     setLoading(false);
+  };
+
+  const handleDelete = (postId: string, title: string) => {
+    Alert.alert('게시글 삭제', `"${title.slice(0, 20)}..." 글을 삭제하시겠어요?`, [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: async () => {
+          await supabase.from('posts').delete().eq('id', postId).eq('user_id', user!.id);
+          setPosts((prev) => prev.filter((p) => p.id !== postId));
+        },
+      },
+    ]);
   };
 
   return (
@@ -64,9 +78,17 @@ export default function MyPostsScreen() {
                 <View style={styles.categoryBadge}>
                   <Text style={styles.categoryText}>{item.category}</Text>
                 </View>
-                <Text style={styles.date}>
-                  {new Date(item.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-                </Text>
+                <View style={styles.cardTopRight}>
+                  <Text style={styles.date}>
+                    {new Date(item.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => handleDelete(item.id, item.title)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.deleteBtn}>삭제</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
               <Text style={styles.postTitle} numberOfLines={2}>{item.title}</Text>
               <Text style={styles.postBody} numberOfLines={2}>{item.body}</Text>
@@ -103,6 +125,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardTopRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  deleteBtn: { fontSize: 12, color: Colors.danger, fontWeight: '600' },
   categoryBadge: { backgroundColor: Colors.primaryLight, paddingVertical: 3, paddingHorizontal: 10, borderRadius: 20 },
   categoryText: { fontSize: 11, fontWeight: '700', color: Colors.primary },
   date: { fontSize: 11, color: Colors.sub },

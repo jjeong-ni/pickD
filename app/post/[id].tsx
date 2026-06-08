@@ -20,7 +20,7 @@ interface Comment {
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, fetchProfile } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +80,17 @@ export default function PostDetailScreen() {
       if (post) {
         await supabase.from('posts').update({ comment_count: post.comment_count + 1 }).eq('id', id);
         setPost({ ...post, comment_count: post.comment_count + 1 });
+      }
+      // 댓글 10pt/일 자동 지급
+      const today = new Date().toISOString().split('T')[0];
+      const { data: existingLog } = await supabase
+        .from('point_logs').select('id').eq('user_id', user.id).eq('reason', '댓글')
+        .gte('created_at', `${today}T00:00:00`).limit(1);
+      if (!existingLog || existingLog.length === 0) {
+        const { data: p } = await supabase.from('profiles').select('points').eq('user_id', user.id).single();
+        await supabase.from('point_logs').insert({ user_id: user.id, amount: 10, reason: '댓글' });
+        await supabase.from('profiles').update({ points: (p?.points ?? 0) + 10 }).eq('user_id', user.id);
+        await fetchProfile(user.id);
       }
     }
     setSubmitting(false);

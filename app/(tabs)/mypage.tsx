@@ -132,7 +132,7 @@ export default function MypageScreen() {
       </View>
       <View style={styles.section}>
         <MenuItem icon="👤" label="계정 정보" onPress={() => router.push('/account')} />
-        <MenuItem icon="🔔" label="알림 설정" onPress={() => router.push({ pathname: '/coming-soon', params: { title: '알림 설정' } })} />
+        <MenuItem icon="🔔" label="알림 설정" onPress={() => router.push('/notifications' as any)} />
       </View>
 
       <View style={styles.divider} />

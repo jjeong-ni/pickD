@@ -1,6 +1,6 @@
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Image, FlatList, Modal, TextInput, Alert, Platform,
+  ActivityIndicator, Image, FlatList, Modal, TextInput, Alert, Platform, Share,
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -14,7 +14,7 @@ import MediaGallery from '../../components/MediaGallery';
 
 export default function TreatmentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, profile, fetchProfile } = useAuth();
   const { items, add } = useCompare();
   const [treatment, setTreatment] = useState<Treatment | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -161,12 +161,42 @@ export default function TreatmentDetailScreen() {
       body: newBody.trim(),
       image_url: imageUrl,
     });
+    // review_count 즉시 반영
+    const newCount = treatment.review_count + 1;
+    await supabase.from('treatments').update({ review_count: newCount }).eq('id', treatment.id);
+    setTreatment({ ...treatment, review_count: newCount });
+    // 리뷰 50pt (아이템당 1회)
+    const reviewReason = `리뷰:${treatment.id}`;
+    const { data: existingLog } = await supabase
+      .from('point_logs').select('id').eq('user_id', user.id).eq('reason', reviewReason).limit(1);
+    if (!existingLog || existingLog.length === 0) {
+      const { data: p } = await supabase.from('profiles').select('points').eq('user_id', user.id).single();
+      await supabase.from('point_logs').insert({ user_id: user.id, amount: 50, reason: reviewReason });
+      await supabase.from('profiles').update({ points: (p?.points ?? 0) + 50 }).eq('user_id', user.id);
+      await fetchProfile(user.id);
+      Alert.alert('✅ 리뷰 등록 완료', '50pt가 적립됐어요!');
+    }
     await fetchReviews(1);
     setNewBody('');
     setNewRating(5);
     setReviewImageUri(null);
     setSubmitting(false);
     setShowReviewModal(false);
+  };
+
+  const handleShare = async () => {
+    const url = `https://pickdi.netlify.app/treatment/${treatment?.id}`;
+    const msg = `${treatment?.name} | 픽디에서 확인해보세요 🌸\n${url}`;
+    try {
+      if (Platform.OS === 'web') {
+        await navigator.clipboard.writeText(msg);
+        Alert.alert('복사 완료!', '링크가 클립보드에 복사됐어요.');
+      } else {
+        await Share.share({ message: msg });
+      }
+    } catch {
+      Alert.alert('공유 링크', url);
+    }
   };
 
   const handleToggleFavorite = async () => {
@@ -205,6 +235,10 @@ export default function TreatmentDetailScreen() {
           {/* 뒤로가기 버튼 */}
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Text style={styles.backBtnText}>←</Text>
+          </TouchableOpacity>
+          {/* 공유 버튼 */}
+          <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
+            <Text style={styles.shareBtnText}>↑</Text>
           </TouchableOpacity>
           {/* 찜하기 버튼 */}
           <TouchableOpacity style={styles.heartBtn} onPress={handleToggleFavorite}>
@@ -505,6 +539,12 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   backBtnText: { fontSize: 18 },
+  shareBtn: {
+    position: 'absolute', top: 52, right: 60, zIndex: 10,
+    width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.9)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  shareBtnText: { fontSize: 16, color: Colors.text, fontWeight: '700' },
   heartBtn: {
     position: 'absolute', top: 52, right: 16, zIndex: 10,
     width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.9)',

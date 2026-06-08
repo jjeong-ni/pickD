@@ -20,7 +20,7 @@ const CATEGORIES: { label: string; desc: string }[] = [
 ];
 
 export default function CreatePostScreen() {
-  const { user } = useAuth();
+  const { user, fetchProfile } = useAuth();
   const { triggerRefresh } = usePostStore();
   const [category, setCategory] = useState('후기');
   const [title, setTitle] = useState('');
@@ -36,13 +36,24 @@ export default function CreatePostScreen() {
     const { error } = await supabase.from('posts').insert({
       user_id: user.id, title: title.trim(), body: body.trim(), category,
     });
-    setLoading(false);
     if (error) {
       Alert.alert('오류', '게시글 작성 중 오류가 발생했어요');
-    } else {
-      triggerRefresh();
-      router.back();
+      setLoading(false);
+      return;
     }
+    // 첫 게시물 500pt 자동 지급
+    const { data: existingLog } = await supabase
+      .from('point_logs').select('id').eq('user_id', user.id).eq('reason', '첫 게시물').limit(1);
+    if (!existingLog || existingLog.length === 0) {
+      const { data: p } = await supabase.from('profiles').select('points').eq('user_id', user.id).single();
+      await supabase.from('point_logs').insert({ user_id: user.id, amount: 500, reason: '첫 게시물' });
+      await supabase.from('profiles').update({ points: (p?.points ?? 0) + 500 }).eq('user_id', user.id);
+      await fetchProfile(user.id);
+      Alert.alert('🎉 첫 게시물 축하해요!', '500pt가 지급됐어요!');
+    }
+    setLoading(false);
+    triggerRefresh();
+    router.back();
   };
 
   return (
