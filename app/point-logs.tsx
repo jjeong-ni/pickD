@@ -1,8 +1,9 @@
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Platform,
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/colors';
@@ -37,18 +38,23 @@ export default function PointLogsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>포인트 내역</Text>
-        <View style={{ width: 32 }} />
-      </View>
-
-      <View style={styles.totalCard}>
-        <Text style={styles.totalLabel}>보유 포인트</Text>
-        <Text style={styles.totalPoints}>🪙 {profile?.points ?? 0} pt</Text>
-      </View>
+      <LinearGradient
+        colors={['#FF6B9D', '#D473E8', '#9B6FE8']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <View style={styles.headerNav}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.back}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>포인트 내역</Text>
+          <View style={{ width: 32 }} />
+        </View>
+        <View style={styles.totalCard}>
+          <Text style={styles.totalLabel}>보유 포인트</Text>
+          <Text style={styles.totalPoints}>🪙 {profile?.points ?? 0} pt</Text>
+        </View>
+      </LinearGradient>
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>
@@ -85,18 +91,22 @@ export default function PointLogsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   header: {
+    paddingTop: Platform.OS === 'web' ? 60 : 56, paddingBottom: 24,
+    paddingHorizontal: 16,
+  },
+  headerNav: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 16, paddingTop: 56, backgroundColor: Colors.white,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+    marginBottom: 20,
   },
-  back: { fontSize: 24, color: Colors.text, width: 32 },
-  title: { fontSize: 17, fontWeight: '700', color: Colors.text },
+  back: { fontSize: 24, color: Colors.white, width: 32 },
+  title: { fontSize: 17, fontWeight: '700', color: Colors.white },
   totalCard: {
-    margin: 16, padding: 20, backgroundColor: Colors.primary,
-    borderRadius: 16, alignItems: 'center', gap: 8,
+    padding: 20, backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 20, alignItems: 'center', gap: 8,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)',
   },
-  totalLabel: { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
-  totalPoints: { fontSize: 28, fontWeight: '800', color: Colors.white },
+  totalLabel: { fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
+  totalPoints: { fontSize: 32, fontWeight: '900', color: Colors.white },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyIcon: { fontSize: 52 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },

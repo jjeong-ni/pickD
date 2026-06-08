@@ -5,6 +5,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
@@ -458,13 +459,20 @@ export default function TreatmentDetailScreen() {
           <Text style={styles.compareBtnText}>{inCompare ? '비교함에 있음' : '비교함 추가'}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.payBtn}
+          style={styles.payBtnWrap}
           onPress={() => router.push({
             pathname: '/payment',
             params: { itemName: treatment.name, amount: treatment.price_min },
           })}
+          activeOpacity={0.85}
         >
-          <Text style={styles.payBtnText}>예약·결제</Text>
+          <LinearGradient
+            colors={['#FF6B9D', '#D473E8']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={styles.payBtn}
+          >
+            <Text style={styles.payBtnText}>예약·결제</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -636,7 +644,8 @@ const styles = StyleSheet.create({
   },
   compareBtnActive: { borderColor: Colors.border },
   compareBtnText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
-  payBtn: { flex: 2, paddingVertical: 14, borderRadius: 12, backgroundColor: Colors.primary, alignItems: 'center' },
+  payBtnWrap: { flex: 2 },
+  payBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   payBtnText: { fontSize: 14, fontWeight: '700', color: Colors.white },
   reviewModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   reviewSheet: {

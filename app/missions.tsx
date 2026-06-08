@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/colors';
@@ -224,13 +225,17 @@ export default function MissionsScreen() {
   if (!user) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
+        <LinearGradient
+          colors={['#FF6B9D', '#D473E8', '#9B6FE8']}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.back}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>미션 & 포인트</Text>
           <View style={{ width: 32 }} />
-        </View>
+        </LinearGradient>
         <View style={styles.center}>
           <Text style={{ fontSize: 48, marginBottom: 12 }}>🪙</Text>
           <Text style={styles.loginTitle}>로그인하고 포인트 받기</Text>
@@ -246,13 +251,17 @@ export default function MissionsScreen() {
   return (
     <View style={styles.container}>
       {/* 헤더 */}
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#FF6B9D', '#D473E8', '#9B6FE8']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.back}>←</Text>
         </TouchableOpacity>
         <Text style={styles.title}>미션 & 포인트</Text>
         <View style={{ width: 32 }} />
-      </View>
+      </LinearGradient>
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>
@@ -260,7 +269,11 @@ export default function MissionsScreen() {
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
 
           {/* 포인트 현황 */}
-          <View style={styles.pointHero}>
+          <LinearGradient
+            colors={['#FF6B9D', '#D473E8', '#9B6FE8']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={styles.pointHero}
+          >
             <Text style={styles.pointLabel}>내 포인트</Text>
             <Text style={styles.pointValue}>{points.toLocaleString()} pt</Text>
             <View style={styles.cashRow}>
@@ -268,7 +281,7 @@ export default function MissionsScreen() {
               <Text style={styles.cashValue}>약 {cashValue.toLocaleString()}원</Text>
             </View>
             <Text style={styles.cashNote}>1,000pt = 100원 · 최소 10,000pt부터 환급 가능 (베타 종료 후 오픈)</Text>
-          </View>
+          </LinearGradient>
 
           {/* 출석 체크 메인 버튼 */}
           <View style={styles.attendanceCard}>
@@ -378,11 +391,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: 56, paddingHorizontal: 16, paddingBottom: 12,
-    backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border,
+    paddingTop: Platform.OS === 'web' ? 60 : 56, paddingHorizontal: 16, paddingBottom: 16,
   },
-  back: { fontSize: 24, color: Colors.text, width: 32 },
-  title: { fontSize: 17, fontWeight: '700', color: Colors.text },
+  back: { fontSize: 24, color: Colors.white, width: 32 },
+  title: { fontSize: 17, fontWeight: '700', color: Colors.white },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
 
   loginTitle: { fontSize: 20, fontWeight: '700', color: Colors.text },
@@ -394,7 +406,7 @@ const styles = StyleSheet.create({
   loginBtnText: { color: Colors.white, fontSize: 15, fontWeight: '700' },
 
   pointHero: {
-    backgroundColor: Colors.primary, padding: 28,
+    padding: 28,
     alignItems: 'center', gap: 6,
   },
   pointLabel: { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
