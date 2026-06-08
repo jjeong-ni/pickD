@@ -29,6 +29,7 @@ export interface Profile {
   skin_metrics: SkinMetrics | null;  // 6대 피부 지표 (0~100)
   skin_dehydration: boolean | null;  // 속건조 여부
   face_photo_url: string | null;     // 회원가입 시 촬영한 얼굴 사진 URL
+  avatar_url: string | null;         // 프로필 사진 URL
   created_at: string;
 }
 

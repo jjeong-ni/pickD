@@ -58,33 +58,51 @@ export default function CommunityScreen() {
     try {
       let q = supabase
         .from('posts')
-        .select('*, profile:profiles(nickname)')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(30);
       if (category !== '전체') q = q.eq('category', category);
       const { data } = await q;
       const fetchedPosts: PostWithVoteCount[] = data ?? [];
 
-      // For quiz posts, fetch vote counts
-      const quizPosts = fetchedPosts.filter((p) => p.category === '퀴즈');
-      if (quizPosts.length > 0) {
-        const quizIds = quizPosts.map((p) => p.id);
-        const { data: votes } = await supabase
-          .from('quiz_votes')
-          .select('post_id')
-          .in('post_id', quizIds);
-        if (votes) {
-          const countMap: Record<string, number> = {};
-          for (const v of votes) {
-            countMap[v.post_id] = (countMap[v.post_id] ?? 0) + 1;
-          }
-          for (const post of fetchedPosts) {
-            if (post.category === '퀴즈') {
-              post.quizVoteCount = countMap[post.id] ?? 0;
+      // Fetch nicknames separately (avoids FK dependency)
+      if (fetchedPosts.length > 0) {
+        const userIds = [...new Set(fetchedPosts.map((p) => p.user_id))];
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('user_id, nickname')
+          .in('user_id', userIds);
+        const profileMap: Record<string, string> = {};
+        for (const pr of profilesData ?? []) {
+          profileMap[pr.user_id] = pr.nickname;
+        }
+        for (const post of fetchedPosts) {
+          (post as any).profile = { nickname: profileMap[post.user_id] ?? '익명' };
+        }
+      }
+
+      // For quiz posts, fetch vote counts (table may not exist yet)
+      try {
+        const quizPosts = fetchedPosts.filter((p) => p.category === '퀴즈');
+        if (quizPosts.length > 0) {
+          const quizIds = quizPosts.map((p) => p.id);
+          const { data: votes } = await supabase
+            .from('quiz_votes')
+            .select('post_id')
+            .in('post_id', quizIds);
+          if (votes) {
+            const countMap: Record<string, number> = {};
+            for (const v of votes) {
+              countMap[v.post_id] = (countMap[v.post_id] ?? 0) + 1;
+            }
+            for (const post of fetchedPosts) {
+              if (post.category === '퀴즈') {
+                post.quizVoteCount = countMap[post.id] ?? 0;
+              }
             }
           }
         }
-      }
+      } catch { /* quiz_votes table may not exist yet */ }
 
       setPosts(fetchedPosts);
     } catch {
