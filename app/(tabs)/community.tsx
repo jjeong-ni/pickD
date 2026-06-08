@@ -16,6 +16,13 @@ type PostWithVoteCount = Post & { quizVoteCount?: number };
 
 const CATEGORIES = ['전체', '후기', '질문', '정보', '비교', '퀴즈'];
 
+const VIRTUAL_NAMES = ['피부미인', '뷰티고수', '피부천재', '스킨케어러', '미용러버', '피부요정', '뷰티스타', '관리러버', '피부빛나', '뷰티천재', '피부사랑', '미용전문'];
+function virtualNick(uid: string): string {
+  let n = 0;
+  for (let i = 0; i < uid.length; i++) n = (n * 31 + uid.charCodeAt(i)) >>> 0;
+  return VIRTUAL_NAMES[n % VIRTUAL_NAMES.length];
+}
+
 const NOTICES = [
   {
     id: 'notice-1',
@@ -77,7 +84,7 @@ export default function CommunityScreen() {
           profileMap[pr.user_id] = pr.nickname;
         }
         for (const post of fetchedPosts) {
-          (post as any).profile = { nickname: profileMap[post.user_id] ?? '익명' };
+          (post as any).profile = { nickname: profileMap[post.user_id] || virtualNick(post.user_id) };
         }
       }
 
@@ -335,10 +342,11 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '900', color: '#fff' },
   writeBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20 },
   writeBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  filters: { paddingHorizontal: 20, paddingVertical: 12, gap: 8, backgroundColor: Colors.white, flexDirection: 'row', alignItems: 'center' },
+  filters: { paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: Colors.white, flexDirection: 'row', alignItems: 'center' },
   filter: {
-    paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20,
-    borderWidth: 1, borderColor: Colors.border,
+    paddingVertical: 10, paddingHorizontal: 18, borderRadius: 20,
+    borderWidth: 1.5, borderColor: Colors.border,
+    minHeight: 40, justifyContent: 'center', alignItems: 'center',
   },
   filterActive: { borderColor: Colors.primary, backgroundColor: 'rgba(255,107,157,0.08)' },
   filterText: { fontSize: 13, color: Colors.sub },

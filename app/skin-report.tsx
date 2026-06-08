@@ -484,7 +484,7 @@ export default function SkinReportScreen() {
   const ageGroup = demoProfile?.age_group ?? profile?.age_group ?? '';
   const concerns: string[] = demoProfile?.concerns ?? profile?.concerns ?? [];
   const displayName = demoProfile?.nickname ?? profile?.nickname ?? user?.email?.split('@')[0] ?? '회원';
-  const facePhotoUrl = demo ? null : (profile?.face_photo_url ?? null);
+  const facePhotoUrl = demo ? null : (profile?.face_photo_url ?? profile?.avatar_url ?? null);
   const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const face = FACE_REPORT[faceShape];

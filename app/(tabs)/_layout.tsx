@@ -23,12 +23,12 @@ export default function TabsLayout() {
           backgroundColor: 'transparent',
           borderTopWidth: 0,
           borderTopColor: 'transparent',
-          paddingTop: 8,
-          paddingBottom: 20,
-          height: 76,
+          paddingTop: 6,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+          height: Platform.OS === 'ios' ? 84 : 68,
           elevation: 0,
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 2 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 0 },
       }}
     >
       <Tabs.Screen

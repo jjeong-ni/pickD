@@ -360,7 +360,12 @@ export default function CompareScreen() {
       <Modal visible={showAI} transparent animationType="slide" onRequestClose={handleCloseAI}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
+            <View style={styles.modalTopBar}>
+              <View style={styles.modalHandle} />
+              <TouchableOpacity style={styles.modalCloseX} onPress={handleCloseAI}>
+                <Ionicons name="close" size={24} color={Colors.sub} />
+              </TouchableOpacity>
+            </View>
 
             {aiLoading ? (
               <View style={styles.aiLoadingWrap}>
@@ -381,6 +386,7 @@ export default function CompareScreen() {
                   </View>
                   <Text style={styles.aiWinnerName}>{displayResult!.item.name}</Text>
                   <Text style={styles.aiWinnerScore}>호환성 {displayResult!.score}점</Text>
+                  <Text style={styles.aiWinnerDesc} numberOfLines={2}>{displayResult!.item.description}</Text>
                 </View>
 
                 <View style={styles.aiReasonCard}>
@@ -657,7 +663,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, paddingBottom: 48, maxHeight: '90%',
   },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 20 },
+  modalTopBar: { alignItems: 'center', marginBottom: 16, position: 'relative' },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border },
+  modalCloseX: { position: 'absolute', right: 0, top: -10, padding: 8 },
   aiLoadingWrap: { alignItems: 'center', gap: 16, paddingVertical: 32 },
   aiLoadingTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
   aiLoadingSub: { fontSize: 14, color: Colors.sub, textAlign: 'center', lineHeight: 22 },
@@ -667,6 +675,7 @@ const styles = StyleSheet.create({
   aiWinnerImg: { width: 80, height: 80, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   aiWinnerName: { fontSize: 18, fontWeight: '800', color: Colors.text },
   aiWinnerScore: { fontSize: 13, color: Colors.primary, fontWeight: '700' },
+  aiWinnerDesc: { fontSize: 12, color: Colors.sub, textAlign: 'center', lineHeight: 18, marginTop: 6, paddingHorizontal: 8 },
   aiReasonCard: { backgroundColor: Colors.bg, borderRadius: 12, padding: 16, marginBottom: 12, gap: 10 },
   aiReasonTitle: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: 4 },
   aiReasonRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },

@@ -31,6 +31,9 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [nickname, setNickname] = useState('');
+  const [nicknameChecked, setNicknameChecked] = useState(false);
+  const [nicknameAvailable, setNicknameAvailable] = useState(false);
+  const [nicknameChecking, setNicknameChecking] = useState(false);
 
   // Page 2
   const [gender, setGender] = useState('');
@@ -119,13 +122,23 @@ export default function SignupScreen() {
     }
   };
 
+  const checkNicknameDuplicate = async () => {
+    if (nickname.length < 2) return;
+    setNicknameChecking(true);
+    const { data } = await supabase.from('profiles').select('user_id').eq('nickname', nickname).limit(1);
+    setNicknameChecking(false);
+    setNicknameChecked(true);
+    setNicknameAvailable(!data || data.length === 0);
+  };
+
   const isStepValid = () => {
     if (step === 1) {
       return (
         email.includes('@') && email.includes('.') &&
         password.length >= 8 &&
         password === passwordConfirm &&
-        nickname.length >= 2 && nickname.length <= 12
+        nickname.length >= 2 && nickname.length <= 12 &&
+        nicknameChecked && nicknameAvailable
       );
     }
     if (step === 2) return skinType !== '';
@@ -205,6 +218,7 @@ export default function SignupScreen() {
         created_at: new Date().toISOString(),
       };
       await supabase.from('profiles').upsert(newProfile, { onConflict: 'user_id' });
+      await supabase.from('point_logs').insert({ user_id: loginData.session.user.id, amount: 1000, reason: '신규 가입' });
       setProfile(newProfile as any);
       setShowPointsPopup(true);
       return;
@@ -223,8 +237,10 @@ export default function SignupScreen() {
       >
         <View style={styles.popupCard}>
           <Text style={styles.popupEmoji}>🎉</Text>
+          <View style={styles.popupMissionBadge}>
+            <Text style={styles.popupMissionText}>✅ 회원가입 미션달성!</Text>
+          </View>
           <Text style={styles.popupTitle}>환영해요, {nickname}님!</Text>
-          <Text style={styles.popupDesc}>가입을 축하드려요!</Text>
           <View style={styles.popupPointBadge}>
             <Text style={styles.popupPointText}>🪙 1,000 pt 지급!</Text>
           </View>
@@ -316,15 +332,32 @@ export default function SignupScreen() {
             )}
 
             <Text style={[styles.fieldLabel, { marginTop: 16 }]}>닉네임</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="2~12자 닉네임"
-              placeholderTextColor={Colors.sub}
-              value={nickname}
-              onChangeText={setNickname}
-              maxLength={12}
-            />
-            <Text style={styles.helper}>한글, 영문, 숫자 2~12자</Text>
+            <View style={styles.nickRow}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="2~12자 닉네임"
+                placeholderTextColor={Colors.sub}
+                value={nickname}
+                onChangeText={(v) => { setNickname(v); setNicknameChecked(false); setNicknameAvailable(false); }}
+                maxLength={12}
+              />
+              <TouchableOpacity
+                style={[styles.nickCheckBtn, (nicknameChecking || nickname.length < 2) && { opacity: 0.4 }]}
+                onPress={checkNicknameDuplicate}
+                disabled={nicknameChecking || nickname.length < 2}
+              >
+                {nicknameChecking
+                  ? <ActivityIndicator size="small" color={Colors.primary} />
+                  : <Text style={styles.nickCheckBtnText}>중복확인</Text>}
+              </TouchableOpacity>
+            </View>
+            {nicknameChecked ? (
+              <Text style={[styles.helper, { color: nicknameAvailable ? Colors.success : Colors.danger, fontWeight: '600' }]}>
+                {nicknameAvailable ? '✓ 사용 가능한 닉네임이에요' : '✗ 이미 사용중인 닉네임이에요'}
+              </Text>
+            ) : (
+              <Text style={styles.helper}>한글, 영문, 숫자 2~12자 · 중복확인 필요</Text>
+            )}
           </View>
         </ScrollView>
       )}
@@ -545,6 +578,13 @@ const styles = StyleSheet.create({
   },
   helper: { fontSize: 12, color: Colors.sub, marginTop: 6 },
   errorText: { fontSize: 12, color: Colors.danger, marginTop: 6 },
+  nickRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  nickCheckBtn: {
+    paddingVertical: 14, paddingHorizontal: 14, borderRadius: 12,
+    borderWidth: 1.5, borderColor: Colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  nickCheckBtnText: { fontSize: 13, fontWeight: '700', color: Colors.primary },
 
   // Survey
   surveySection: { gap: 4, paddingVertical: 4 },
@@ -619,6 +659,10 @@ const styles = StyleSheet.create({
   popupEmoji: { fontSize: 64, marginBottom: 16 },
   popupTitle: { fontSize: 26, fontWeight: '900', color: Colors.text, marginBottom: 6, textAlign: 'center' },
   popupDesc: { fontSize: 16, color: Colors.sub, marginBottom: 20, textAlign: 'center' },
+  popupMissionBadge: {
+    backgroundColor: '#E8F8EF', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 20, marginBottom: 12,
+  },
+  popupMissionText: { fontSize: 15, fontWeight: '800', color: '#27AE60' },
   popupPointBadge: {
     backgroundColor: '#FFF5E0', borderRadius: 50, paddingVertical: 14, paddingHorizontal: 32, marginBottom: 12,
   },

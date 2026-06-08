@@ -144,7 +144,7 @@ function WebKakaoMap({ keyword }: { keyword: string }) {
   }, []);
 
   useEffect(() => {
-    if (!webCoords || !mapDivRef.current || scriptLoaded.current) return;
+    if (!webCoords || webLoading || scriptLoaded.current) return;
     scriptLoaded.current = true;
 
     const { lat, lng } = webCoords;
@@ -157,14 +157,12 @@ function WebKakaoMap({ keyword }: { keyword: string }) {
       const myLatLng = new kakao.maps.LatLng(lat, lng);
       const map = new kakao.maps.Map(container, { center: myLatLng, level: 4 });
 
-      // 내 위치 파란 원 마커
       const myOverlay = document.createElement('div');
       myOverlay.style.cssText = 'width:14px;height:14px;border-radius:50%;background:#4A90E2;border:3px solid white;box-shadow:0 0 0 3px rgba(74,144,226,0.35)';
       new kakao.maps.CustomOverlay({ map, position: myLatLng, content: myOverlay, zIndex: 5 });
 
       const ps = new kakao.maps.services.Places();
       const infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
-
       const badge = document.getElementById('web-map-badge');
 
       ps.keywordSearch(`${decodeURIComponent(query)} 피부과`, (data: any[], status: string) => {
@@ -192,14 +190,9 @@ function WebKakaoMap({ keyword }: { keyword: string }) {
         } else {
           if (badge) badge.textContent = '⚠️ 주변 피부과를 찾지 못했어요';
         }
-      }, {
-        location: myLatLng,
-        radius: 5000,
-        sort: kakao.maps.services.SortBy.DISTANCE,
-      });
+      }, { location: myLatLng, radius: 5000, sort: kakao.maps.services.SortBy.DISTANCE });
     };
 
-    // SDK가 이미 로드됐으면 바로 초기화
     if ((window as any).kakao?.maps) {
       (window as any).kakao.maps.load(initMap);
       return;
@@ -209,7 +202,7 @@ function WebKakaoMap({ keyword }: { keyword: string }) {
     script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&libraries=services&autoload=false`;
     script.onload = () => (window as any).kakao.maps.load(initMap);
     document.head.appendChild(script);
-  }, [webCoords]);
+  }, [webCoords, webLoading]);
 
   if (webLoading) {
     return (
