@@ -2,6 +2,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Share, Platform, Image,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
@@ -468,8 +469,13 @@ const DEMO_PROFILES: Record<string, { face_shape: string; skin_type: string; age
 };
 
 export default function SkinReportScreen() {
-  const { user, profile } = useAuth();
+  const { user, profile, fetchProfile } = useAuth();
   const { demo } = useLocalSearchParams<{ demo?: string }>();
+
+  // 최신 face_photo_url 확보: 회원가입 직후 race condition 보정
+  useEffect(() => {
+    if (!demo && user?.id) fetchProfile(user.id);
+  }, [user?.id]);
 
   const demoProfile = demo ? DEMO_PROFILES[demo] ?? DEMO_PROFILES['둥근형-지성'] : null;
 

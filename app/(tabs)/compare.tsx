@@ -132,6 +132,42 @@ export default function CompareScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ paddingHorizontal: hPad, paddingVertical: 20, gap: 16 }}>
+          {/* AI 추천 결과 배너 — 상단 고정 */}
+          {savedAiResult && !showAI && (
+            <TouchableOpacity style={styles.aiResultBanner} onPress={() => setShowAI(true)}>
+              <View style={styles.aiResultBannerLeft}>
+                <Text style={styles.aiResultBannerBadge}>✨ AI 추천</Text>
+                <Text style={styles.aiResultBannerName} numberOfLines={1}>{savedAiResult.item.name}</Text>
+                <Text style={styles.aiResultBannerScore}>호환성 {savedAiResult.score}점 · 탭하면 상세 보기</Text>
+              </View>
+              <View style={[styles.aiResultBannerImg, { backgroundColor: savedAiResult.isTreatment ? '#FFE8F0' : '#EEE8FF' }]}>
+                <Ionicons name={savedAiResult.isTreatment ? 'medical-outline' : 'hardware-chip-outline'} size={26} color={savedAiResult.isTreatment ? Colors.primary : '#9B6FE8'} />
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* AI 추천 버튼 — 아이템 위 */}
+          {visibleDetails.length >= 2 && (
+            <TouchableOpacity style={styles.aiBtn} onPress={handleAIRecommend}>
+              <View style={styles.aiBtnGradient}>
+                <Ionicons name="color-wand-outline" size={24} color={Colors.white} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.aiBtnTitle}>
+                  {savedAiResult ? 'AI 추천 다시 받기' : 'AI 맞춤 추천받기'}
+                </Text>
+                <Text style={styles.aiBtnSub}>
+                  {profile?.face_shape
+                    ? `${profile.face_shape} 얼굴형 · ${profile.skin_type ?? ''} 피부 기반`
+                    : profile?.skin_type
+                    ? `${profile.skin_type} 피부 · 고민 ${profile.concerns?.length ?? 0}개 기반`
+                    : '피부 프로필 기반 AI 분석'}
+                </Text>
+              </View>
+              <Text style={styles.aiBtnArrow}>›</Text>
+            </TouchableOpacity>
+          )}
+
           {/* 아이템 카드들 */}
           <View style={styles.compareRow}>
             {items.map((ci) => {
@@ -170,42 +206,6 @@ export default function CompareScreen() {
               </TouchableOpacity>
             ))}
           </View>
-
-          {/* AI 추천 결과 배너 (모달 닫은 후 유지) */}
-          {savedAiResult && !showAI && (
-            <TouchableOpacity style={styles.aiResultBanner} onPress={() => setShowAI(true)}>
-              <View style={styles.aiResultBannerLeft}>
-                <Text style={styles.aiResultBannerBadge}>✨ AI 추천</Text>
-                <Text style={styles.aiResultBannerName} numberOfLines={1}>{savedAiResult.item.name}</Text>
-                <Text style={styles.aiResultBannerScore}>호환성 {savedAiResult.score}점 · 탭하면 상세 보기</Text>
-              </View>
-              <View style={[styles.aiResultBannerImg, { backgroundColor: savedAiResult.isTreatment ? '#FFE8F0' : '#EEE8FF' }]}>
-                <Ionicons name={savedAiResult.isTreatment ? 'medical-outline' : 'hardware-chip-outline'} size={26} color={savedAiResult.isTreatment ? Colors.primary : '#9B6FE8'} />
-              </View>
-            </TouchableOpacity>
-          )}
-
-          {/* AI 추천 버튼 */}
-          {visibleDetails.length >= 2 && (
-            <TouchableOpacity style={styles.aiBtn} onPress={handleAIRecommend}>
-              <View style={styles.aiBtnGradient}>
-                <Ionicons name="color-wand-outline" size={24} color={Colors.white} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.aiBtnTitle}>
-                  {savedAiResult ? 'AI 추천 다시 받기' : 'AI 맞춤 추천받기'}
-                </Text>
-                <Text style={styles.aiBtnSub}>
-                  {profile?.face_shape
-                    ? `${profile.face_shape} 얼굴형 · ${profile.skin_type ?? ''} 피부 기반`
-                    : profile?.skin_type
-                    ? `${profile.skin_type} 피부 · 고민 ${profile.concerns?.length ?? 0}개 기반`
-                    : '피부 프로필 기반 AI 분석'}
-                </Text>
-              </View>
-              <Text style={styles.aiBtnArrow}>›</Text>
-            </TouchableOpacity>
-          )}
 
           {/* 비용 환산 비교 */}
           {tableEntries.length >= 2 && tableEntries.some(({ ci }) => ci.item_type === 'treatment') && tableEntries.some(({ ci }) => ci.item_type === 'device') && (

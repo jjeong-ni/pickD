@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../../constants/colors';
 
 const TOTAL_STEPS = 3;
@@ -20,8 +21,10 @@ const FACE_SHAPES = ['계란형', '둥근형', '사각형', '하트형', '긴형
 const SKIN_CONCERNS = ['주름', '색소침착', '모공', '리프팅', '수분', '홍조', '트러블', '탄력'];
 
 export default function SignupScreen() {
+  const { setProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [showPointsPopup, setShowPointsPopup] = useState(false);
 
   // Page 1
   const [email, setEmail] = useState('');
@@ -54,14 +57,15 @@ export default function SignupScreen() {
   const requestCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status === 'granted') {
-      return; // 권한 승인 → 사용자가 직접 촬영 버튼 누름
+      await launchCamera();
+      return;
     }
     Alert.alert(
       '얼굴형 정밀분석',
-      '얼굴형 정밀분석을 하지 않으시겠습니까?',
+      '카메라 권한이 필요해요. 얼굴형 정밀분석을 건너뛰시겠습니까?',
       [
         {
-          text: '아니오',
+          text: '다시 시도',
           style: 'cancel',
           onPress: () => {
             cameraRequested.current = false;
@@ -69,7 +73,7 @@ export default function SignupScreen() {
           },
         },
         {
-          text: '네',
+          text: '나중에 하기',
           onPress: () => setSkipFace(true),
         },
       ],
@@ -83,6 +87,7 @@ export default function SignupScreen() {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
+        cameraType: ImagePicker.CameraType.front,
       });
       if (!result.canceled) {
         setFacePhotoUri(result.assets[0].uri);
@@ -158,7 +163,7 @@ export default function SignupScreen() {
         }
       }
 
-      await supabase.from('profiles').upsert({
+      const newProfile = {
         id: loginData.session.user.id,
         user_id: loginData.session.user.id,
         nickname,
@@ -169,12 +174,52 @@ export default function SignupScreen() {
         concerns,
         points: 1000,
         face_photo_url: facePhotoUrl,
-      }, { onConflict: 'user_id' });
+        skin_age: null,
+        moisture_score: null,
+        oil_score: null,
+        baumann_code: null,
+        skin_metrics: null,
+        skin_dehydration: null,
+        created_at: new Date().toISOString(),
+      };
+      await supabase.from('profiles').upsert(newProfile, { onConflict: 'user_id' });
+      setProfile(newProfile as any);
+      setShowPointsPopup(true);
+      return;
     }
 
     setLoading(false);
     router.replace('/(tabs)');
   };
+
+  if (showPointsPopup) {
+    return (
+      <LinearGradient
+        colors={['#FF6B9D', '#D473E8', '#9B6FE8']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
+      >
+        <View style={styles.popupCard}>
+          <Text style={styles.popupEmoji}>🎉</Text>
+          <Text style={styles.popupTitle}>환영해요, {nickname}님!</Text>
+          <Text style={styles.popupDesc}>가입을 축하드려요!</Text>
+          <View style={styles.popupPointBadge}>
+            <Text style={styles.popupPointText}>🪙 1,000 pt 지급!</Text>
+          </View>
+          <Text style={styles.popupSub}>포인트로 AI 피부 분석 보고서를 받아보세요</Text>
+          <TouchableOpacity
+            style={styles.popupBtn}
+            onPress={() => {
+              setLoading(false);
+              router.replace('/(tabs)');
+            }}
+          >
+            <Text style={styles.popupBtnText}>픽디 시작하기 →</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -528,4 +573,25 @@ const styles = StyleSheet.create({
   btn: { borderRadius: 12, padding: 16, alignItems: 'center' },
   btnDisabled: { backgroundColor: Colors.border },
   btnText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
+
+  // Points popup
+  popupCard: {
+    backgroundColor: '#fff', borderRadius: 28, padding: 36,
+    alignItems: 'center', width: '100%', maxWidth: 360,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18, shadowRadius: 24, elevation: 10,
+  },
+  popupEmoji: { fontSize: 64, marginBottom: 16 },
+  popupTitle: { fontSize: 26, fontWeight: '900', color: Colors.text, marginBottom: 6, textAlign: 'center' },
+  popupDesc: { fontSize: 16, color: Colors.sub, marginBottom: 20, textAlign: 'center' },
+  popupPointBadge: {
+    backgroundColor: '#FFF5E0', borderRadius: 50, paddingVertical: 14, paddingHorizontal: 32, marginBottom: 12,
+  },
+  popupPointText: { fontSize: 24, fontWeight: '900', color: '#E8A000' },
+  popupSub: { fontSize: 13, color: Colors.sub, marginBottom: 28, textAlign: 'center' },
+  popupBtn: {
+    backgroundColor: Colors.primary, borderRadius: 14,
+    paddingVertical: 16, paddingHorizontal: 40, width: '100%', alignItems: 'center',
+  },
+  popupBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
 });
