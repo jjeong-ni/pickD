@@ -8,6 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
+import { APP_URL } from '../../constants/app';
 import { useAuth } from '../../hooks/useAuth';
 import { useCompare } from '../../hooks/useCompare';
 import { Treatment, Device, Review } from '../../types';
@@ -186,7 +187,7 @@ export default function TreatmentDetailScreen() {
   };
 
   const handleShare = async () => {
-    const url = `https://pickdi.netlify.app/treatment/${treatment?.id}`;
+    const url = `${APP_URL}/treatment/${treatment?.id}`;
     const msg = `${treatment?.name} | 픽디에서 확인해보세요 🌸\n${url}`;
     try {
       if (Platform.OS === 'web') {
