@@ -125,6 +125,57 @@ export default function PostDetailScreen() {
     setSubmitting(false);
   };
 
+  const handleCloseQuiz = async () => {
+    if (!user || !post) return;
+    Alert.alert(
+      '퀴즈 마감',
+      '퀴즈를 마감하면 되돌릴 수 없어요. 지금 투표한 결과로 포인트가 지급됩니다.',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '마감하기', style: 'destructive',
+          onPress: async () => {
+            setVotingLoading(true);
+            try {
+              // Mark quiz as closed in body JSON
+              let bodyData: any = {};
+              try { bodyData = JSON.parse(post.body); } catch {}
+              bodyData.closed = true;
+              await supabase.from('posts').update({ body: JSON.stringify(bodyData) }).eq('id', post.id);
+              setPost({ ...post, body: JSON.stringify(bodyData) });
+
+              // Distribute 50pt to winners based on current votes
+              const countA = quizVotes.filter((v) => v.option_index === 0).length;
+              const countB = quizVotes.filter((v) => v.option_index === 1).length;
+              if (quizVotes.length > 0) {
+                let winnerIndices: number[] = [];
+                if (countA > countB) winnerIndices = [0];
+                else if (countB > countA) winnerIndices = [1];
+                else winnerIndices = [0, 1];
+
+                for (const winIdx of winnerIndices) {
+                  const winnerIds = quizVotes.filter((v) => v.option_index === winIdx).map((v) => v.user_id);
+                  for (const winnerId of winnerIds) {
+                    const { data: wp } = await supabase.from('profiles').select('points').eq('user_id', winnerId).maybeSingle();
+                    const pts = wp?.points ?? 0;
+                    await supabase.from('profiles').update({ points: pts + 50 }).eq('user_id', winnerId);
+                    await supabase.from('point_logs').insert({ user_id: winnerId, amount: 50, reason: '퀴즈 당첨' });
+                    if (winnerId === user.id && profile) setProfile({ ...profile, points: pts + 50 });
+                  }
+                }
+                Alert.alert('✅ 퀴즈 마감 완료', '다수 투표자에게 50pt가 지급됐어요!');
+              } else {
+                Alert.alert('✅ 퀴즈 마감 완료', '투표자가 없어 포인트 지급이 없어요.');
+              }
+            } finally {
+              setVotingLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleVote = async (optionIndex: number) => {
     if (!user) {
       Alert.alert('로그인 필요', '투표하려면 로그인해주세요');
@@ -135,7 +186,8 @@ export default function PostDetailScreen() {
       return;
     }
     if (userVote !== null) return;
-    if (quizVotes.length >= 4) return;
+    const bodyData = (() => { try { return JSON.parse(post?.body ?? '{}'); } catch { return {}; } })();
+    if (bodyData.closed) return;
 
     setVotingLoading(true);
     try {
@@ -158,47 +210,6 @@ export default function PostDetailScreen() {
         .eq('post_id', id);
       const newVotes: QuizVote[] = votes ?? [];
       setQuizVotes(newVotes);
-
-      // Check if quiz is now closed (4 votes reached)
-      if (newVotes.length >= 4) {
-        const countA = newVotes.filter((v) => v.option_index === 0).length;
-        const countB = newVotes.filter((v) => v.option_index === 1).length;
-
-        let winnerIndices: number[] = [];
-        if (countA > countB) winnerIndices = [0];
-        else if (countB > countA) winnerIndices = [1];
-        else winnerIndices = [0, 1]; // tie: both win
-
-        // Distribute 50pt to winners
-        for (const winIdx of winnerIndices) {
-          const winnerIds = newVotes
-            .filter((v) => v.option_index === winIdx)
-            .map((v) => v.user_id);
-
-          for (const winnerId of winnerIds) {
-            const { data: winnerProfile } = await supabase
-              .from('profiles')
-              .select('points')
-              .eq('user_id', winnerId)
-              .maybeSingle();
-            const currentPts = winnerProfile?.points ?? 0;
-            await supabase
-              .from('profiles')
-              .update({ points: currentPts + 50 })
-              .eq('user_id', winnerId);
-            await supabase
-              .from('point_logs')
-              .insert({ user_id: winnerId, amount: 50, reason: '퀴즈 당첨' });
-
-            // Update local Zustand state if current user is a winner
-            if (winnerId === user.id && profile) {
-              setProfile({ ...profile, points: currentPts + 50 });
-            }
-          }
-        }
-
-        Alert.alert('🎉 퀴즈 마감!', '다수 투표자에게 50pt가 지급됩니다!');
-      }
     } finally {
       setVotingLoading(false);
     }
@@ -213,7 +224,8 @@ export default function PostDetailScreen() {
   if (isQuiz && post.body) {
     try { quizOptions = JSON.parse(post.body).options ?? []; } catch {}
   }
-  const quizClosed = quizVotes.length >= 4;
+  const quizBodyData = (() => { try { return JSON.parse(post.body); } catch { return {}; } })();
+  const quizClosed = quizBodyData.closed === true;
   const voteCountA = quizVotes.filter((v) => v.option_index === 0).length;
   const voteCountB = quizVotes.filter((v) => v.option_index === 1).length;
   const totalVotes = quizVotes.length;
@@ -259,14 +271,21 @@ export default function PostDetailScreen() {
               {/* Status badge */}
               <View style={[styles.quizStatusBadge, quizClosed && styles.quizStatusBadgeClosed]}>
                 <Text style={[styles.quizStatusText, quizClosed && styles.quizStatusTextClosed]}>
-                  {quizClosed ? '✅ 퀴즈 마감' : `🗳️ 투표 진행중 (${totalVotes}/4명)`}
+                  {quizClosed ? '✅ 퀴즈 마감' : `🗳️ 투표 진행중 (${totalVotes}명 참여)`}
                 </Text>
               </View>
 
-              {/* Creator notice */}
+              {/* Creator controls */}
               {isCreator && !quizClosed && (
                 <View style={styles.creatorNotice}>
                   <Text style={styles.creatorNoticeText}>작성자는 투표에 참여할 수 없어요</Text>
+                  <TouchableOpacity
+                    style={styles.closeQuizBtn}
+                    onPress={handleCloseQuiz}
+                    disabled={votingLoading}
+                  >
+                    <Text style={styles.closeQuizBtnText}>🔒 퀴즈 마감하기</Text>
+                  </TouchableOpacity>
                 </View>
               )}
 
@@ -327,7 +346,7 @@ export default function PostDetailScreen() {
                 <Text style={styles.voteHint}>선택지를 눌러 투표해보세요</Text>
               )}
               {showResults && !quizClosed && (
-                <Text style={styles.voteHint}>투표가 완료됐어요 • {4 - totalVotes}명 더 투표하면 마감돼요</Text>
+                <Text style={styles.voteHint}>투표 완료! 작성자가 마감하면 결과가 확정돼요</Text>
               )}
             </View>
           ) : (
@@ -428,10 +447,15 @@ const styles = StyleSheet.create({
   quizStatusText: { fontSize: 13, fontWeight: '700', color: '#7C5CEB' },
   quizStatusTextClosed: { color: '#27AE60' },
   creatorNotice: {
-    backgroundColor: '#F8F4FF', borderRadius: 8, padding: 10,
-    borderLeftWidth: 3, borderLeftColor: '#7C5CEB',
+    backgroundColor: '#F8F4FF', borderRadius: 12, padding: 12,
+    borderLeftWidth: 3, borderLeftColor: '#7C5CEB', gap: 10,
   },
   creatorNoticeText: { fontSize: 12, color: '#7C5CEB', fontWeight: '500' },
+  closeQuizBtn: {
+    backgroundColor: '#7C5CEB', borderRadius: 10,
+    paddingVertical: 10, alignItems: 'center',
+  },
+  closeQuizBtnText: { fontSize: 14, fontWeight: '800', color: '#fff' },
   quizOptions: { gap: 12 },
   voteButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
