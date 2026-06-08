@@ -8,7 +8,7 @@ import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Colors } from '../constants/colors';
 
-const KAKAO_JS_KEY = '5b939de88307ee9510f8bdea863492b2';
+const KAKAO_JS_KEY = '78a1bd65ed949a70fdd8b12e8538909f';
 
 interface Coords {
   lat: number;
