@@ -6,17 +6,26 @@ import { useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useCompare } from '../../hooks/useCompare';
 import { Treatment, Device } from '../../types';
 
-const TREATMENT_EMOJI: Record<string, string> = {
-  '리프팅': '✨', '보톡스': '💉', '필러': '💫', '레이저': '⚡', '스킨케어': '🌿',
+const TREATMENT_ICON: Record<string, string> = {
+  '리프팅': 'trending-up-outline',
+  '보톡스': 'medical-outline',
+  '필러': 'water-outline',
+  '레이저': 'flash-outline',
+  '스킨케어': 'leaf-outline',
 };
-const DEVICE_EMOJI: Record<string, string> = {
-  '리프팅': '✨', '제모': '🪄', 'RF': '⚡', 'LED': '💡', '초음파': '🌊',
+const DEVICE_ICON: Record<string, string> = {
+  '리프팅': 'trending-up-outline',
+  '제모': 'cut-outline',
+  'RF': 'radio-outline',
+  'LED': 'bulb-outline',
+  '초음파': 'pulse-outline',
 };
 
 type Tab = 'treatment' | 'device';
@@ -281,7 +290,13 @@ function ResultRow({
       <View style={[styles.rowImage, type === 'device' && { backgroundColor: '#EEE8FF' }]}>
         {(item as any).image_url
           ? <Image source={{ uri: (item as any).image_url }} style={{ width: '100%', height: '100%', borderRadius: 12 }} resizeMode="cover" />
-          : <Text style={{ fontSize: 28 }}>{type === 'treatment' ? (TREATMENT_EMOJI[(item as any).category] ?? '💆') : (DEVICE_EMOJI[(item as any).category] ?? '⚡')}</Text>}
+          : <Ionicons
+              name={(type === 'treatment'
+                ? (TREATMENT_ICON[(item as any).category] ?? 'medical-outline')
+                : (DEVICE_ICON[(item as any).category] ?? 'hardware-chip-outline')) as any}
+              size={28}
+              color={type === 'treatment' ? Colors.primary : '#9B6FE8'}
+            />}
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.rowTitle}>{item.name}</Text>

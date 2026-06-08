@@ -5,6 +5,7 @@ import {
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
@@ -12,11 +13,19 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
 import { Treatment, Device } from '../../types';
 
-const TREATMENT_EMOJI: Record<string, string> = {
-  '리프팅': '✨', '보톡스': '💉', '필러': '💫', '레이저': '⚡', '스킨케어': '🌿',
+const TREATMENT_ICON: Record<string, string> = {
+  '리프팅': 'trending-up-outline',
+  '보톡스': 'medical-outline',
+  '필러': 'water-outline',
+  '레이저': 'flash-outline',
+  '스킨케어': 'leaf-outline',
 };
-const DEVICE_EMOJI: Record<string, string> = {
-  '리프팅': '✨', '제모': '🪄', 'RF': '⚡', 'LED': '💡', '초음파': '🌊',
+const DEVICE_ICON: Record<string, string> = {
+  '리프팅': 'trending-up-outline',
+  '제모': 'cut-outline',
+  'RF': 'radio-outline',
+  'LED': 'bulb-outline',
+  '초음파': 'pulse-outline',
 };
 
 export default function HomeScreen() {
@@ -190,7 +199,7 @@ function TreatmentCard({ item, width, onPress }: { item: Treatment; width?: numb
       <View style={styles.cardImage}>
         {item.image_url
           ? <Image source={{ uri: item.image_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-          : <Text style={styles.cardEmoji}>{TREATMENT_EMOJI[item.category] ?? '💆'}</Text>}
+          : <Ionicons name={(TREATMENT_ICON[item.category] ?? 'medical-outline') as any} size={38} color={Colors.primary} />}
         {/* 카테고리 뱃지 */}
         <View style={styles.cardBadge}>
           <Text style={styles.cardBadgeText}>{item.category}</Text>
@@ -213,7 +222,7 @@ function DeviceCard({ item, width, onPress }: { item: Device; width?: number; on
       <View style={[styles.cardImage, { backgroundColor: '#EEE8FF' }]}>
         {item.image_url
           ? <Image source={{ uri: item.image_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-          : <Text style={styles.cardEmoji}>{DEVICE_EMOJI[item.category] ?? '⚡'}</Text>}
+          : <Ionicons name={(DEVICE_ICON[item.category] ?? 'hardware-chip-outline') as any} size={38} color="#9B6FE8" />}
         <View style={[styles.cardBadge, { backgroundColor: 'rgba(155,111,232,0.85)' }]}>
           <Text style={styles.cardBadgeText}>{item.brand}</Text>
         </View>
