@@ -1,10 +1,12 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform, Alert,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform, Alert, Image,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../../constants/colors';
@@ -14,10 +16,45 @@ import { GlassCard } from '../../components/GlassCard';
 const REPORT_COST = 990;
 
 export default function MypageScreen() {
-  const { user, profile, setProfile, fetchProfile } = useAuth();
+  const { user, profile, setProfile, fetchProfile, signOut } = useAuth();
   const { hPad } = useResponsive();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const handlePickAvatar = async () => {
+    if (!user) return;
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('권한 필요', '갤러리 접근 권한이 필요해요.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'] as any,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    setAvatarUploading(true);
+    try {
+      const uri = result.assets[0].uri;
+      const fileName = `avatar/${user.id}.jpg`;
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const { error } = await supabase.storage
+        .from('face-photos')
+        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from('face-photos').getPublicUrl(fileName);
+      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('user_id', user.id);
+      setProfile({ ...profile!, avatar_url: publicUrl });
+    } catch {
+      Alert.alert('오류', '프로필 사진 업로드에 실패했어요.');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const handleGetReport = async () => {
     if (!user || !profile) {
@@ -54,9 +91,24 @@ export default function MypageScreen() {
         style={styles.profileSection}
       >
         <View style={styles.profileOrb} />
-        <GlassCard style={styles.avatarGlass} intensity="low">
-          <Ionicons name="person" size={38} color="rgba(255,255,255,0.92)" />
-        </GlassCard>
+        <TouchableOpacity onPress={handlePickAvatar} activeOpacity={0.85} style={styles.avatarWrap}>
+          <GlassCard style={styles.avatarGlass} intensity="low">
+            {profile?.avatar_url ? (
+              <Image
+                source={{ uri: profile.avatar_url }}
+                style={styles.avatarImage}
+                resizeMode="cover"
+              />
+            ) : avatarUploading ? (
+              <ActivityIndicator color="rgba(255,255,255,0.9)" size="large" />
+            ) : (
+              <Ionicons name="person" size={38} color="rgba(255,255,255,0.92)" />
+            )}
+          </GlassCard>
+          <View style={styles.avatarEditBadge}>
+            <Ionicons name="camera" size={12} color="#fff" />
+          </View>
+        </TouchableOpacity>
         <Text style={styles.nickname}>{displayName}</Text>
         <View style={styles.chips}>
           {profile?.skin_type && <Chip label={profile.skin_type} />}
@@ -327,9 +379,19 @@ const styles = StyleSheet.create({
     position: 'absolute', width: 200, height: 200, borderRadius: 100,
     backgroundColor: 'rgba(255,255,255,0.08)', top: -60, right: -40,
   },
+  avatarWrap: { position: 'relative', marginBottom: 14 },
   avatarGlass: {
     width: 80, height: 80, borderRadius: 40,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 14,
+    alignItems: 'center', justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: { width: 80, height: 80, borderRadius: 40 },
+  avatarEditBadge: {
+    position: 'absolute', bottom: 0, right: 0,
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: Colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: '#fff',
   },
   nickname: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 12 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 14 },

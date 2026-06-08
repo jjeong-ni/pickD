@@ -1,8 +1,8 @@
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  FlatList, ActivityIndicator, Image, Platform,
+  FlatList, ActivityIndicator, Image, Platform, Alert,
 } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
 import { Treatment, Device } from '../../types';
+
+const KAKAO_JS_KEY = '5b939de88307ee9510f8bdea863492b2';
+const REPORT_COST = 990;
 
 type PairBundle = {
   concern: string;
@@ -43,14 +46,78 @@ const DEVICE_ICON: Record<string, string> = {
   '초음파': 'pulse-outline',
 };
 
+// Mini Kakao map for home screen (web only)
+function HomeClinicMap() {
+  const mapRef = useRef<any>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!ready || !mapRef.current) return;
+    const script = document.createElement('script');
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&libraries=services&autoload=false`;
+    script.async = true;
+    script.onload = () => {
+      (window as any).kakao.maps.load(() => {
+        const kakao = (window as any).kakao;
+        const init = (lat: number, lng: number) => {
+          const center = new kakao.maps.LatLng(lat, lng);
+          const map = new kakao.maps.Map(mapRef.current, { center, level: 5 });
+          // Blue dot for current location
+          new kakao.maps.CustomOverlay({
+            map,
+            position: center,
+            content: '<div style="width:14px;height:14px;background:#4A90E2;border:2.5px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+          });
+          const ps = new kakao.maps.services.Places();
+          ps.keywordSearch('피부과', (data: any[], status: string) => {
+            if (status !== kakao.maps.services.Status.OK) return;
+            data.slice(0, 8).forEach((place) => {
+              const marker = new kakao.maps.Marker({
+                map,
+                position: new kakao.maps.LatLng(place.y, place.x),
+                title: place.place_name,
+              });
+              const iw = new kakao.maps.InfoWindow({ content: `<div style="padding:4px 8px;font-size:12px;font-weight:700">${place.place_name}</div>` });
+              kakao.maps.event.addListener(marker, 'click', () => iw.open(map, marker));
+            });
+          }, { location: center, radius: 2000 });
+        };
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => init(pos.coords.latitude, pos.coords.longitude),
+            () => init(37.5665, 126.9780),
+          );
+        } else {
+          init(37.5665, 126.9780);
+        }
+      });
+    };
+    document.head.appendChild(script);
+    return () => { try { document.head.removeChild(script); } catch {} };
+  }, [ready]);
+
+  if (Platform.OS !== 'web') return null;
+
+  return (
+    // @ts-ignore
+    <div ref={mapRef} style={{ width: '100%', height: 220, borderRadius: 18, overflow: 'hidden' }} />
+  );
+}
+
 export default function HomeScreen() {
-  const { user, profile } = useAuth();
+  const { user, profile, setProfile } = useAuth();
   const { cardWidth, hPad } = useResponsive();
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [recommended, setRecommended] = useState<Treatment[]>([]);
   const [pairs, setPairs] = useState<PairBundle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reportLoading, setReportLoading] = useState(false);
 
   useEffect(() => { fetchData(); }, []);
   useEffect(() => { if (profile?.skin_type) fetchRecommended(); }, [profile]);
@@ -86,6 +153,29 @@ export default function HomeScreen() {
     if (data && data.length > 0) setRecommended(data);
   };
 
+  const handleGetReport = async () => {
+    if (!user || !profile) {
+      router.push('/(auth)/login' as any);
+      return;
+    }
+    const currentPoints = profile.points ?? 0;
+    if (currentPoints < REPORT_COST) {
+      Alert.alert(
+        '포인트 부족',
+        `보고서를 받으려면 ${REPORT_COST}pt가 필요해요.\n현재 보유: ${currentPoints}pt`,
+        [{ text: '확인' }]
+      );
+      return;
+    }
+    setReportLoading(true);
+    const newPoints = currentPoints - REPORT_COST;
+    await supabase.from('profiles').update({ points: newPoints }).eq('user_id', user.id);
+    await supabase.from('point_logs').insert({ user_id: user.id, amount: -REPORT_COST, reason: '맞춤 피부 분석 보고서' });
+    setProfile({ ...profile, points: newPoints });
+    setReportLoading(false);
+    router.push('/skin-report' as any);
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -103,16 +193,26 @@ export default function HomeScreen() {
         end={{ x: 1, y: 1 }}
         style={styles.header}
       >
-        {/* 장식 오브 */}
         <View style={styles.headerOrb1} />
         <View style={styles.headerOrb2} />
 
+        {/* 상단 인사 + 포인트 */}
         <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.greeting}>안녕하세요 👋</Text>
-            <Text style={styles.nickname}>
-              {profile?.nickname || user?.email?.split('@')[0] || (user ? '사용자' : '방문자')} 님
-            </Text>
+          <View style={styles.headerLeft}>
+            {/* 프로필 사진 */}
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} resizeMode="cover" />
+            ) : (
+              <View style={styles.headerAvatarPlaceholder}>
+                <Ionicons name="person" size={18} color="rgba(255,255,255,0.85)" />
+              </View>
+            )}
+            <View>
+              <Text style={styles.greeting}>안녕하세요 👋</Text>
+              <Text style={styles.nickname}>
+                {profile?.nickname || user?.email?.split('@')[0] || (user ? '사용자' : '방문자')} 님
+              </Text>
+            </View>
           </View>
           <View style={styles.headerRight}>
             {user && (
@@ -131,11 +231,11 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 배너 영역 */}
+        {/* 배너 1: 피부 타입 추천 */}
         {profile?.skin_type ? (
           <TouchableOpacity onPress={() => router.push('/search' as any)} activeOpacity={0.85}>
             <GlassCard style={styles.banner} intensity="low">
-              <Text style={styles.bannerLabel}>내 피부 타입 · {profile.skin_type}</Text>
+              <Text style={styles.bannerLabel}>✨ 내 피부 타입 · {profile.skin_type}</Text>
               <Text style={styles.bannerValue}>
                 {profile.concerns?.length
                   ? `${profile.concerns.join(', ')} 맞춤 추천 →`
@@ -158,23 +258,27 @@ export default function HomeScreen() {
             </GlassCard>
           </TouchableOpacity>
         ) : null}
+
+        {/* 배너 2: 맞춤 피부 분석 보고서 */}
+        <TouchableOpacity onPress={handleGetReport} activeOpacity={0.85} disabled={reportLoading} style={{ marginTop: 10 }}>
+          <GlassCard style={styles.reportBanner} intensity="low">
+            <View style={styles.reportBannerInner}>
+              <View style={styles.reportBannerLeft}>
+                <View style={styles.reportBannerBadge}>
+                  <Text style={styles.reportBannerBadgeText}>베타 990pt</Text>
+                </View>
+                <Text style={styles.reportBannerTitle}>📋 맞춤 피부 분석 보고서</Text>
+                <Text style={styles.reportBannerDesc}>AI가 분석한 나만의 피부 솔루션</Text>
+              </View>
+              {reportLoading
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.reportBannerArrow}>›</Text>}
+            </View>
+          </GlassCard>
+        </TouchableOpacity>
       </LinearGradient>
 
-      {/* 시술 + 기기 묶음 추천 */}
-      {pairs.length > 0 && (
-        <Section title="시술 + 홈케어 기기 함께 추천" onMore={() => router.push('/search' as any)} hPad={hPad}>
-          <FlatList
-            horizontal data={pairs} keyExtractor={(i) => i.concern}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingLeft: hPad, paddingRight: hPad, gap: 12 }}
-            renderItem={({ item }) => (
-              <PairCard bundle={item} width={Math.min(cardWidth * 1.4, 260)} />
-            )}
-          />
-        </Section>
-      )}
-
-      {/* 맞춤 추천 */}
+      {/* 내 피부타입 별 추천 */}
       {recommended.length > 0 && profile?.concerns?.[0] && (
         <Section title={`${profile.concerns[0]} 맞춤 추천`} onMore={() => router.push('/search' as any)} hPad={hPad}>
           <FlatList
@@ -188,19 +292,43 @@ export default function HomeScreen() {
         </Section>
       )}
 
-      {/* 인기 시술 */}
-      <Section title="인기 시술" onMore={() => router.push('/search' as any)} hPad={hPad}>
-        {treatments.length > 0 ? (
+      {/* 시술 + 홈케어 기기 묶음 추천 */}
+      {pairs.length > 0 && (
+        <Section title="시술 + 홈케어 기기 함께 추천" onMore={() => router.push('/search' as any)} hPad={hPad}>
           <FlatList
-            horizontal data={treatments} keyExtractor={(i) => i.id}
+            horizontal data={pairs} keyExtractor={(i) => i.concern}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingLeft: hPad, paddingRight: hPad, gap: 12 }}
             renderItem={({ item }) => (
-              <TreatmentCard item={item} width={cardWidth} onPress={() => router.push(`/treatment/${item.id}` as any)} />
+              <PairCard bundle={item} width={Math.min(cardWidth * 1.4, 260)} />
             )}
           />
-        ) : <Text style={styles.emptySection}>데이터를 불러오는 중이에요</Text>}
-      </Section>
+        </Section>
+      )}
+
+      {/* 맞춤 피부 분석 보고서 섹션 */}
+      <View style={[styles.reportSection, { marginHorizontal: hPad }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>맞춤 피부 분석 보고서</Text>
+        </View>
+        <TouchableOpacity onPress={handleGetReport} activeOpacity={0.85} disabled={reportLoading}>
+          <View style={styles.reportCard}>
+            <View style={styles.reportCardLeft}>
+              <Text style={styles.reportCardEmoji}>📋</Text>
+              <View style={styles.reportCardText}>
+                <Text style={styles.reportCardTitle}>AI 피부 분석 보고서</Text>
+                <Text style={styles.reportCardDesc}>피부 타입·고민·얼굴형을 종합{'\n'}분석한 나만의 맞춤 리포트</Text>
+                <View style={styles.reportCardBadge}>
+                  <Text style={styles.reportCardBadgeText}>베타 한정 990pt</Text>
+                </View>
+              </View>
+            </View>
+            {reportLoading
+              ? <ActivityIndicator color={Colors.primary} />
+              : <Ionicons name="chevron-forward" size={22} color={Colors.primary} />}
+          </View>
+        </TouchableOpacity>
+      </View>
 
       {/* 인기 기기 */}
       <Section title="인기 기기" onMore={() => router.push('/search' as any)} hPad={hPad}>
@@ -216,7 +344,58 @@ export default function HomeScreen() {
         ) : <Text style={styles.emptySection}>데이터를 불러오는 중이에요</Text>}
       </Section>
 
-      <View style={{ height: 24 }} />
+      {/* 인기 시술 */}
+      <Section title="인기 시술" onMore={() => router.push('/search' as any)} hPad={hPad}>
+        {treatments.length > 0 ? (
+          <FlatList
+            horizontal data={treatments} keyExtractor={(i) => i.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingLeft: hPad, paddingRight: hPad, gap: 12 }}
+            renderItem={({ item }) => (
+              <TreatmentCard item={item} width={cardWidth} onPress={() => router.push(`/treatment/${item.id}` as any)} />
+            )}
+          />
+        ) : <Text style={styles.emptySection}>데이터를 불러오는 중이에요</Text>}
+      </Section>
+
+      {/* 내 주변 클리닉 */}
+      <View style={{ marginTop: 28 }}>
+        <View style={[styles.sectionHeader, { paddingHorizontal: hPad }]}>
+          <Text style={styles.sectionTitle}>내 주변 클리닉</Text>
+          <TouchableOpacity onPress={() => router.push('/clinic-map' as any)}>
+            <Text style={styles.sectionMore}>더보기</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={{ paddingHorizontal: hPad }}>
+          {Platform.OS === 'web' ? (
+            <>
+              <HomeClinicMap />
+              <TouchableOpacity
+                style={styles.clinicMoreBtn}
+                onPress={() => router.push('/clinic-map' as any)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.clinicMoreBtnText}>📍 지도 전체 화면으로 보기 →</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity
+              style={styles.clinicNativeBanner}
+              onPress={() => router.push('/clinic-map' as any)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.clinicNativeEmoji}>📍</Text>
+              <View style={styles.clinicNativeText}>
+                <Text style={styles.clinicNativeTitle}>내 주변 피부과·클리닉 찾기</Text>
+                <Text style={styles.clinicNativeDesc}>현재 위치 기반으로 주변 클리닉 보기</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      <View style={{ height: 32 }} />
     </ScrollView>
   );
 }
@@ -242,7 +421,6 @@ function TreatmentCard({ item, width, onPress }: { item: Treatment; width?: numb
         {item.image_url
           ? <Image source={{ uri: item.image_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           : <Ionicons name={(TREATMENT_ICON[item.category] ?? 'medical-outline') as any} size={38} color={Colors.primary} />}
-        {/* 카테고리 뱃지 */}
         <View style={styles.cardBadge}>
           <Text style={styles.cardBadgeText}>{item.category}</Text>
         </View>
@@ -332,10 +510,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bg },
 
-  // 헤더 (그라데이션)
+  // 헤더 (그라데이션) — 더 길게
   header: {
     paddingTop: HEADER_TOP,
-    paddingHorizontal: 20, paddingBottom: 24,
+    paddingHorizontal: 20, paddingBottom: 28,
     overflow: 'hidden',
   },
   headerOrb1: {
@@ -346,9 +524,20 @@ const styles = StyleSheet.create({
     position: 'absolute', width: 130, height: 130, borderRadius: 65,
     backgroundColor: 'rgba(155,111,232,0.15)', bottom: -20, left: -20,
   },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-  greeting: { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: '500' },
-  nickname: { fontSize: 22, fontWeight: '800', color: '#fff', marginTop: 2 },
+  headerTop: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: 20,
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerAvatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)' },
+  headerAvatarPlaceholder: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  greeting: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: '500' },
+  nickname: { fontSize: 18, fontWeight: '800', color: '#fff', marginTop: 1 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   missionBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 14 },
   missionEmoji: { fontSize: 16 },
@@ -356,19 +545,71 @@ const styles = StyleSheet.create({
   pointBadge: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 14 },
   pointText: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.9)' },
 
-  // 배너 (글래스)
+  // 배너
   banner: { padding: 16, gap: 6 },
   bannerLabel: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.75)' },
   bannerValue: { fontSize: 16, fontWeight: '700', color: '#fff' },
 
+  // 보고서 배너 (헤더 내)
+  reportBanner: { padding: 14 },
+  reportBannerInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  reportBannerLeft: { gap: 4, flex: 1 },
+  reportBannerBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8,
+    paddingVertical: 2, paddingHorizontal: 8, marginBottom: 2,
+  },
+  reportBannerBadgeText: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  reportBannerTitle: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  reportBannerDesc: { fontSize: 12, color: 'rgba(255,255,255,0.75)' },
+  reportBannerArrow: { fontSize: 22, color: 'rgba(255,255,255,0.7)', marginLeft: 8 },
+
+  // 보고서 섹션 카드
+  reportSection: { marginTop: 28 },
+  reportCard: {
+    backgroundColor: Colors.white, borderRadius: 18, padding: 18,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: 1.5, borderColor: Colors.primaryLight,
+    shadowColor: '#FF6B9D', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12, shadowRadius: 12, elevation: 3,
+  },
+  reportCardLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+  reportCardEmoji: { fontSize: 40 },
+  reportCardText: { gap: 4, flex: 1 },
+  reportCardTitle: { fontSize: 15, fontWeight: '800', color: Colors.text },
+  reportCardDesc: { fontSize: 12, color: Colors.sub, lineHeight: 18 },
+  reportCardBadge: {
+    alignSelf: 'flex-start', backgroundColor: Colors.primaryLight,
+    borderRadius: 8, paddingVertical: 3, paddingHorizontal: 8, marginTop: 2,
+  },
+  reportCardBadgeText: { fontSize: 11, fontWeight: '800', color: Colors.primary },
+
   // 섹션
   sectionHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, marginBottom: 14,
+    marginBottom: 14,
   },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: Colors.text },
   sectionMore: { fontSize: 13, color: Colors.primary, fontWeight: '700' },
   emptySection: { paddingHorizontal: 20, fontSize: 14, color: Colors.sub },
+
+  // 클리닉 섹션
+  clinicMoreBtn: {
+    marginTop: 12, paddingVertical: 12, borderRadius: 12,
+    backgroundColor: Colors.primaryLight, alignItems: 'center',
+  },
+  clinicMoreBtnText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+  clinicNativeBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: Colors.white, borderRadius: 18, padding: 18,
+    borderWidth: 1.5, borderColor: Colors.primaryLight,
+    shadowColor: Colors.cardShadow,
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 12, elevation: 3,
+  },
+  clinicNativeEmoji: { fontSize: 36 },
+  clinicNativeText: { flex: 1, gap: 3 },
+  clinicNativeTitle: { fontSize: 15, fontWeight: '800', color: Colors.text },
+  clinicNativeDesc: { fontSize: 12, color: Colors.sub },
 
   // 카드
   card: {
@@ -377,7 +618,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 }, shadowOpacity: 1, shadowRadius: 16, elevation: 4,
   },
   cardImage: { height: 120, backgroundColor: '#FFE8F0', alignItems: 'center', justifyContent: 'center' },
-  cardEmoji: { fontSize: 38 },
   cardBadge: {
     position: 'absolute', bottom: 8, left: 8,
     backgroundColor: 'rgba(255,107,157,0.85)', borderRadius: 10,
