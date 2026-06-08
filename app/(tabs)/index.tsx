@@ -14,7 +14,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
 import { Treatment, Device } from '../../types';
 
-const KAKAO_JS_KEY = '5b939de88307ee9510f8bdea863492b2';
+const KAKAO_JS_KEY = '78a1bd65ed949a70fdd8b12e8538909f';
 const REPORT_COST = 990;
 
 type PairBundle = {
