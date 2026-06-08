@@ -7,10 +7,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../../constants/colors';
+import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
 
 export default function MypageScreen() {
   const { user, profile, signOut } = useAuth();
+  const { hPad } = useResponsive();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const displayName = profile?.nickname || user?.email?.split('@')[0] || '-';
@@ -40,7 +42,7 @@ export default function MypageScreen() {
       </LinearGradient>
 
       {/* 피부 프로필 카드 */}
-      <View style={styles.skinProfileCard}>
+      <View style={[styles.skinProfileCard, { marginHorizontal: hPad }]}>
         <View style={styles.skinProfileHeader}>
           <View style={styles.skinProfileTitleRow}>
             <Ionicons name="leaf-outline" size={18} color={Colors.primary} />
@@ -129,7 +131,7 @@ export default function MypageScreen() {
 
       {/* 미션 & 포인트 */}
       {user && (
-        <TouchableOpacity style={styles.missionBanner} onPress={() => router.push('/missions' as any)} activeOpacity={0.85}>
+        <TouchableOpacity style={[styles.missionBanner, { marginHorizontal: hPad }]} onPress={() => router.push('/missions' as any)} activeOpacity={0.85}>
           <View style={styles.missionBannerLeft}>
             <Text style={styles.missionBannerTitle}>🎯 미션 & 포인트</Text>
             <Text style={styles.missionBannerDesc}>출석체크·댓글·공유로 포인트 쌓기</Text>
@@ -144,7 +146,7 @@ export default function MypageScreen() {
       {/* 얼굴형 정밀분석 유도 배너 (face_shape 미설정 시) */}
       {user && !profile?.face_shape && (
         <TouchableOpacity
-          style={styles.faceAnalysisBanner}
+          style={[styles.faceAnalysisBanner, { marginHorizontal: hPad }]}
           onPress={() => router.push('/face-analysis' as any)}
           activeOpacity={0.85}
         >
@@ -160,7 +162,7 @@ export default function MypageScreen() {
       )}
 
       {/* AI 피부 분석 */}
-      <View style={styles.aiSection}>
+      <View style={[styles.aiSection, { marginHorizontal: hPad }]}>
         <View style={styles.aiSectionHeader}>
           <Text style={styles.aiSectionTitle}>AI 피부 분석</Text>
           <TouchableOpacity onPress={() => router.push('/analysis-report' as any)}>
@@ -305,7 +307,7 @@ const styles = StyleSheet.create({
 
   /* 피부 프로필 카드 */
   skinProfileCard: {
-    backgroundColor: Colors.white, marginHorizontal: 16, marginTop: 12,
+    backgroundColor: Colors.white, marginTop: 12,
     borderRadius: 18, padding: 18, gap: 14,
     shadowColor: Colors.cardShadow,
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 12, elevation: 3,
@@ -387,7 +389,7 @@ const styles = StyleSheet.create({
   /* 미션 배너 */
   missionBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: Colors.white, marginHorizontal: 16, marginTop: 12,
+    backgroundColor: Colors.white, marginTop: 12,
     borderRadius: 14, padding: 16,
     borderWidth: 1.5, borderColor: Colors.primaryLight,
   },
@@ -401,7 +403,7 @@ const styles = StyleSheet.create({
   /* 얼굴형 정밀분석 배너 */
   faceAnalysisBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#FFF5F9', marginHorizontal: 16, marginTop: 12,
+    backgroundColor: '#FFF5F9', marginTop: 12,
     borderRadius: 14, padding: 16,
     borderWidth: 1.5, borderColor: Colors.primaryLight,
   },
@@ -417,7 +419,7 @@ const styles = StyleSheet.create({
 
   /* AI 피부 분석 */
   aiSection: {
-    backgroundColor: Colors.white, margin: 16, borderRadius: 18,
+    backgroundColor: Colors.white, marginTop: 12, marginBottom: 0, borderRadius: 18,
     padding: 18, gap: 14,
     shadowColor: '#FF6B9D', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,

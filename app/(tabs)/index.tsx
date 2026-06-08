@@ -162,13 +162,13 @@ export default function HomeScreen() {
 
       {/* 시술 + 기기 묶음 추천 */}
       {pairs.length > 0 && (
-        <Section title="시술 + 홈케어 기기 함께 추천" onMore={() => router.push('/search' as any)}>
+        <Section title="시술 + 홈케어 기기 함께 추천" onMore={() => router.push('/search' as any)} hPad={hPad}>
           <FlatList
             horizontal data={pairs} keyExtractor={(i) => i.concern}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingLeft: hPad, paddingRight: hPad, gap: 12 }}
             renderItem={({ item }) => (
-              <PairCard bundle={item} />
+              <PairCard bundle={item} width={Math.min(cardWidth * 1.4, 260)} />
             )}
           />
         </Section>
@@ -176,7 +176,7 @@ export default function HomeScreen() {
 
       {/* 맞춤 추천 */}
       {recommended.length > 0 && profile?.concerns?.[0] && (
-        <Section title={`${profile.concerns[0]} 맞춤 추천`} onMore={() => router.push('/search' as any)}>
+        <Section title={`${profile.concerns[0]} 맞춤 추천`} onMore={() => router.push('/search' as any)} hPad={hPad}>
           <FlatList
             horizontal data={recommended} keyExtractor={(i) => i.id}
             showsHorizontalScrollIndicator={false}
@@ -189,7 +189,7 @@ export default function HomeScreen() {
       )}
 
       {/* 인기 시술 */}
-      <Section title="인기 시술" onMore={() => router.push('/search' as any)}>
+      <Section title="인기 시술" onMore={() => router.push('/search' as any)} hPad={hPad}>
         {treatments.length > 0 ? (
           <FlatList
             horizontal data={treatments} keyExtractor={(i) => i.id}
@@ -203,7 +203,7 @@ export default function HomeScreen() {
       </Section>
 
       {/* 인기 기기 */}
-      <Section title="인기 기기" onMore={() => router.push('/search' as any)}>
+      <Section title="인기 기기" onMore={() => router.push('/search' as any)} hPad={hPad}>
         {devices.length > 0 ? (
           <FlatList
             horizontal data={devices} keyExtractor={(i) => i.id}
@@ -221,10 +221,10 @@ export default function HomeScreen() {
   );
 }
 
-function Section({ title, onMore, children }: { title: string; onMore: () => void; children: React.ReactNode }) {
+function Section({ title, onMore, children, hPad = 20 }: { title: string; onMore: () => void; children: React.ReactNode; hPad?: number }) {
   return (
     <View style={{ marginTop: 28 }}>
-      <View style={styles.sectionHeader}>
+      <View style={[styles.sectionHeader, { paddingHorizontal: hPad }]}>
         <Text style={styles.sectionTitle}>{title}</Text>
         <TouchableOpacity onPress={onMore}>
           <Text style={styles.sectionMore}>더보기</Text>
@@ -258,9 +258,9 @@ function TreatmentCard({ item, width, onPress }: { item: Treatment; width?: numb
   );
 }
 
-function PairCard({ bundle }: { bundle: PairBundle }) {
+function PairCard({ bundle, width }: { bundle: PairBundle; width?: number }) {
   return (
-    <View style={styles.pairCard}>
+    <View style={[styles.pairCard, width ? { width } : {}]}>
       <View style={[styles.pairHeader, { backgroundColor: bundle.color + '18' }]}>
         <Ionicons name={bundle.icon as any} size={18} color={bundle.color} />
         <Text style={[styles.pairConcern, { color: bundle.color }]}>{bundle.concern}</Text>

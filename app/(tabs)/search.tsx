@@ -11,6 +11,7 @@ import { supabase } from '../../lib/supabase';
 import { Colors, HEADER_TOP } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useCompare } from '../../hooks/useCompare';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Treatment, Device } from '../../types';
 
 const TREATMENT_ICON: Record<string, string> = {
@@ -54,6 +55,7 @@ const RECENT_KEY = 'pickdi_recent';
 export default function SearchScreen() {
   const { user } = useAuth();
   const { items: compareItems, add } = useCompare();
+  const { hPad } = useResponsive();
   const [tab, setTab] = useState<Tab>('treatment');
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('전체');
@@ -261,7 +263,7 @@ export default function SearchScreen() {
         <FlatList
           data={results}
           keyExtractor={(i) => i.id}
-          contentContainerStyle={{ padding: 16, gap: 10 }}
+          contentContainerStyle={{ paddingHorizontal: hPad, paddingVertical: 16, gap: 10 }}
           renderItem={({ item }) => (
             <ResultRow
               item={item}

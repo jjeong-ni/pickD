@@ -67,11 +67,29 @@ export default function RootLayout() {
     </>
   );
 
-  // 데스크톱 웹: 중앙 정렬 + max-width로 모바일 앱 프레임 연출
+  // 웹: 중앙 정렬 + 유동 max-width (모바일 앱 프레임)
   if (Platform.OS === 'web') {
     return (
-      <View style={{ flex: 1, backgroundColor: '#E8E8ED', alignItems: 'center' }}>
-        <View style={{ flex: 1, width: '100%', maxWidth: 430, backgroundColor: '#fff', overflow: 'hidden' }}>
+      <View style={{ flex: 1, backgroundColor: '#E0D6EC', alignItems: 'center', justifyContent: 'center' }}>
+        {/* 배경 데코 */}
+        <View style={{
+          position: 'absolute', width: 400, height: 400, borderRadius: 200,
+          backgroundColor: 'rgba(255,107,157,0.07)', top: -80, right: -60,
+        }} />
+        <View style={{
+          position: 'absolute', width: 300, height: 300, borderRadius: 150,
+          backgroundColor: 'rgba(155,111,232,0.06)', bottom: -60, left: -40,
+        }} />
+        <View style={{
+          flex: 1,
+          width: '100%',
+          // @ts-ignore
+          maxWidth: 680,
+          backgroundColor: '#fff',
+          overflow: 'hidden',
+          // @ts-ignore
+          boxShadow: '0 0 60px rgba(180,80,140,0.12)',
+        }}>
           {stack}
         </View>
       </View>
