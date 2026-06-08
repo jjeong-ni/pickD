@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Stack, router } from 'expo-router';
+import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, View } from 'react-native';
 import { supabase } from '../lib/supabase';
@@ -7,6 +7,17 @@ import { useAuth } from '../hooks/useAuth';
 
 export default function RootLayout() {
   const { setSession, fetchProfile } = useAuth();
+  const pathname = usePathname();
+
+  // Fix: aria-hidden warning on web — blur focused element when route changes
+  // (React Navigation sets aria-hidden="true" on inactive screens, which conflicts
+  //  with a focused button from the previous screen)
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, [pathname]);
 
   useEffect(() => {
     // 초기 세션: demo 파라미터가 있으면 리다이렉트 없음
