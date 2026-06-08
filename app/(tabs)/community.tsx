@@ -51,17 +51,7 @@ export default function CommunityScreen() {
   const [loading, setLoading] = useState(true);
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    fetchPosts();
-  }, [category, refreshKey]);
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchPosts();
-    }, [category])
-  );
-
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
       let q = supabase
@@ -77,7 +67,17 @@ export default function CommunityScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [category]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts, refreshKey]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPosts();
+    }, [fetchPosts])
+  );
 
   const revealPost = (id: string) => {
     setRevealedIds((prev) => new Set([...prev, id]));

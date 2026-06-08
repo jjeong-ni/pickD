@@ -1,19 +1,46 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform, Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../../constants/colors';
 import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
 
+const REPORT_COST = 990;
+
 export default function MypageScreen() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, setProfile, fetchProfile } = useAuth();
   const { hPad } = useResponsive();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+
+  const handleGetReport = async () => {
+    if (!user || !profile) {
+      router.push('/(auth)/login' as any);
+      return;
+    }
+    const currentPoints = profile.points ?? 0;
+    if (currentPoints < REPORT_COST) {
+      Alert.alert(
+        '포인트 부족',
+        `보고서를 받으려면 ${REPORT_COST}pt가 필요해요.\n현재 보유: ${currentPoints}pt`,
+        [{ text: '확인' }]
+      );
+      return;
+    }
+    setReportLoading(true);
+    const newPoints = currentPoints - REPORT_COST;
+    await supabase.from('profiles').update({ points: newPoints }).eq('user_id', user.id);
+    await supabase.from('point_logs').insert({ user_id: user.id, amount: -REPORT_COST, reason: '맞춤 피부 분석 보고서' });
+    setProfile({ ...profile, points: newPoints });
+    setReportLoading(false);
+    router.push('/skin-report' as any);
+  };
 
   const displayName = profile?.nickname || user?.email?.split('@')[0] || '-';
 
@@ -187,16 +214,17 @@ export default function MypageScreen() {
       {/* 맞춤 보고서 CTA */}
       <TouchableOpacity
         style={[styles.reportBanner, { marginHorizontal: hPad }]}
-        onPress={() => router.push('/payment?itemName=맞춤+분석+보고서&amount=990&returnTo=skin-report' as any)}
+        onPress={handleGetReport}
         activeOpacity={0.85}
+        disabled={reportLoading}
       >
         <View style={styles.reportBannerLeft}>
-          <Text style={styles.reportBannerBadge}>NEW</Text>
+          <Text style={styles.reportBannerBadge}>베타 한정</Text>
           <Text style={styles.reportBannerTitle}>📋 맞춤 피부 분석 보고서</Text>
-          <Text style={styles.reportBannerDesc}>얼굴형·피부타입·로드맵 종합 리포트</Text>
+          <Text style={styles.reportBannerDesc}>베타테스트 기간 동안 현금 대신 포인트로!</Text>
         </View>
         <View style={styles.reportBannerRight}>
-          <Text style={styles.reportBannerPrice}>990원</Text>
+          <Text style={styles.reportBannerPrice}>990pt</Text>
           <Text style={styles.reportBannerArrow}>›</Text>
         </View>
       </TouchableOpacity>
