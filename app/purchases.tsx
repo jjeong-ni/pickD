@@ -27,6 +27,7 @@ export default function PurchasesScreen() {
   const { user } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (user) fetchPayments();
@@ -34,12 +35,17 @@ export default function PurchasesScreen() {
   }, [user]);
 
   const fetchPayments = async () => {
-    const { data } = await supabase
+    setFetchError(false);
+    const { data, error } = await supabase
       .from('payments')
       .select('*')
       .eq('user_id', user!.id)
       .order('created_at', { ascending: false });
-    setPayments(data ?? []);
+    if (error) {
+      setFetchError(true);
+    } else {
+      setPayments(data ?? []);
+    }
     setLoading(false);
   };
 
@@ -59,6 +65,15 @@ export default function PurchasesScreen() {
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>
+      ) : fetchError ? (
+        <View style={styles.center}>
+          <Text style={styles.emptyIcon}>⚠️</Text>
+          <Text style={styles.emptyTitle}>불러오기 실패</Text>
+          <Text style={styles.emptyDesc}>네트워크를 확인하고 다시 시도해주세요</Text>
+          <TouchableOpacity style={styles.goBtn} onPress={() => { setLoading(true); fetchPayments(); }}>
+            <Text style={styles.goBtnText}>다시 시도</Text>
+          </TouchableOpacity>
+        </View>
       ) : payments.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyIcon}>🛒</Text>

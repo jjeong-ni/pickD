@@ -62,7 +62,7 @@ export default function CreatePostScreen() {
       const { error: deductError } = await supabase
         .from('profiles').update({ points: currentPoints - 100 }).eq('user_id', user.id);
       if (deductError) {
-        console.error('퀴즈 포인트 차감 실패:', deductError);
+        Alert.alert('포인트 차감 실패', '퀴즈는 등록됐지만 포인트 차감 중 오류가 발생했어요. 고객센터에 문의해주세요.');
       } else {
         await supabase.from('point_logs').insert({ user_id: user.id, amount: -100, reason: '퀴즈 생성' });
         if (profile) setProfile({ ...profile, points: currentPoints - 100 });
@@ -87,10 +87,16 @@ export default function CreatePostScreen() {
       .from('point_logs').select('id').eq('user_id', user.id).eq('reason', '첫 게시물').limit(1);
     if (!existingLog || existingLog.length === 0) {
       const { data: p } = await supabase.from('profiles').select('points').eq('user_id', user.id).maybeSingle();
-      await supabase.from('point_logs').insert({ user_id: user.id, amount: 500, reason: '첫 게시물' });
-      await supabase.from('profiles').update({ points: (p?.points ?? 0) + 500 }).eq('user_id', user.id);
-      await fetchProfile(user.id);
-      Alert.alert('🎉 첫 게시물 축하해요!', '500pt가 지급됐어요!');
+      const { error: logError } = await supabase.from('point_logs').insert({ user_id: user.id, amount: 500, reason: '첫 게시물' });
+      if (!logError) {
+        const { error: ptError } = await supabase.from('profiles').update({ points: (p?.points ?? 0) + 500 }).eq('user_id', user.id);
+        if (ptError) {
+          await supabase.from('point_logs').delete().eq('user_id', user.id).eq('reason', '첫 게시물').order('created_at', { ascending: false }).limit(1);
+        } else {
+          await fetchProfile(user.id);
+          Alert.alert('🎉 첫 게시물 축하해요!', '500pt가 지급됐어요!');
+        }
+      }
     }
     setLoading(false);
     triggerRefresh();
