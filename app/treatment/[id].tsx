@@ -12,10 +12,11 @@ import { useAuth } from '../../hooks/useAuth';
 import { useCompare } from '../../hooks/useCompare';
 import { Treatment, Device } from '../../types';
 import MediaGallery from '../../components/MediaGallery';
+import CompatibilityCard from '../../components/CompatibilityCard';
 
 export default function TreatmentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { items, add } = useCompare();
   const [treatment, setTreatment] = useState<Treatment | null>(null);
   const [relatedDevices, setRelatedDevices] = useState<Device[]>([]);
@@ -166,7 +167,16 @@ export default function TreatmentDetailScreen() {
 
         {/* 기본 정보 */}
         <View style={styles.infoCard}>
-          <Text style={styles.category}>{treatment.category}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <Text style={[styles.category, { flex: 1, marginRight: 8 }]}>{treatment.category}</Text>
+            <CompatibilityCard
+              profile={profile}
+              user={user}
+              category={treatment.category}
+              itemName={treatment.name}
+              itemType="treatment"
+            />
+          </View>
           <Text style={styles.name}>{treatment.name}</Text>
           <TouchableOpacity
             style={styles.ratingRow}
