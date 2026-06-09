@@ -3,7 +3,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -20,6 +20,14 @@ export default function MypageScreen() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [hasPurchasedReport, setHasPurchasedReport] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('point_logs')
+      .select('id').eq('user_id', user.id).eq('reason', '맞춤 피부 분석 보고서').limit(1)
+      .then(({ data }) => setHasPurchasedReport(!!(data && data.length > 0)));
+  }, [user?.id]);
 
   const handlePickAvatar = async () => {
     if (!user) return;
@@ -282,6 +290,68 @@ export default function MypageScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* 내 보관함 */}
+      {user && (
+        <View style={[styles.vaultSection, { marginHorizontal: hPad }]}>
+          <View style={styles.vaultHeader}>
+            <Ionicons name="folder-open-outline" size={18} color={Colors.primary} />
+            <Text style={styles.vaultTitle}>내 보관함</Text>
+          </View>
+
+          {/* 피부 분석 리포트 */}
+          <TouchableOpacity
+            style={styles.vaultItem}
+            onPress={() => router.push('/analysis-report' as any)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.vaultIconBox, { backgroundColor: '#F3EFFF' }]}>
+              <Ionicons name="analytics-outline" size={22} color="#6B4EFF" />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={styles.vaultItemTitle}>피부 분석 리포트</Text>
+              <Text style={styles.vaultItemDesc}>얼굴형 + 피부타입 AI 분석</Text>
+            </View>
+            {(profile?.face_shape || profile?.skin_type) ? (
+              <View style={styles.vaultBadgeOpen}>
+                <Text style={styles.vaultBadgeOpenText}>열람</Text>
+              </View>
+            ) : (
+              <View style={styles.vaultBadgeLock}>
+                <Text style={styles.vaultBadgeLockText}>진단 필요</Text>
+              </View>
+            )}
+            <Ionicons name="chevron-forward" size={16} color={Colors.sub} />
+          </TouchableOpacity>
+
+          {/* 맞춤 피부 보고서 */}
+          <TouchableOpacity
+            style={styles.vaultItem}
+            onPress={() => hasPurchasedReport
+              ? router.push('/skin-report' as any)
+              : router.push('/payment?itemName=맞춤 분석 보고서&returnTo=skin-report' as any)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.vaultIconBox, { backgroundColor: '#FFF0F5' }]}>
+              <Ionicons name="document-text-outline" size={22} color={Colors.primary} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={styles.vaultItemTitle}>맞춤 피부 보고서</Text>
+              <Text style={styles.vaultItemDesc}>시술·루틴·스타일링 종합 리포트</Text>
+            </View>
+            {hasPurchasedReport ? (
+              <View style={styles.vaultBadgeOpen}>
+                <Text style={styles.vaultBadgeOpenText}>열람</Text>
+              </View>
+            ) : (
+              <View style={styles.vaultBadgeLock}>
+                <Text style={styles.vaultBadgeLockText}>990pt</Text>
+              </View>
+            )}
+            <Ionicons name="chevron-forward" size={16} color={Colors.sub} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* 맞춤 보고서 CTA */}
       <TouchableOpacity
@@ -584,4 +654,37 @@ const styles = StyleSheet.create({
   aiCardEmoji: { fontSize: 28 },
   aiCardLabel: { fontSize: 14, fontWeight: '700', color: Colors.text },
   aiCardDesc: { fontSize: 11, color: Colors.sub },
+
+  /* 보관함 */
+  vaultSection: {
+    backgroundColor: Colors.white, marginTop: 12, borderRadius: 18,
+    padding: 18, gap: 10,
+    borderWidth: 1, borderColor: Colors.border,
+    shadowColor: Colors.cardShadow,
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 12, elevation: 3,
+  },
+  vaultHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  vaultTitle: { fontSize: 15, fontWeight: '800', color: Colors.text },
+  vaultItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 12, paddingHorizontal: 4,
+    borderTopWidth: 1, borderTopColor: Colors.border,
+  },
+  vaultIconBox: {
+    width: 44, height: 44, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  vaultItemTitle: { fontSize: 14, fontWeight: '700', color: Colors.text },
+  vaultItemDesc: { fontSize: 12, color: Colors.sub },
+  vaultBadgeOpen: {
+    backgroundColor: '#E8F8F0', borderRadius: 10,
+    paddingVertical: 4, paddingHorizontal: 10,
+  },
+  vaultBadgeOpenText: { fontSize: 12, fontWeight: '700', color: Colors.success },
+  vaultBadgeLock: {
+    backgroundColor: Colors.bg, borderRadius: 10,
+    paddingVertical: 4, paddingHorizontal: 10,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  vaultBadgeLockText: { fontSize: 12, fontWeight: '700', color: Colors.sub },
 });
