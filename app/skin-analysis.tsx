@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { Colors } from '../constants/colors';
+import { Colors, HEADER_TOP } from '../constants/colors';
 
 // ───────────────────────────────────────────────
 // 타입 정의
@@ -718,7 +718,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 16, paddingTop: 56, backgroundColor: Colors.white,
+    padding: 16, paddingTop: HEADER_TOP, backgroundColor: Colors.white,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   back: { fontSize: 24, color: Colors.text, width: 32 },

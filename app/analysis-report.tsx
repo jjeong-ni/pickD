@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
-import { Colors } from '../constants/colors';
+import { Colors, HEADER_TOP } from '../constants/colors';
 
 // ─── 얼굴형 데이터 ───────────────────────────────────────────────────────────
 
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: 56, paddingHorizontal: 16, paddingBottom: 12,
+    paddingTop: HEADER_TOP, paddingHorizontal: 16, paddingBottom: 12,
     backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   back: { fontSize: 24, color: Colors.text, width: 32 },
