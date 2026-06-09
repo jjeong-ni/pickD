@@ -509,7 +509,7 @@ const DEMO_PROFILES: Record<string, { face_shape: string; skin_type: string; age
 const PAYMENT_URL = `/payment?itemName=${encodeURIComponent('맞춤 분석 보고서')}&amount=${REPORT_COST}&returnTo=skin-report`;
 
 export default function SkinReportScreen() {
-  const { user, profile, fetchProfile, loading: authLoading } = useAuth();
+  const { user, profile, fetchProfile, loading } = useAuth();
   const { demo } = useLocalSearchParams<{ demo?: string }>();
 
   // 최신 face_photo_url 확보: 회원가입 직후 race condition 보정
@@ -517,13 +517,12 @@ export default function SkinReportScreen() {
     if (!demo && user?.id) fetchProfile(user.id);
   }, [user?.id]);
 
-  // 비로그인 + 데모 아닌 경우 → 결제 화면으로 리다이렉트
-  // authLoading 중에는 redirect 금지 (iOS에서 auth 초기화 전 user=null로 잘못 redirect되는 문제 방지)
+  // 비로그인 + 데모 아닌 경우 → 결제 화면으로 리다이렉트 (auth 로딩 완료 후에만)
   useEffect(() => {
-    if (!demo && !authLoading && !user) {
+    if (!loading && !demo && !user) {
       router.replace(PAYMENT_URL as any);
     }
-  }, [demo, user, authLoading]);
+  }, [loading, demo, user]);
 
   const demoProfile = demo ? DEMO_PROFILES[demo] ?? DEMO_PROFILES['둥근형-지성'] : null;
 
