@@ -165,14 +165,12 @@ export default function MissionsScreen() {
   };
 
   const awardPoints = async (amount: number, reason: string): Promise<boolean> => {
-    const currentPoints = profile?.points ?? 0;
-    const { error: logError } = await supabase.from('point_logs').insert({ user_id: user!.id, amount, reason });
-    if (logError) return false;
-    const { error: updateError } = await supabase.from('profiles').update({ points: currentPoints + amount }).eq('user_id', user!.id);
-    if (updateError) {
-      await supabase.from('point_logs').delete().eq('user_id', user!.id).eq('reason', reason).order('created_at', { ascending: false }).limit(1);
-      return false;
-    }
+    const { data, error } = await supabase.rpc('add_points', {
+      p_user_id: user!.id,
+      p_amount: amount,
+      p_reason: reason,
+    });
+    if (error || !data?.success) return false;
     await fetchProfile(user!.id);
     return true;
   };

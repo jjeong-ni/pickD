@@ -21,7 +21,7 @@ const CATEGORIES: { label: string; desc: string }[] = [
 ];
 
 export default function CreatePostScreen() {
-  const { user, fetchProfile, profile, setProfile } = useAuth();
+  const { user, fetchProfile, profile } = useAuth();
   const { triggerRefresh } = usePostStore();
   const [category, setCategory] = useState('후기');
   const [title, setTitle] = useState('');
@@ -47,7 +47,21 @@ export default function CreatePostScreen() {
         setLoading(false);
         return;
       }
-      // 먼저 포스트 삽입 후 포인트 차감 (포스트 실패 시 포인트 차감 방지)
+      // 포인트 차감 먼저 (서버사이드 atomic) → 성공 시 포스트 등록
+      const { data: deductData, error: deductError } = await supabase.rpc('deduct_points', {
+        p_user_id: user.id,
+        p_amount: 100,
+        p_reason: '퀴즈 생성',
+      });
+      if (deductError || !deductData?.success) {
+        if (deductData?.error === 'insufficient_points') {
+          Alert.alert('포인트 부족', '퀴즈 생성에 100pt가 필요해요');
+        } else {
+          Alert.alert('오류', '포인트 차감 중 오류가 발생했어요');
+        }
+        setLoading(false);
+        return;
+      }
       const { error: postError } = await supabase.from('posts').insert({
         user_id: user.id,
         title: title.trim(),
@@ -59,14 +73,7 @@ export default function CreatePostScreen() {
         setLoading(false);
         return;
       }
-      const { error: deductError } = await supabase
-        .from('profiles').update({ points: currentPoints - 100 }).eq('user_id', user.id);
-      if (deductError) {
-        Alert.alert('포인트 차감 실패', '퀴즈는 등록됐지만 포인트 차감 중 오류가 발생했어요. 고객센터에 문의해주세요.');
-      } else {
-        await supabase.from('point_logs').insert({ user_id: user.id, amount: -100, reason: '퀴즈 생성' });
-        if (profile) setProfile({ ...profile, points: currentPoints - 100 });
-      }
+      await fetchProfile(user.id);
       setLoading(false);
       triggerRefresh();
       router.back();
@@ -82,20 +89,18 @@ export default function CreatePostScreen() {
       setLoading(false);
       return;
     }
-    // 첫 게시물 500pt 자동 지급
+    // 첫 게시물 500pt 자동 지급 (중복 확인 후 RPC로 atomic 지급)
     const { data: existingLog } = await supabase
       .from('point_logs').select('id').eq('user_id', user.id).eq('reason', '첫 게시물').limit(1);
     if (!existingLog || existingLog.length === 0) {
-      const { data: p } = await supabase.from('profiles').select('points').eq('user_id', user.id).maybeSingle();
-      const { error: logError } = await supabase.from('point_logs').insert({ user_id: user.id, amount: 500, reason: '첫 게시물' });
-      if (!logError) {
-        const { error: ptError } = await supabase.from('profiles').update({ points: (p?.points ?? 0) + 500 }).eq('user_id', user.id);
-        if (ptError) {
-          await supabase.from('point_logs').delete().eq('user_id', user.id).eq('reason', '첫 게시물').order('created_at', { ascending: false }).limit(1);
-        } else {
-          await fetchProfile(user.id);
-          Alert.alert('🎉 첫 게시물 축하해요!', '500pt가 지급됐어요!');
-        }
+      const { data: awarded } = await supabase.rpc('add_points', {
+        p_user_id: user.id,
+        p_amount: 500,
+        p_reason: '첫 게시물',
+      });
+      if (awarded?.success) {
+        await fetchProfile(user.id);
+        Alert.alert('🎉 첫 게시물 축하해요!', '500pt가 지급됐어요!');
       }
     }
     setLoading(false);

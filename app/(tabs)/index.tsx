@@ -15,7 +15,7 @@ import { GlassCard } from '../../components/GlassCard';
 import { Treatment, Device } from '../../types';
 import { REPORT_COST } from '../../constants/app';
 
-const KAKAO_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_JS_KEY ?? '78a1bd65ed949a70fdd8b12e8538909f';
+const KAKAO_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_JS_KEY ?? '';
 
 type PairBundle = {
   concern: string;
@@ -111,7 +111,7 @@ function HomeClinicMap() {
 }
 
 export default function HomeScreen() {
-  const { user, profile, setProfile } = useAuth();
+  const { user, profile, fetchProfile } = useAuth();
   const { cardWidth, hPad } = useResponsive();
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -195,24 +195,21 @@ export default function HomeScreen() {
       );
       return;
     }
-    const newPoints = currentPoints - REPORT_COST;
-    const { error: deductError } = await supabase
-      .from('profiles').update({ points: newPoints }).eq('user_id', user.id);
-    if (deductError) {
+    const { data, error } = await supabase.rpc('deduct_points', {
+      p_user_id: user.id,
+      p_amount: REPORT_COST,
+      p_reason: '맞춤 피부 분석 보고서',
+    });
+    if (error || !data?.success) {
       setReportLoading(false);
-      Alert.alert('오류', '포인트 차감 중 오류가 발생했어요. 다시 시도해주세요.');
+      if (data?.error === 'insufficient_points') {
+        Alert.alert('포인트 부족', `보고서를 받으려면 ${REPORT_COST}pt가 필요해요.\n현재 보유: ${data.current_points}pt`, [{ text: '확인' }]);
+      } else {
+        Alert.alert('오류', '포인트 차감 중 오류가 발생했어요. 다시 시도해주세요.');
+      }
       return;
     }
-    const { error: logError } = await supabase
-      .from('point_logs').insert({ user_id: user.id, amount: -REPORT_COST, reason: '맞춤 피부 분석 보고서' });
-    if (logError) {
-      // 로그 실패 시 포인트 복구
-      await supabase.from('profiles').update({ points: currentPoints }).eq('user_id', user.id);
-      setReportLoading(false);
-      Alert.alert('오류', '처리 중 오류가 발생했어요. 다시 시도해주세요.');
-      return;
-    }
-    setProfile({ ...profile, points: newPoints });
+    await fetchProfile(user.id);
     setReportLoading(false);
     router.push('/skin-report' as any);
   };
