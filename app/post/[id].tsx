@@ -115,7 +115,8 @@ export default function PostDetailScreen() {
     }
     // Append to liked posts list (for "하트 누른 게시물" tab)
     const raw = await AsyncStorage.getItem('liked_posts');
-    const ids: string[] = raw ? JSON.parse(raw) : [];
+    let ids: string[] = [];
+    try { ids = raw ? JSON.parse(raw) : []; } catch { ids = []; }
     if (!ids.includes(id as string)) {
       await AsyncStorage.setItem('liked_posts', JSON.stringify([...ids, id as string]));
     }

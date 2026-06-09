@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { Colors, HEADER_TOP } from '../constants/colors';
+import { REPORT_COST } from '../constants/app';
 
 // ─── 얼굴형별 핵심 데이터 ──────────────────────────────────────────────────────
 
@@ -507,7 +508,7 @@ const DEMO_PROFILES: Record<string, { face_shape: string; skin_type: string; age
   '계란형-복합성': { face_shape: '계란형', skin_type: '복합성', age_group: '40대', concerns: ['주름', '탄력'], nickname: '데모 회원' },
 };
 
-const PAYMENT_URL = '/payment?itemName=맞춤 분석 보고서&amount=990&returnTo=skin-report';
+const PAYMENT_URL = `/payment?itemName=맞춤 분석 보고서&amount=${REPORT_COST}&returnTo=skin-report`;
 
 export default function SkinReportScreen() {
   const { user, profile, fetchProfile, loading: authLoading } = useAuth();

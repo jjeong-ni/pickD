@@ -67,7 +67,9 @@ export default function SearchScreen() {
 
   useEffect(() => {
     AsyncStorage.getItem(RECENT_KEY).then((raw) => {
-      if (raw) setRecentSearches(JSON.parse(raw));
+      if (raw) {
+        try { setRecentSearches(JSON.parse(raw)); } catch { /* corrupted data — ignore */ }
+      }
     });
   }, []);
 
