@@ -165,10 +165,10 @@ export default function HomeScreen() {
   const fetchRecommended = async () => {
     if (!profile?.concerns?.length) return;
     const concern = profile.concerns[0];
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('treatments').select('*').contains('tags', [concern])
       .order('rating', { ascending: false }).limit(5);
-    if (data && data.length > 0) setRecommended(data);
+    if (!error && data && data.length > 0) setRecommended(data);
   };
 
   const handleGetReport = async () => {
