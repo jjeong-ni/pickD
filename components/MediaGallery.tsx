@@ -6,7 +6,7 @@ import {
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity,
   Dimensions, Platform,
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { WebView } from 'react-native-webview';
 import { Colors } from '../constants/colors';
 
@@ -23,10 +23,11 @@ function toYoutubeEmbed(url: string): string | null {
 }
 
 interface MediaGalleryProps {
-  imageUrl: string | null;   // 기존 대표 이미지
-  images?: string[];          // 추가 갤러리 이미지
-  videoUrl?: string | null;  // YouTube URL
+  imageUrl: string | null;
+  images?: string[];
+  videoUrl?: string | null;
   fallbackEmoji?: string;
+  altText?: string;
 }
 
 export default function MediaGallery({
@@ -34,6 +35,7 @@ export default function MediaGallery({
   images = [],
   videoUrl,
   fallbackEmoji = '💆',
+  altText = '상품 이미지',
 }: MediaGalleryProps) {
   // 전체 미디어 목록: video → 이미지들 순
   const allImages = [
@@ -46,20 +48,29 @@ export default function MediaGallery({
 
   const [activeIdx, setActiveIdx] = useState(0);
 
-  // 미디어가 아무것도 없으면 fallback
+  const handleScroll = useCallback((e: any) => {
+    const idx = Math.round(e.nativeEvent.contentOffset.x / CARD_W);
+    setActiveIdx(idx);
+  }, []);
+
   if (totalSlides === 0) {
     return (
-      <View style={styles.heroFallback}>
+      <View style={styles.heroFallback} accessible accessibilityLabel={altText}>
         <Text style={styles.heroEmoji}>{fallbackEmoji}</Text>
       </View>
     );
   }
 
-  // 단일 이미지 (갤러리 불필요)
   if (totalSlides === 1 && !hasVideo) {
     return (
       <View style={styles.heroSingle}>
-        <Image source={{ uri: allImages[0] }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <Image
+          source={{ uri: allImages[0] }}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+          accessible
+          accessibilityLabel={altText}
+        />
       </View>
     );
   }
@@ -72,10 +83,7 @@ export default function MediaGallery({
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         style={{ width: CARD_W }}
-        onScroll={(e) => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / CARD_W);
-          setActiveIdx(idx);
-        }}
+        onScroll={handleScroll}
         scrollEventThrottle={200}
       >
         {/* 동영상 슬라이드 */}
@@ -105,10 +113,15 @@ export default function MediaGallery({
           </View>
         )}
 
-        {/* 이미지 슬라이드들 */}
         {allImages.map((uri, i) => (
           <View key={i} style={[styles.slide, { width: CARD_W }]}>
-            <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image
+              source={{ uri }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+              accessible
+              accessibilityLabel={`${altText} ${i + 1}`}
+            />
           </View>
         ))}
       </ScrollView>

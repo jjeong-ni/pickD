@@ -125,16 +125,30 @@ export default function SignupScreen() {
   const checkNicknameDuplicate = async () => {
     if (nickname.length < 2) return;
     setNicknameChecking(true);
-    const { data } = await supabase.from('profiles').select('user_id').eq('nickname', nickname).limit(1);
-    setNicknameChecking(false);
-    setNicknameChecked(true);
-    setNicknameAvailable(!data || data.length === 0);
+    try {
+      const { data, error } = await supabase.from('profiles').select('user_id').eq('nickname', nickname).limit(1);
+      setNicknameChecked(true);
+      if (error) {
+        console.error('닉네임 중복 확인 오류:', error);
+        setNicknameAvailable(false);
+      } else {
+        setNicknameAvailable(!data || data.length === 0);
+      }
+    } catch (e) {
+      console.error('닉네임 중복 확인 네트워크 오류:', e);
+      setNicknameChecked(false);
+      Alert.alert('오류', '닉네임 확인 중 오류가 발생했어요. 다시 시도해주세요.');
+    } finally {
+      setNicknameChecking(false);
+    }
   };
+
+  const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
 
   const isStepValid = () => {
     if (step === 1) {
       return (
-        email.includes('@') && email.includes('.') &&
+        isValidEmail(email) &&
         password.length >= 8 &&
         password === passwordConfirm &&
         nickname.length >= 2 && nickname.length <= 12 &&

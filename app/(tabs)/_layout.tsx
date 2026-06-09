@@ -35,8 +35,8 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: '홈',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }}>🏠</Text>
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }} accessibilityLabel="홈">🏠</Text>
           ),
         }}
       />
@@ -44,8 +44,8 @@ export default function TabsLayout() {
         name="search"
         options={{
           title: '검색',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }}>🔍</Text>
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }} accessibilityLabel="검색">🔍</Text>
           ),
         }}
       />
@@ -53,8 +53,8 @@ export default function TabsLayout() {
         name="compare"
         options={{
           title: '비교함',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }}>📦</Text>
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }} accessibilityLabel="비교함">📦</Text>
           ),
           tabBarBadge: compareCount > 0 ? compareCount : undefined,
         }}
@@ -63,8 +63,8 @@ export default function TabsLayout() {
         name="community"
         options={{
           title: '커뮤니티',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }}>💬</Text>
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }} accessibilityLabel="커뮤니티">💬</Text>
           ),
         }}
       />
@@ -72,8 +72,8 @@ export default function TabsLayout() {
         name="mypage"
         options={{
           title: '마이페이지',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }}>👤</Text>
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }} accessibilityLabel="마이페이지">👤</Text>
           ),
         }}
       />

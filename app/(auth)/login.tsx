@@ -36,8 +36,10 @@ export default function LoginScreen() {
     }
   };
 
+  const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+
   const handlePasswordReset = async () => {
-    if (!resetEmail.includes('@')) return;
+    if (!isValidEmail(resetEmail)) return;
     setResetLoading(true);
     await supabase.auth.resetPasswordForEmail(resetEmail, {
       redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined,
@@ -177,9 +179,9 @@ export default function LoginScreen() {
                     <Text style={styles.modalCancelText}>취소</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.modalBtn, { flex: 1 }, !resetEmail.includes('@') && styles.btnDisabled]}
+                    style={[styles.modalBtn, { flex: 1 }, !isValidEmail(resetEmail) && styles.btnDisabled]}
                     onPress={handlePasswordReset}
-                    disabled={resetLoading || !resetEmail.includes('@')}
+                    disabled={resetLoading || !isValidEmail(resetEmail)}
                   >
                     {resetLoading
                       ? <ActivityIndicator color="#FF6B9D" size="small" />
