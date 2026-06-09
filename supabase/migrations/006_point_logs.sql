@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS point_logs (
 -- RLS 활성화
 ALTER TABLE point_logs ENABLE ROW LEVEL SECURITY;
 
+-- 기존 정책 제거 (재실행 시 중복 오류 방지)
+DROP POLICY IF EXISTS "본인 로그만 조회" ON point_logs;
+DROP POLICY IF EXISTS "본인 로그만 삽입" ON point_logs;
+
 -- 본인 로그만 조회
 CREATE POLICY "본인 로그만 조회" ON point_logs
   FOR SELECT USING (auth.uid() = user_id);
