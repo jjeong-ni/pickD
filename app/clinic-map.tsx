@@ -204,7 +204,10 @@ function WebKakaoMap({ keyword }: { keyword: string }) {
   }, []);
 
   const handleMyLocation = () => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      Alert.alert('오류', '이 브라우저는 위치 기능을 지원하지 않아요.');
+      return;
+    }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -222,8 +225,18 @@ function WebKakaoMap({ keyword }: { keyword: string }) {
         searchNearby(lat, lng);
         setLocating(false);
       },
-      () => { setLocating(false); },
-      { timeout: 8000 }
+      (err) => {
+        setLocating(false);
+        if (err.code === 1) {
+          Alert.alert(
+            '위치 권한 필요',
+            'Safari 설정 > 개인 정보 보호 > 위치 서비스에서 이 사이트의 위치 접근을 허용해주세요.',
+          );
+        } else {
+          Alert.alert('위치 오류', '현재 위치를 가져오지 못했어요. 잠시 후 다시 시도해주세요.');
+        }
+      },
+      { timeout: 12000, maximumAge: 60000, enableHighAccuracy: false },
     );
   };
 
