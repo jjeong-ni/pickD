@@ -121,6 +121,9 @@ export default function HomeScreen() {
   const [fetchError, setFetchError] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [signupPopup, setSignupPopup] = useState<{ nickname: string } | null>(null);
+  const [skinPicks, setSkinPicks] = useState<{ treatment: Treatment | null; device: Device | null } | null>(null);
+  const [showSkinModal, setShowSkinModal] = useState(false);
+  const [skinPicksLoading, setSkinPicksLoading] = useState(false);
 
   useEffect(() => { fetchData(); checkSignupPopup(); }, []);
   useEffect(() => { if (profile?.skin_type) fetchRecommended(); }, [profile]);
@@ -169,6 +172,36 @@ export default function HomeScreen() {
       .from('treatments').select('*').contains('tags', [concern])
       .order('rating', { ascending: false }).limit(5);
     if (!error && data && data.length > 0) setRecommended(data);
+  };
+
+  const fetchSkinPicks = async () => {
+    if (!profile?.skin_type) return;
+    setSkinPicksLoading(true);
+    const [tRes, dRes] = await Promise.all([
+      supabase.from('treatments').select('*').order('rating', { ascending: false }).limit(25),
+      supabase.from('devices').select('*').order('rating', { ascending: false }).limit(25),
+    ]);
+    const allT: Treatment[] = tRes.data ?? [];
+    const allD: Device[] = dRes.data ?? [];
+    const skinType = profile.skin_type;
+    const concerns: string[] = profile?.concerns ?? [];
+    const scoreItem = (item: { tags?: string[]; rating: number }) => {
+      let s = item.rating;
+      if (item.tags?.some((t) => t.includes(skinType) || skinType.includes(t))) s += 2;
+      concerns.forEach((c) => {
+        if (item.tags?.some((t) => t.includes(c) || c.includes(t))) s += 1;
+      });
+      return s;
+    };
+    const bestT = [...allT].sort((a, b) => scoreItem(b) - scoreItem(a))[0] ?? null;
+    const bestD = [...allD].sort((a, b) => scoreItem(b) - scoreItem(a))[0] ?? null;
+    setSkinPicks({ treatment: bestT, device: bestD });
+    setSkinPicksLoading(false);
+  };
+
+  const handleSkinBannerPress = async () => {
+    setShowSkinModal(true);
+    if (!skinPicks) await fetchSkinPicks();
   };
 
   const handleGetReport = async () => {
@@ -289,7 +322,7 @@ export default function HomeScreen() {
 
         {/* 배너 1: 피부 타입 추천 */}
         {profile?.skin_type ? (
-          <TouchableOpacity onPress={() => router.push('/search' as any)} activeOpacity={0.85}>
+          <TouchableOpacity onPress={handleSkinBannerPress} activeOpacity={0.85}>
             <GlassCard style={styles.banner} intensity="low">
               <Text style={styles.bannerLabel}>✨ 내 피부 타입 · {profile.skin_type}</Text>
               <Text style={styles.bannerValue}>
@@ -453,6 +486,69 @@ export default function HomeScreen() {
 
       <View style={{ height: 32 }} />
     </ScrollView>
+
+    {/* 피부타입 맞춤 추천 모달 */}
+    <Modal visible={showSkinModal} transparent animationType="slide" onRequestClose={() => setShowSkinModal(false)}>
+      <View style={styles.skinPicksOverlay}>
+        <View style={styles.skinPicksSheet}>
+          <View style={styles.skinPicksHandle} />
+          <Text style={styles.skinPicksTitle}>✨ 내 피부타입 맞춤 추천</Text>
+          <Text style={styles.skinPicksSubtitle}>{profile?.skin_type} 타입에 가장 잘 맞는 시술·기기예요</Text>
+          {skinPicksLoading ? (
+            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+              <ActivityIndicator color={Colors.primary} size="large" />
+              <Text style={{ marginTop: 12, color: Colors.sub, fontSize: 14 }}>최적 상품 분석 중...</Text>
+            </View>
+          ) : skinPicks ? (
+            <View style={{ gap: 12 }}>
+              {skinPicks.treatment && (
+                <TouchableOpacity
+                  style={styles.skinPickCard}
+                  onPress={() => { setShowSkinModal(false); router.push(`/treatment/${skinPicks.treatment!.id}` as any); }}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.skinPickIcon, { backgroundColor: '#FFE8F0' }]}>
+                    <Ionicons name="medical-outline" size={24} color={Colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.skinPickLabel}>추천 시술</Text>
+                    <Text style={styles.skinPickName}>{skinPicks.treatment.name}</Text>
+                    <Text style={styles.skinPickMeta}>⭐ {(skinPicks.treatment.rating ?? 0).toFixed(1)} · {(skinPicks.treatment.price_min ?? 0).toLocaleString()}원~</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={Colors.sub} />
+                </TouchableOpacity>
+              )}
+              {skinPicks.device && (
+                <TouchableOpacity
+                  style={styles.skinPickCard}
+                  onPress={() => { setShowSkinModal(false); router.push(`/device/${skinPicks.device!.id}` as any); }}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.skinPickIcon, { backgroundColor: '#EEE8FF' }]}>
+                    <Ionicons name="hardware-chip-outline" size={24} color="#9B6FE8" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.skinPickLabel}>추천 홈케어 기기</Text>
+                    <Text style={styles.skinPickName}>{skinPicks.device.name}</Text>
+                    <Text style={styles.skinPickMeta}>⭐ {(skinPicks.device.rating ?? 0).toFixed(1)} · {(skinPicks.device.price ?? 0).toLocaleString()}원</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={Colors.sub} />
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : null}
+          <TouchableOpacity
+            style={styles.skinPicksMoreBtn}
+            onPress={() => { setShowSkinModal(false); router.push('/search' as any); }}
+          >
+            <Text style={styles.skinPicksMoreBtnText}>전체 상품 더보기</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowSkinModal(false)} style={{ alignItems: 'center', paddingVertical: 12 }}>
+            <Text style={{ color: Colors.sub, fontSize: 14 }}>닫기</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
 
     {/* 회원가입 완료 1000pt 팝업 */}
     <Modal
@@ -744,6 +840,35 @@ const styles = StyleSheet.create({
   },
   pairDividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
   pairDividerText: { fontSize: 10, color: Colors.sub, fontWeight: '600' },
+
+  // 피부타입 맞춤 추천 모달
+  skinPicksOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  skinPicksSheet: {
+    backgroundColor: Colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: 24, paddingBottom: 40,
+  },
+  skinPicksHandle: {
+    width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border,
+    alignSelf: 'center', marginBottom: 18,
+  },
+  skinPicksTitle: { fontSize: 20, fontWeight: '800', color: Colors.text, marginBottom: 4 },
+  skinPicksSubtitle: { fontSize: 14, color: Colors.sub, marginBottom: 20 },
+  skinPickCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: Colors.bg, borderRadius: 14, padding: 14,
+  },
+  skinPickIcon: {
+    width: 48, height: 48, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  skinPickLabel: { fontSize: 11, fontWeight: '700', color: Colors.sub, marginBottom: 3 },
+  skinPickName: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 2 },
+  skinPickMeta: { fontSize: 12, color: Colors.sub },
+  skinPicksMoreBtn: {
+    backgroundColor: Colors.primaryLight, borderRadius: 12,
+    paddingVertical: 14, alignItems: 'center', marginTop: 16,
+  },
+  skinPicksMoreBtnText: { fontSize: 15, fontWeight: '700', color: Colors.primary },
 
   // 회원가입 완료 팝업
   popupOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },

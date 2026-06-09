@@ -441,6 +441,23 @@ export default function SkinAnalysisScreen() {
     }
   }, [isViewMode, profile?.skin_type, profile?.baumann_code]);
 
+  useEffect(() => {
+    if (isViewMode && profile?.skin_type && profile?.baumann_code) {
+      const code = profile.baumann_code;
+      setResult({
+        type: profile.skin_type as SkinType,
+        code,
+        axisD: code[0] as AxisD,
+        axisS: code[1] as AxisS,
+        axisP: code[2] as AxisP,
+        axisW: code[3] as AxisW,
+        dehydration: profile.skin_dehydration ?? false,
+        metrics: (profile.skin_metrics ?? { 모공: 50, 주름: 50, 색소침착: 50, UV색소침착: 50, 탄력: 50, 피부톤: 50 }) as SkinResult['metrics'],
+      });
+      setStep(TOTAL_Q);
+    }
+  }, [isViewMode, profile?.skin_type, profile?.baumann_code]);
+
   const handleNext = () => {
     if (selected === null) return;
     const newAnswers = [...answers];
@@ -557,6 +574,10 @@ export default function SkinAnalysisScreen() {
             </TouchableOpacity>
           </View>
         </>
+      ) : result === null ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={Colors.primary} size="large" />
+        </View>
       ) : (
         /* ── 결과 ── */
         <>

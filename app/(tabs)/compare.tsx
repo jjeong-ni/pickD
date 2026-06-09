@@ -148,7 +148,9 @@ export default function CompareScreen() {
               <View style={styles.aiResultBannerLeft}>
                 <Text style={styles.aiResultBannerBadge}>✨ AI 추천</Text>
                 <Text style={styles.aiResultBannerName} numberOfLines={1}>{savedAiResult.item.name}</Text>
-                <Text style={styles.aiResultBannerScore}>호환성 {savedAiResult.score}점 · 탭하면 상세 보기</Text>
+                <Text style={styles.aiResultBannerScore}>
+                  {'❤️'.repeat(Math.min(savedAiResult.score, 5))}{'🤍'.repeat(Math.max(0, 5 - savedAiResult.score))} {savedAiResult.score}점 · 탭하면 상세 보기
+                </Text>
               </View>
               <View style={[styles.aiResultBannerImg, { backgroundColor: savedAiResult.isTreatment ? '#FFE8F0' : '#EEE8FF' }]}>
                 <Ionicons name={savedAiResult.isTreatment ? 'medical-outline' : 'hardware-chip-outline'} size={26} color={savedAiResult.isTreatment ? Colors.primary : '#9B6FE8'} />
@@ -395,7 +397,9 @@ export default function CompareScreen() {
                     <Ionicons name={displayResult!.isTreatment ? 'medical-outline' : 'hardware-chip-outline'} size={44} color={displayResult!.isTreatment ? Colors.primary : '#9B6FE8'} />
                   </View>
                   <Text style={styles.aiWinnerName}>{displayResult!.item.name}</Text>
-                  <Text style={styles.aiWinnerScore}>호환성 {displayResult!.score}점</Text>
+                  <Text style={styles.aiWinnerScore}>
+                    {'❤️'.repeat(Math.min(displayResult!.score, 5))}{'🤍'.repeat(Math.max(0, 5 - displayResult!.score))} {displayResult!.score}점
+                  </Text>
                   <Text style={styles.aiWinnerDesc} numberOfLines={2}>{displayResult!.item.description}</Text>
                 </View>
 
@@ -418,7 +422,7 @@ export default function CompareScreen() {
                       <View style={styles.aiScoreBarWrap}>
                         <View style={[styles.aiScoreBar, { width: `${(s.score / 16) * 100}%` as any }]} />
                       </View>
-                      <Text style={styles.aiScoreNum}>{s.score}점</Text>
+                      <Text style={styles.aiScoreNum}>{'❤️'.repeat(Math.min(s.score, 5))} {s.score}점</Text>
                     </View>
                   ))}
                 </View>

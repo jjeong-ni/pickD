@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { Colors } from '../constants/colors';
+import { Colors, HEADER_TOP } from '../constants/colors';
 
 const SKIN_TYPES = ['지성', '건성', '중성', '복합성', '민감성'];
 const FACE_SHAPES = ['계란형', '둥근형', '사각형', '하트형', '긴형', '다이아몬드형'];
