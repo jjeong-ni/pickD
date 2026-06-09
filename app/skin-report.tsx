@@ -1,5 +1,5 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Share, Platform, Image,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Share, Platform, Image, ActivityIndicator,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
@@ -506,10 +506,10 @@ const DEMO_PROFILES: Record<string, { face_shape: string; skin_type: string; age
   '계란형-복합성': { face_shape: '계란형', skin_type: '복합성', age_group: '40대', concerns: ['주름', '탄력'], nickname: '데모 회원' },
 };
 
-const PAYMENT_URL = '/payment?itemName=맞춤 분석 보고서&amount=990&returnTo=skin-report';
+const PAYMENT_URL = `/payment?itemName=${encodeURIComponent('맞춤 분석 보고서')}&amount=${REPORT_COST}&returnTo=skin-report`;
 
 export default function SkinReportScreen() {
-  const { user, profile, fetchProfile, loading: authLoading } = useAuth();
+  const { user, profile, fetchProfile, loading } = useAuth();
   const { demo } = useLocalSearchParams<{ demo?: string }>();
 
   // 최신 face_photo_url 확보: 회원가입 직후 race condition 보정
@@ -517,13 +517,12 @@ export default function SkinReportScreen() {
     if (!demo && user?.id) fetchProfile(user.id);
   }, [user?.id]);
 
-  // 비로그인 + 데모 아닌 경우 → 결제 화면으로 리다이렉트
-  // authLoading 중에는 redirect 금지 (iOS에서 auth 초기화 전 user=null로 잘못 redirect되는 문제 방지)
+  // 비로그인 + 데모 아닌 경우 → 결제 화면으로 리다이렉트 (auth 로딩 완료 후에만)
   useEffect(() => {
-    if (!demo && !authLoading && !user) {
+    if (!loading && !demo && !user) {
       router.replace(PAYMENT_URL as any);
     }
-  }, [demo, user, authLoading]);
+  }, [loading, demo, user]);
 
   const demoProfile = demo ? DEMO_PROFILES[demo] ?? DEMO_PROFILES['둥근형-지성'] : null;
 
@@ -549,6 +548,14 @@ export default function SkinReportScreen() {
       });
     } catch {}
   };
+
+  if (loading && !demo) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bg }}>
+        <ActivityIndicator color={Colors.primary} size="large" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
