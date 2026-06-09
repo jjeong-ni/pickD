@@ -17,12 +17,13 @@ export const useCompare = create<CompareState>((set, get) => ({
 
   fetch: async (userId) => {
     set({ loading: true });
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('compare_items')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: true });
-    set({ items: data ?? [], loading: false });
+    if (!error) set({ items: data ?? [], loading: false });
+    else set({ loading: false });
   },
 
   add: async (userId, itemId, itemType) => {
@@ -39,12 +40,16 @@ export const useCompare = create<CompareState>((set, get) => ({
   },
 
   remove: async (id) => {
-    await supabase.from('compare_items').delete().eq('id', id);
+    const prev = get().items;
     set((s) => ({ items: s.items.filter((i) => i.id !== id) }));
+    const { error } = await supabase.from('compare_items').delete().eq('id', id);
+    if (error) set({ items: prev });
   },
 
   clear: async (userId) => {
-    await supabase.from('compare_items').delete().eq('user_id', userId);
+    const prev = get().items;
     set({ items: [] });
+    const { error } = await supabase.from('compare_items').delete().eq('user_id', userId);
+    if (error) set({ items: prev });
   },
 }));

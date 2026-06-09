@@ -31,30 +31,35 @@ export default function MyPostsScreen() {
 
   const fetchMyPosts = async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('posts')
       .select('*')
       .eq('user_id', user!.id)
       .order('created_at', { ascending: false });
-    setMyPosts(data ?? []);
+    if (!error) setMyPosts(data ?? []);
     setLoading(false);
   };
 
   const fetchLikedPosts = async () => {
     setLikedLoading(true);
-    const raw = await AsyncStorage.getItem('liked_posts');
-    const ids: string[] = raw ? JSON.parse(raw) : [];
+    let ids: string[] = [];
+    try {
+      const raw = await AsyncStorage.getItem('liked_posts');
+      ids = raw ? JSON.parse(raw) : [];
+    } catch {
+      ids = [];
+    }
     if (ids.length === 0) {
       setLikedPosts([]);
       setLikedLoading(false);
       return;
     }
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('posts')
       .select('*')
       .in('id', ids)
       .order('created_at', { ascending: false });
-    setLikedPosts(data ?? []);
+    if (!error) setLikedPosts(data ?? []);
     setLikedLoading(false);
   };
 
@@ -65,8 +70,13 @@ export default function MyPostsScreen() {
         text: '삭제',
         style: 'destructive',
         onPress: async () => {
-          await supabase.from('posts').delete().eq('id', postId).eq('user_id', user!.id);
-          setMyPosts((prev) => prev.filter((p) => p.id !== postId));
+          const prev = myPosts;
+          setMyPosts((p) => p.filter((post) => post.id !== postId));
+          const { error } = await supabase.from('posts').delete().eq('id', postId).eq('user_id', user!.id);
+          if (error) {
+            setMyPosts(prev);
+            Alert.alert('오류', '게시글 삭제 중 문제가 발생했어요.');
+          }
         },
       },
     ]);

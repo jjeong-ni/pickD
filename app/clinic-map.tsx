@@ -9,8 +9,17 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, HEADER_TOP } from '../constants/colors';
 
-const KAKAO_JS_KEY = '78a1bd65ed949a70fdd8b12e8538909f';
+const KAKAO_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_JS_KEY ?? '78a1bd65ed949a70fdd8b12e8538909f';
 const DEFAULT_COORDS = { lat: 37.5981, lng: 127.0524 }; // 서울 회기·경희대 기본값
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
 
 interface Coords { lat: number; lng: number }
 
@@ -51,7 +60,7 @@ function buildMapHtml(coords: Coords, keyword: string): string {
 </head>
 <body>
 <div id="map"></div>
-<div class="badge" id="badge">📍 <b>${keyword}</b> 주변 피부과 탐색 중...</div>
+<div class="badge" id="badge">📍 <b>${escapeHtml(keyword)}</b> 주변 피부과 탐색 중...</div>
 
 <script>
 var map, myOverlay, infowindow;
