@@ -2,7 +2,7 @@ import {
   View, Text, FlatList, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Platform,
 } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { Colors, HEADER_TOP } from '../../constants/colors';
@@ -128,12 +128,6 @@ export default function CommunityScreen() {
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts, refreshKey]);
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchPosts();
-    }, [fetchPosts])
-  );
 
   const revealPost = (id: string) => {
     setRevealedIds((prev) => new Set([...prev, id]));

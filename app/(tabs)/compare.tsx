@@ -50,12 +50,21 @@ export default function CompareScreen() {
   const loadMissingDetails = async (missing: CompareItem[]) => {
     if (Object.keys(detailMap).length === 0) setInitialLoad(true);
     const newEntries: Record<string, Treatment | Device> = {};
-    for (const ci of missing) {
-      const table = ci.item_type === 'treatment' ? 'treatments' : 'devices';
-      const { data, error } = await supabase.from(table).select('*').eq('id', ci.item_id).single();
-      if (error) { console.error('compare detail fetch error:', error); continue; }
-      if (data) newEntries[ci.item_id] = data;
-    }
+
+    const treatmentIds = missing.filter((ci) => ci.item_type === 'treatment').map((ci) => ci.item_id);
+    const deviceIds = missing.filter((ci) => ci.item_type === 'device').map((ci) => ci.item_id);
+
+    const [tRes, dRes] = await Promise.all([
+      treatmentIds.length > 0
+        ? supabase.from('treatments').select('*').in('id', treatmentIds)
+        : { data: [] as Treatment[] },
+      deviceIds.length > 0
+        ? supabase.from('devices').select('*').in('id', deviceIds)
+        : { data: [] as Device[] },
+    ]);
+    for (const t of tRes.data ?? []) newEntries[t.id] = t;
+    for (const d of dRes.data ?? []) newEntries[d.id] = d;
+
     setDetailMap((prev) => ({ ...prev, ...newEntries }));
     setInitialLoad(false);
   };
