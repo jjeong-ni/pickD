@@ -44,7 +44,7 @@ export default function PaymentScreen() {
       return;
     }
     await supabase.from('point_logs').insert({
-      user_id: profile.id,
+      user_id: user.id,
       amount: -cost,
       reason: `맞춤 피부 분석 보고서`,
     }).throwOnError().catch(() => null);
