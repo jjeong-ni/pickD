@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   headerBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: 56, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: Colors.white,
+    paddingTop: HEADER_TOP, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: Colors.white,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   backBtn: { width: 60, height: 40, justifyContent: 'center' },

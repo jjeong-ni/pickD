@@ -12,10 +12,11 @@ import { useAuth } from '../../hooks/useAuth';
 import { useCompare } from '../../hooks/useCompare';
 import { Device, Treatment } from '../../types';
 import MediaGallery from '../../components/MediaGallery';
+import CompatibilityCard from '../../components/CompatibilityCard';
 
 export default function DeviceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { items, add } = useCompare();
   const [device, setDevice] = useState<Device | null>(null);
   const [relatedTreatments, setRelatedTreatments] = useState<Treatment[]>([]);
@@ -163,7 +164,17 @@ export default function DeviceDetailScreen() {
 
         {/* 기본 정보 */}
         <View style={styles.infoCard}>
-          <Text style={styles.brand}>{device.brand}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <Text style={[styles.brand, { flex: 1, marginRight: 8 }]}>{device.brand}</Text>
+            <CompatibilityCard
+              profile={profile}
+              user={user}
+              category={device.category}
+              itemName={device.name}
+              coupangUrl={device.coupang_url}
+              itemType="device"
+            />
+          </View>
           <Text style={styles.name}>{device.name}</Text>
           <TouchableOpacity
             style={styles.ratingRow}
@@ -300,7 +311,33 @@ export default function DeviceDetailScreen() {
           style={styles.clinicMapBanner}
           onPress={() => router.push({
             pathname: '/clinic-map',
-            params: { treatmentName: device.category },
+            params: {
+              treatmentName: ({
+                // 에너지 리프팅 계열 (RF 고주파·EMS·미세전류)
+                '리프팅':     '리프팅',
+                'RF':         '고주파 리프팅',
+                'RF·EMS':     '리프팅',
+                'EMS':        '리프팅',
+                '미세전류':    '리프팅',
+                // 광 치료 계열 (LED·IPL)
+                'LED':        'LED 피부관리',
+                'LED·RF':     'LED 피부관리',
+                'IPL':        'IPL 제모',
+                // 초음파·수분·이온 계열
+                '초음파':     '초음파 피부관리',
+                '이온도입':   '수분 관리',
+                '스팀':       '수분 관리',
+                // 모공·클렌징·필링 계열
+                '진공흡입':   '모공 관리',
+                '진동클렌저': '모공 클렌징',
+                '필링':       '필링',
+                // 제모
+                '제모':       '제모',
+                // 마사지·순환 계열
+                '진동마사지': '마사지',
+                '롤링':       '마사지',
+              } as Record<string, string>)[device.category] ?? device.category,
+            },
           } as any)}
           activeOpacity={0.85}
         >

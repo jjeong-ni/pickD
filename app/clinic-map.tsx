@@ -6,17 +6,16 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
-import { Colors } from '../constants/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors, HEADER_TOP } from '../constants/colors';
 
 const KAKAO_JS_KEY = '78a1bd65ed949a70fdd8b12e8538909f';
+const DEFAULT_COORDS = { lat: 37.5981, lng: 127.0524 }; // 서울 회기·경희대 기본값
 
-interface Coords {
-  lat: number;
-  lng: number;
-}
+interface Coords { lat: number; lng: number }
 
+// ─── 네이티브용 WebView HTML ──────────────────────────────────────────────────
 function buildMapHtml(coords: Coords, keyword: string): string {
-  const query = encodeURIComponent(keyword);
   return `
 <!DOCTYPE html>
 <html>
@@ -27,14 +26,14 @@ function buildMapHtml(coords: Coords, keyword: string): string {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, sans-serif; }
     #map { width: 100vw; height: 100vh; }
-    .info-wrap {
+    .badge {
       position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
       background: rgba(255,255,255,0.95); border-radius: 20px;
       padding: 8px 16px; font-size: 13px; color: #333;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15); white-space: nowrap;
       pointer-events: none; z-index: 100;
     }
-    .info-wrap b { color: #FF6B9D; }
+    .badge b { color: #FF6B9D; }
     .place-info {
       padding: 14px 16px; background: white; border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.12); font-size: 13px; line-height: 1.6;
@@ -43,7 +42,7 @@ function buildMapHtml(coords: Coords, keyword: string): string {
     .place-info .addr { color: #666; margin-top: 2px; }
     .place-info .phone { color: #FF6B9D; margin-top: 2px; }
     .place-info a { color: #FF6B9D; font-weight: 600; text-decoration: none; }
-    .my-marker {
+    .my-dot {
       width: 14px; height: 14px; border-radius: 50%;
       background: #4A90E2; border: 3px solid white;
       box-shadow: 0 0 0 3px rgba(74,144,226,0.35);
@@ -52,39 +51,36 @@ function buildMapHtml(coords: Coords, keyword: string): string {
 </head>
 <body>
 <div id="map"></div>
-<div class="info-wrap">📍 <b>${keyword}</b> 주변 피부과 탐색 중...</div>
+<div class="badge" id="badge">📍 <b>${keyword}</b> 주변 피부과 탐색 중...</div>
 
 <script>
+var map, myOverlay, infowindow;
+
 var script = document.createElement('script');
 script.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&libraries=services&autoload=false';
-script.onload = function() {
-  kakao.maps.load(function() { initMap(); });
-};
+script.onload = function() { kakao.maps.load(initMap); };
 document.head.appendChild(script);
 
 function initMap() {
   var container = document.getElementById('map');
-  var myLatLng = new kakao.maps.LatLng(${coords.lat}, ${coords.lng});
-  var map = new kakao.maps.Map(container, { center: myLatLng, level: 4 });
+  var center = new kakao.maps.LatLng(${coords.lat}, ${coords.lng});
+  map = new kakao.maps.Map(container, { center: center, level: 5 });
+  infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
+  searchNearby(${coords.lat}, ${coords.lng});
+}
 
-  // 내 위치: 파란 원 커스텀 오버레이
-  new kakao.maps.CustomOverlay({
-    map: map,
-    position: myLatLng,
-    content: '<div class="my-marker"></div>',
-    zIndex: 5
-  });
-
-  // 장소 검색
+function searchNearby(lat, lng) {
+  if (!map) return;
+  var latlng = new kakao.maps.LatLng(lat, lng);
   var ps = new kakao.maps.services.Places();
-  var infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
+  var badge = document.getElementById('badge');
+  if (badge) badge.innerHTML = '📍 <b>${keyword}</b> 주변 피부과 탐색 중...';
 
-  ps.keywordSearch('${query} 피부과', function(data, status) {
-    var infoEl = document.querySelector('.info-wrap');
+  ps.keywordSearch('${encodeURIComponent(keyword)} 피부과', function(data, status) {
     if (status === kakao.maps.services.Status.OK) {
-      infoEl.innerHTML = '📍 주변 피부과 <b>' + data.length + '곳</b>';
+      if (badge) badge.innerHTML = '📍 주변 피부과 <b>' + data.length + '곳</b>';
       var bounds = new kakao.maps.LatLngBounds();
-      bounds.extend(myLatLng);
+      bounds.extend(latlng);
       data.forEach(function(place) {
         var pos = new kakao.maps.LatLng(place.y, place.x);
         var marker = new kakao.maps.Marker({ map: map, position: pos, title: place.place_name });
@@ -103,131 +99,130 @@ function initMap() {
       });
       map.setBounds(bounds);
     } else {
-      infoEl.innerHTML = '⚠️ 주변 피부과를 찾지 못했어요';
+      if (badge) badge.innerHTML = '⚠️ 주변 피부과를 찾지 못했어요';
     }
-  }, {
-    location: myLatLng,
-    radius: 5000,
-    sort: kakao.maps.services.SortBy.DISTANCE
-  });
+  }, { location: latlng, radius: 5000, sort: kakao.maps.services.SortBy.DISTANCE });
 }
+
+// React Native에서 injectJavaScript로 호출
+window.moveToMyLocation = function(lat, lng) {
+  if (!map) return;
+  var pos = new kakao.maps.LatLng(lat, lng);
+  map.setCenter(pos);
+  map.setLevel(4);
+  if (myOverlay) myOverlay.setMap(null);
+  var dot = document.createElement('div');
+  dot.className = 'my-dot';
+  myOverlay = new kakao.maps.CustomOverlay({ map: map, position: pos, content: dot, zIndex: 5 });
+  searchNearby(lat, lng);
+};
 </script>
 </body>
 </html>
 `;
 }
 
-// ─── 웹 전용: SDK 직접 삽입 컴포넌트 ──────────────────────────────────────────
+// ─── 웹 전용 컴포넌트 ─────────────────────────────────────────────────────────
 function WebKakaoMap({ keyword }: { keyword: string }) {
   const mapDivRef = useRef<any>(null);
-  const [webCoords, setWebCoords] = useState<Coords | null>(null);
-  const [webLoading, setWebLoading] = useState(true);
+  const kakaoMapRef = useRef<any>(null);
+  const myOverlayRef = useRef<any>(null);
   const scriptLoaded = useRef(false);
+  const [locating, setLocating] = useState(false);
+  const badgeRef = useRef<any>(null);
+
+  const searchNearby = (lat: number, lng: number) => {
+    const kakao = (window as any).kakao;
+    const map = kakaoMapRef.current;
+    if (!map) return;
+
+    const latlng = new kakao.maps.LatLng(lat, lng);
+    const ps = new kakao.maps.services.Places();
+    const infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
+    if (badgeRef.current) badgeRef.current.textContent = `📍 ${keyword} 주변 피부과 탐색 중...`;
+
+    ps.keywordSearch(`${keyword} 피부과`, (data: any[], status: string) => {
+      if (status === kakao.maps.services.Status.OK) {
+        if (badgeRef.current) badgeRef.current.innerHTML = `📍 주변 피부과 <b style="color:#FF6B9D">${data.length}곳</b>`;
+        const bounds = new kakao.maps.LatLngBounds();
+        bounds.extend(latlng);
+        data.forEach((place: any) => {
+          const pos = new kakao.maps.LatLng(place.y, place.x);
+          const marker = new kakao.maps.Marker({ map, position: pos, title: place.place_name });
+          bounds.extend(pos);
+          kakao.maps.event.addListener(marker, 'click', () => {
+            infowindow.setContent(
+              `<div style="padding:12px 14px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.12);font-size:13px;line-height:1.6;max-width:220px">
+                <div style="font-weight:700;font-size:15px;color:#111">${place.place_name}</div>
+                <div style="color:#666;margin-top:2px">${place.road_address_name || place.address_name}</div>
+                ${place.phone ? `<div style="color:#FF6B9D;margin-top:2px">📞 ${place.phone}</div>` : ''}
+                <div style="margin-top:8px"><a href="${place.place_url}" target="_blank" style="color:#FF6B9D;font-weight:600;text-decoration:none">카카오맵에서 보기 →</a></div>
+              </div>`
+            );
+            infowindow.open(map, marker);
+          });
+        });
+        map.setBounds(bounds);
+      } else {
+        if (badgeRef.current) badgeRef.current.textContent = '⚠️ 주변 피부과를 찾지 못했어요';
+      }
+    }, { location: latlng, radius: 5000, sort: kakao.maps.services.SortBy.DISTANCE });
+  };
+
+  const initMap = (lat: number, lng: number) => {
+    const kakao = (window as any).kakao;
+    const container = mapDivRef.current;
+    if (!container) return;
+    const center = new kakao.maps.LatLng(lat, lng);
+    const map = new kakao.maps.Map(container, { center, level: 5 });
+    kakaoMapRef.current = map;
+    searchNearby(lat, lng);
+  };
 
   useEffect(() => {
-    if (typeof navigator === 'undefined') {
-      setWebCoords({ lat: 37.5172, lng: 127.0473 });
-      setWebLoading(false);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setWebCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setWebLoading(false);
-      },
-      () => {
-        setWebCoords({ lat: 37.5172, lng: 127.0473 });
-        setWebLoading(false);
-      },
-      { timeout: 8000 }
-    );
-  }, []);
-
-  useEffect(() => {
-    if (!webCoords || webLoading || scriptLoaded.current) return;
+    if (scriptLoaded.current || typeof window === 'undefined') return;
     scriptLoaded.current = true;
 
-    const { lat, lng } = webCoords;
-    const query = encodeURIComponent(keyword);
+    const load = () => (window as any).kakao.maps.load(() => initMap(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng));
 
-    const initMap = () => {
-      const kakao = (window as any).kakao;
-      const container = mapDivRef.current;
-      if (!container) return;
-      const myLatLng = new kakao.maps.LatLng(lat, lng);
-      const map = new kakao.maps.Map(container, { center: myLatLng, level: 4 });
-
-      const myOverlay = document.createElement('div');
-      myOverlay.style.cssText = 'width:14px;height:14px;border-radius:50%;background:#4A90E2;border:3px solid white;box-shadow:0 0 0 3px rgba(74,144,226,0.35)';
-      new kakao.maps.CustomOverlay({ map, position: myLatLng, content: myOverlay, zIndex: 5 });
-
-      const ps = new kakao.maps.services.Places();
-      const infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
-      const badge = document.getElementById('web-map-badge');
-
-      ps.keywordSearch(`${decodeURIComponent(query)} 피부과`, (data: any[], status: string) => {
-        if (status === kakao.maps.services.Status.OK) {
-          if (badge) badge.textContent = `📍 주변 피부과 ${data.length}곳`;
-          const bounds = new kakao.maps.LatLngBounds();
-          bounds.extend(myLatLng);
-          data.forEach((place: any) => {
-            const pos = new kakao.maps.LatLng(place.y, place.x);
-            const marker = new kakao.maps.Marker({ map, position: pos, title: place.place_name });
-            bounds.extend(pos);
-            kakao.maps.event.addListener(marker, 'click', () => {
-              infowindow.setContent(
-                `<div style="padding:12px 14px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.12);font-size:13px;line-height:1.6;max-width:220px">
-                  <div style="font-weight:700;font-size:15px;color:#111">${place.place_name}</div>
-                  <div style="color:#666;margin-top:2px">${place.road_address_name || place.address_name}</div>
-                  ${place.phone ? `<div style="color:#FF6B9D;margin-top:2px">📞 ${place.phone}</div>` : ''}
-                  <div style="margin-top:8px"><a href="${place.place_url}" target="_blank" style="color:#FF6B9D;font-weight:600;text-decoration:none">카카오맵에서 보기 →</a></div>
-                </div>`
-              );
-              infowindow.open(map, marker);
-            });
-          });
-          map.setBounds(bounds);
-        } else {
-          if (badge) badge.textContent = '⚠️ 주변 피부과를 찾지 못했어요';
-        }
-      }, { location: myLatLng, radius: 5000, sort: kakao.maps.services.SortBy.DISTANCE });
-    };
-
-    if ((window as any).kakao?.maps) {
-      (window as any).kakao.maps.load(initMap);
-      return;
-    }
+    if ((window as any).kakao?.maps) { load(); return; }
 
     const script = document.createElement('script');
     script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&libraries=services&autoload=false`;
-    script.onload = () => {
-      try { (window as any).kakao.maps.load(initMap); } catch (e) {
-        const badge = document.getElementById('web-map-badge');
-        if (badge) badge.textContent = '⚠️ 지도를 불러오지 못했어요 (API 키 도메인 확인 필요)';
-      }
-    };
-    script.onerror = () => {
-      const badge = document.getElementById('web-map-badge');
-      if (badge) badge.textContent = '⚠️ 카카오맵 SDK를 불러오지 못했어요';
-    };
+    script.onload = () => { try { load(); } catch { if (badgeRef.current) badgeRef.current.textContent = '⚠️ 지도를 불러오지 못했어요'; } };
+    script.onerror = () => { if (badgeRef.current) badgeRef.current.textContent = '⚠️ 카카오맵 SDK 로드 실패'; };
     document.head.appendChild(script);
-  }, [webCoords, webLoading]);
+  }, []);
 
-  if (webLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>내 위치를 확인 중이에요...</Text>
-      </View>
+  const handleMyLocation = () => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        const kakao = (window as any).kakao;
+        const map = kakaoMapRef.current;
+        if (!map) { setLocating(false); return; }
+        const latlng = new kakao.maps.LatLng(lat, lng);
+        map.setCenter(latlng);
+        map.setLevel(4);
+        if (myOverlayRef.current) myOverlayRef.current.setMap(null);
+        const dot = document.createElement('div');
+        dot.style.cssText = 'width:14px;height:14px;border-radius:50%;background:#4A90E2;border:3px solid white;box-shadow:0 0 0 3px rgba(74,144,226,0.35)';
+        myOverlayRef.current = new kakao.maps.CustomOverlay({ map, position: latlng, content: dot, zIndex: 5 });
+        searchNearby(lat, lng);
+        setLocating(false);
+      },
+      () => { setLocating(false); },
+      { timeout: 8000 }
     );
-  }
+  };
 
-  // @ts-ignore — React Native Web에서 div 직접 사용
   return (
     <View style={{ flex: 1, position: 'relative' }}>
       {/* @ts-ignore */}
       <div
-        id="web-map-badge"
+        ref={badgeRef}
         style={{
           position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(255,255,255,0.95)', borderRadius: 20,
@@ -236,8 +231,19 @@ function WebKakaoMap({ keyword }: { keyword: string }) {
           zIndex: 100, pointerEvents: 'none',
         }}
       >
-        📍 <b style={{ color: '#FF6B9D' }}>{keyword}</b> 주변 피부과 탐색 중...
+        📍 피부과 탐색 중...
       </div>
+
+      {/* 내 위치 버튼 (웹 지도 위 플로팅) */}
+      <View style={styles.myLocBtn} pointerEvents="box-none">
+        <TouchableOpacity style={styles.myLocBtnInner} onPress={handleMyLocation} disabled={locating}>
+          {locating
+            ? <ActivityIndicator size="small" color={Colors.primary} />
+            : <Ionicons name="locate" size={20} color={Colors.primary} />}
+          <Text style={styles.myLocBtnText}>내 위치</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* @ts-ignore */}
       <div
         ref={mapDivRef}
@@ -247,56 +253,62 @@ function WebKakaoMap({ keyword }: { keyword: string }) {
   );
 }
 
-// ─── 메인 화면 ──────────────────────────────────────────────────────────────
+// ─── 메인 화면 ────────────────────────────────────────────────────────────────
 export default function ClinicMapScreen() {
   const { treatmentName } = useLocalSearchParams<{ treatmentName?: string }>();
   const keyword = treatmentName || '피부과';
 
-  const [coords, setCoords] = useState<Coords | null>(null);
-  const [permissionDenied, setPermissionDenied] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [coords, setCoords] = useState<Coords>(DEFAULT_COORDS); // 즉시 기본값
+  const [locating, setLocating] = useState(false);
   const webViewRef = useRef<any>(null);
 
-  useEffect(() => {
-    if (Platform.OS !== 'web') requestLocation();
-    else setLoading(false);
-  }, []);
-
-  const requestLocation = async () => {
+  const handleMyLocation = async () => {
+    setLocating(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setPermissionDenied(true);
-        setLoading(false);
+        Alert.alert(
+          '위치 권한 필요',
+          '내 위치로 이동하려면 위치 접근 권한이 필요해요.',
+          [
+            { text: '설정 열기', onPress: () => Linking.openSettings() },
+            { text: '취소', style: 'cancel' },
+          ]
+        );
+        setLocating(false);
         return;
       }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+      const newCoords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+      setCoords(newCoords);
+      // WebView에 이미 로드된 지도에 JS로 위치 전달
+      webViewRef.current?.injectJavaScript(
+        `window.moveToMyLocation(${newCoords.lat}, ${newCoords.lng}); true;`
+      );
     } catch {
-      setCoords({ lat: 37.5172, lng: 127.0473 });
+      Alert.alert('오류', '위치를 가져오지 못했어요.');
     } finally {
-      setLoading(false);
+      setLocating(false);
     }
   };
 
   const Header = () => (
     <View style={styles.header}>
       <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-        <Text style={styles.backBtnText}>←</Text>
+        <Ionicons name="arrow-back" size={22} color={Colors.text} />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>근처 피부과 찾기</Text>
       {Platform.OS !== 'web' ? (
-        <TouchableOpacity
-          style={styles.refreshBtn}
-          onPress={() => { setLoading(true); setCoords(null); requestLocation(); }}
-        >
-          <Text style={{ fontSize: 18 }}>🔄</Text>
+        <TouchableOpacity style={styles.myLocHeaderBtn} onPress={handleMyLocation} disabled={locating}>
+          {locating
+            ? <ActivityIndicator size="small" color={Colors.primary} />
+            : <Ionicons name="locate" size={20} color={Colors.primary} />}
+          <Text style={styles.myLocHeaderText}>내 위치</Text>
         </TouchableOpacity>
-      ) : <View style={{ width: 40 }} />}
+      ) : <View style={{ width: 64 }} />}
     </View>
   );
 
-  // ── 웹: SDK 직접 삽입 ──
   if (Platform.OS === 'web') {
     return (
       <View style={styles.container}>
@@ -311,29 +323,6 @@ export default function ClinicMapScreen() {
     );
   }
 
-  // ── 네이티브: 위치 권한 거부 ──
-  if (permissionDenied) {
-    return (
-      <View style={styles.container}>
-        <Header />
-        <View style={styles.permissionDenied}>
-          <Text style={{ fontSize: 48 }}>📍</Text>
-          <Text style={styles.permTitle}>위치 권한이 필요해요</Text>
-          <Text style={styles.permDesc}>근처 피부과를 찾으려면{'\n'}위치 접근 권한을 허용해주세요.</Text>
-          <TouchableOpacity style={styles.permBtn} onPress={() => Linking.openSettings()}>
-            <Text style={styles.permBtnText}>설정에서 권한 허용</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.permBtnSecondary}
-            onPress={() => { setPermissionDenied(false); setLoading(false); setCoords({ lat: 37.5172, lng: 127.0473 }); }}
-          >
-            <Text style={styles.permBtnSecondaryText}>서울 강남 기준으로 보기</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <Header />
@@ -342,23 +331,16 @@ export default function ClinicMapScreen() {
           <Text style={styles.keywordBadgeText}>✨ "{treatmentName}" 시술 가능한 피부과 탐색</Text>
         </View>
       )}
-      {loading || !coords ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>내 위치를 확인 중이에요...</Text>
-        </View>
-      ) : (
-        <WebView
-          ref={webViewRef}
-          style={{ flex: 1 }}
-          source={{ html: buildMapHtml(coords, keyword) }}
-          javaScriptEnabled
-          domStorageEnabled
-          originWhitelist={['*']}
-          mixedContentMode="always"
-          onError={() => Alert.alert('오류', '지도를 불러오지 못했어요. 네트워크를 확인해주세요.')}
-        />
-      )}
+      <WebView
+        ref={webViewRef}
+        style={{ flex: 1 }}
+        source={{ html: buildMapHtml(DEFAULT_COORDS, keyword) }}
+        javaScriptEnabled
+        domStorageEnabled
+        originWhitelist={['*']}
+        mixedContentMode="always"
+        onError={() => Alert.alert('오류', '지도를 불러오지 못했어요. 네트워크를 확인해주세요.')}
+      />
     </View>
   );
 }
@@ -367,24 +349,31 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: 56, paddingBottom: 12, paddingHorizontal: 16,
+    paddingTop: HEADER_TOP, paddingBottom: 12, paddingHorizontal: 16,
     backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   backBtn: { width: 40, alignItems: 'flex-start' },
-  backBtnText: { fontSize: 24, color: Colors.text },
   headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.text },
-  refreshBtn: { width: 40, alignItems: 'flex-end' },
+  myLocHeaderBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingVertical: 6, paddingHorizontal: 10,
+    borderRadius: 16, borderWidth: 1.5, borderColor: Colors.primary,
+    minWidth: 64, justifyContent: 'center',
+  },
+  myLocHeaderText: { fontSize: 12, fontWeight: '700', color: Colors.primary },
   keywordBadge: {
     backgroundColor: '#FFF0F5', paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center',
   },
   keywordBadgeText: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText: { fontSize: 15, color: Colors.sub },
-  permissionDenied: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-  permTitle: { fontSize: 20, fontWeight: '800', color: Colors.text, textAlign: 'center' },
-  permDesc: { fontSize: 14, color: Colors.sub, textAlign: 'center', lineHeight: 22 },
-  permBtn: { marginTop: 8, backgroundColor: Colors.primary, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 12 },
-  permBtnText: { color: Colors.white, fontWeight: '700', fontSize: 15 },
-  permBtnSecondary: { paddingVertical: 10, paddingHorizontal: 20 },
-  permBtnSecondaryText: { color: Colors.sub, fontSize: 14 },
+  myLocBtn: {
+    position: 'absolute', bottom: 24, right: 16, zIndex: 200,
+  },
+  myLocBtnInner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: Colors.white, paddingVertical: 10, paddingHorizontal: 16,
+    borderRadius: 24, borderWidth: 1.5, borderColor: Colors.primary,
+    shadowColor: Colors.pinkShadow, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1, shadowRadius: 12, elevation: 6,
+  },
+  myLocBtnText: { fontSize: 13, fontWeight: '700', color: Colors.primary },
 });
