@@ -24,39 +24,32 @@ export default function PaymentScreen() {
       router.push('/(auth)/login' as any);
       return;
     }
-    if (!hasEnough) {
-      Alert.alert('포인트 부족', `보유 포인트(${profile.points}pt)가 부족해요.\n미션을 완료해서 포인트를 모아보세요!`, [
-        { text: '미션 가기', onPress: () => router.push('/missions' as any) },
-        { text: '닫기', style: 'cancel' },
-      ]);
-      return;
-    }
     setLoading(true);
-    const { data, error } = await supabase.rpc('deduct_points_for_report', {
+    // 이미 구매한 경우 재차감 없이 바로 이동
+    if (isReport) {
+      const { data: existing } = await supabase.from('point_logs')
+        .select('id').eq('user_id', user.id).eq('reason', '맞춤 피부 분석 보고서').limit(1);
+      if (existing && existing.length > 0) {
+        setLoading(false);
+        router.replace('/skin-report' as any);
+        return;
+      }
+    }
+    const { data, error } = await supabase.rpc('deduct_points', {
       p_user_id: user.id,
-      p_cost: cost,
+      p_amount: cost,
+      p_reason: '맞춤 피부 분석 보고서',
     });
-    if (error || !data) {
+    if (error || !data?.success) {
       setLoading(false);
-      Alert.alert('오류', '처리 중 문제가 발생했어요. 다시 시도해주세요.');
-      return;
-    }
-    if (data.status === 'already_purchased') {
-      setLoading(false);
-      router.replace('/skin-report' as any);
-      return;
-    }
-    if (data.status === 'insufficient_points') {
-      setLoading(false);
-      Alert.alert('포인트 부족', `보유 포인트(${data.current_points}pt)가 부족해요.\n미션을 완료해서 포인트를 모아보세요!`, [
-        { text: '미션 가기', onPress: () => router.push('/missions' as any) },
-        { text: '닫기', style: 'cancel' },
-      ]);
-      return;
-    }
-    if (data.status !== 'ok') {
-      setLoading(false);
-      Alert.alert('오류', '처리 중 문제가 발생했어요.');
+      if (data?.error === 'insufficient_points') {
+        Alert.alert('포인트 부족', `보유 포인트(${data.current_points}pt)가 부족해요.\n미션을 완료해서 포인트를 모아보세요!`, [
+          { text: '미션 가기', onPress: () => router.push('/missions' as any) },
+          { text: '닫기', style: 'cancel' },
+        ]);
+      } else {
+        Alert.alert('오류', '포인트 처리 중 문제가 발생했어요. 다시 시도해주세요.');
+      }
       return;
     }
     await fetchProfile(user.id);
