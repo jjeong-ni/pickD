@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { Colors } from '../constants/colors';
+import { Colors, HEADER_TOP } from '../constants/colors';
 
 type FaceShape = '계란형' | '둥근형' | '사각형' | '하트형' | '긴형' | '다이아몬드형';
 const ALL_SHAPES: FaceShape[] = ['계란형', '둥근형', '사각형', '하트형', '긴형', '다이아몬드형'];
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
   /* 헤더 */
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: 56, paddingHorizontal: 16, paddingBottom: 12,
+    paddingTop: HEADER_TOP, paddingHorizontal: 16, paddingBottom: 12,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   back: { fontSize: 24, color: Colors.text, width: 32 },

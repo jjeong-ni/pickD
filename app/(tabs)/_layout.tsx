@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Platform, View, StyleSheet } from 'react-native';
-import { Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useCompare } from '../../hooks/useCompare';
 
 function GlassTabBar() {
@@ -35,8 +35,8 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: '홈',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }} accessibilityLabel="홈">🏠</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />
           ),
         }}
       />
@@ -44,8 +44,8 @@ export default function TabsLayout() {
         name="search"
         options={{
           title: '검색',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }} accessibilityLabel="검색">🔍</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'search' : 'search-outline'} size={24} color={color} />
           ),
         }}
       />
@@ -53,8 +53,8 @@ export default function TabsLayout() {
         name="compare"
         options={{
           title: '비교함',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }} accessibilityLabel="비교함">📦</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'layers' : 'layers-outline'} size={24} color={color} />
           ),
           tabBarBadge: compareCount > 0 ? compareCount : undefined,
         }}
@@ -63,8 +63,8 @@ export default function TabsLayout() {
         name="community"
         options={{
           title: '커뮤니티',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }} accessibilityLabel="커뮤니티">💬</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={24} color={color} />
           ),
         }}
       />
@@ -72,8 +72,8 @@ export default function TabsLayout() {
         name="mypage"
         options={{
           title: '마이페이지',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }} accessibilityLabel="마이페이지">👤</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={24} color={color} />
           ),
         }}
       />

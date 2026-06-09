@@ -515,6 +515,13 @@ export default function SkinReportScreen() {
     if (!demo && user?.id) fetchProfile(user.id);
   }, [user?.id]);
 
+  // 비로그인 + 데모 아닌 경우 → 결제 화면으로 리다이렉트
+  useEffect(() => {
+    if (!demo && !user) {
+      router.replace('/payment?itemName=맞춤 분석 보고서&amount=990&returnTo=skin-report' as any);
+    }
+  }, [demo, user]);
+
   const demoProfile = demo ? DEMO_PROFILES[demo] ?? DEMO_PROFILES['둥근형-지성'] : null;
 
   const faceShape = demoProfile?.face_shape ?? profile?.face_shape ?? '';

@@ -1,5 +1,5 @@
 export type SkinType = '건성' | '지성' | '복합성' | '민감성' | '중성';
-export type FaceShape = '타원형' | '둥근형' | '각진형' | '하트형' | '긴형';
+export type FaceShape = '계란형' | '둥근형' | '사각형' | '하트형' | '긴형' | '다이아몬드형';
 export type ItemType = 'treatment' | 'device';
 
 export interface SkinMetrics {
