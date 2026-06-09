@@ -300,7 +300,15 @@ export default function DeviceDetailScreen() {
           style={styles.clinicMapBanner}
           onPress={() => router.push({
             pathname: '/clinic-map',
-            params: { treatmentName: device.category },
+            params: {
+              treatmentName: ({
+                '리프팅': '리프팅',
+                'RF': '모공·피지',
+                'LED': '미백·잡티',
+                '초음파': '초음파',
+                '제모': '제모',
+              } as Record<string, string>)[device.category] ?? device.category,
+            },
           } as any)}
           activeOpacity={0.85}
         >
