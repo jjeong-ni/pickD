@@ -14,7 +14,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
 import { Treatment, Device } from '../../types';
 
-const KAKAO_JS_KEY = '78a1bd65ed949a70fdd8b12e8538909f';
+const KAKAO_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_JS_KEY ?? '78a1bd65ed949a70fdd8b12e8538909f';
 const REPORT_COST = 990;
 
 type PairBundle = {
@@ -118,6 +118,7 @@ export default function HomeScreen() {
   const [recommended, setRecommended] = useState<Treatment[]>([]);
   const [pairs, setPairs] = useState<PairBundle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [signupPopup, setSignupPopup] = useState<{ nickname: string } | null>(null);
 
@@ -133,10 +134,12 @@ export default function HomeScreen() {
   };
 
   const fetchData = async () => {
+    try {
     const [t, d] = await Promise.all([
       supabase.from('treatments').select('*').limit(6).order('rating', { ascending: false }),
       supabase.from('devices').select('*').limit(6).order('rating', { ascending: false }),
     ]);
+    if (t.error || d.error) { setFetchError(true); setLoading(false); return; }
     const tData: Treatment[] = t.data ?? [];
     const dData: Device[] = d.data ?? [];
     setTreatments(tData);
@@ -152,6 +155,11 @@ export default function HomeScreen() {
     }
     setPairs(built);
     setLoading(false);
+    } catch (e) {
+      console.error('fetchData error:', e);
+      setFetchError(true);
+      setLoading(false);
+    }
   };
 
   const fetchRecommended = async () => {
@@ -188,8 +196,22 @@ export default function HomeScreen() {
       return;
     }
     const newPoints = currentPoints - REPORT_COST;
-    await supabase.from('profiles').update({ points: newPoints }).eq('user_id', user.id);
-    await supabase.from('point_logs').insert({ user_id: user.id, amount: -REPORT_COST, reason: '맞춤 피부 분석 보고서' });
+    const { error: deductError } = await supabase
+      .from('profiles').update({ points: newPoints }).eq('user_id', user.id);
+    if (deductError) {
+      setReportLoading(false);
+      Alert.alert('오류', '포인트 차감 중 오류가 발생했어요. 다시 시도해주세요.');
+      return;
+    }
+    const { error: logError } = await supabase
+      .from('point_logs').insert({ user_id: user.id, amount: -REPORT_COST, reason: '맞춤 피부 분석 보고서' });
+    if (logError) {
+      // 로그 실패 시 포인트 복구
+      await supabase.from('profiles').update({ points: currentPoints }).eq('user_id', user.id);
+      setReportLoading(false);
+      Alert.alert('오류', '처리 중 오류가 발생했어요. 다시 시도해주세요.');
+      return;
+    }
     setProfile({ ...profile, points: newPoints });
     setReportLoading(false);
     router.push('/skin-report' as any);
@@ -199,6 +221,23 @@ export default function HomeScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={Colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <View style={styles.center}>
+        <Text style={{ fontSize: 36 }}>⚠️</Text>
+        <Text style={{ fontSize: 15, color: Colors.sub, marginTop: 12, textAlign: 'center' }}>
+          데이터를 불러오지 못했어요{'\n'}네트워크를 확인 후 다시 시도해주세요
+        </Text>
+        <TouchableOpacity
+          onPress={() => { setFetchError(false); setLoading(true); fetchData(); }}
+          style={{ marginTop: 20, paddingVertical: 12, paddingHorizontal: 28, backgroundColor: Colors.primary, borderRadius: 12 }}
+        >
+          <Text style={{ color: '#fff', fontWeight: '700' }}>다시 시도</Text>
+        </TouchableOpacity>
       </View>
     );
   }

@@ -1,12 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// 토스페이먼츠 시크릿 키 (서버 전용 — 절대 앱에 노출하지 말 것)
-const TOSS_SECRET_KEY = 'test_sk_zXLkKEypNArWmo50nX3lmeaxYG5R';
+const TOSS_SECRET_KEY = Deno.env.get('TOSS_SECRET_KEY') ?? '';
 const TOSS_CONFIRM_URL = 'https://api.tosspayments.com/v1/payments/confirm';
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? 'https://pick-d.vercel.app';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
@@ -16,10 +16,37 @@ serve(async (req) => {
   }
 
   try {
-    const { paymentKey, orderId, amount, userId, orderName } = await req.json();
+    // JWT로 요청자 신원 검증
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: '인증이 필요합니다' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    if (!paymentKey || !orderId || !amount || !userId) {
+    const supabaseVerify = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user: authUser }, error: authError } = await supabaseVerify.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(JSON.stringify({ error: '유효하지 않은 인증입니다' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { paymentKey, orderId, amount, orderName } = await req.json();
+    const userId = authUser.id; // 클라이언트 제공값 무시, JWT에서 추출
+
+    if (!paymentKey || !orderId || !amount) {
       return new Response(JSON.stringify({ error: '필수 파라미터 누락' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (typeof amount !== 'number' || amount <= 0 || amount > 1000000) {
+      return new Response(JSON.stringify({ error: '유효하지 않은 결제 금액입니다' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

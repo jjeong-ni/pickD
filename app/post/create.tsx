@@ -41,30 +41,32 @@ export default function CreatePostScreen() {
     setLoading(true);
 
     if (isQuiz) {
-      // Quiz creation: costs 100pt
       const currentPoints = profile?.points ?? 0;
       if (currentPoints < 100) {
         Alert.alert('포인트 부족', '퀴즈 생성에 100pt가 필요해요');
         setLoading(false);
         return;
       }
-      // Deduct 100pt
-      await supabase.from('profiles').update({ points: currentPoints - 100 }).eq('user_id', user.id);
-      await supabase.from('point_logs').insert({ user_id: user.id, amount: -100, reason: '퀴즈 생성' });
-      // Insert quiz post
-      const { error } = await supabase.from('posts').insert({
+      // 먼저 포스트 삽입 후 포인트 차감 (포스트 실패 시 포인트 차감 방지)
+      const { error: postError } = await supabase.from('posts').insert({
         user_id: user.id,
         title: title.trim(),
         body: JSON.stringify({ options: [optionA.trim(), optionB.trim()] }),
         category,
       });
-      if (error) {
+      if (postError) {
         Alert.alert('오류', '퀴즈 작성 중 오류가 발생했어요');
         setLoading(false);
         return;
       }
-      // Update Zustand profile
-      if (profile) setProfile({ ...profile, points: currentPoints - 100 });
+      const { error: deductError } = await supabase
+        .from('profiles').update({ points: currentPoints - 100 }).eq('user_id', user.id);
+      if (deductError) {
+        console.error('퀴즈 포인트 차감 실패:', deductError);
+      } else {
+        await supabase.from('point_logs').insert({ user_id: user.id, amount: -100, reason: '퀴즈 생성' });
+        if (profile) setProfile({ ...profile, points: currentPoints - 100 });
+      }
       setLoading(false);
       triggerRefresh();
       router.back();

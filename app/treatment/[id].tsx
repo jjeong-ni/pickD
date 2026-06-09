@@ -20,6 +20,7 @@ export default function TreatmentDetailScreen() {
   const [treatment, setTreatment] = useState<Treatment | null>(null);
   const [relatedDevices, setRelatedDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
+  const [networkError, setNetworkError] = useState(false);
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,7 +55,8 @@ export default function TreatmentDetailScreen() {
         setRelatedDevices(devs ?? []);
       }
     } catch (e) {
-      // network error — leave treatment null, show not-found UI
+      console.error('fetchData network error:', e);
+      setNetworkError(true);
     } finally {
       setLoading(false);
     }
@@ -116,6 +118,15 @@ export default function TreatmentDetailScreen() {
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.primary} size="large" /></View>;
+  if (networkError) return (
+    <View style={styles.center}>
+      <Text style={{ fontSize: 48 }}>📡</Text>
+      <Text style={{ fontSize: 16, color: Colors.sub, marginTop: 12, textAlign: 'center' }}>네트워크 오류가 발생했어요{'\n'}연결 상태를 확인해주세요</Text>
+      <TouchableOpacity onPress={() => { setNetworkError(false); setLoading(true); fetchData(); }} style={{ marginTop: 20, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: Colors.primary, borderRadius: 12 }}>
+        <Text style={{ color: '#fff', fontWeight: '700' }}>다시 시도</Text>
+      </TouchableOpacity>
+    </View>
+  );
   if (!treatment) return (
     <View style={styles.center}>
       <Text style={{ fontSize: 48 }}>😢</Text>

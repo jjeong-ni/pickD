@@ -58,10 +58,12 @@ export default function CommunityScreen() {
   const [category, setCategory] = useState('전체');
   const [posts, setPosts] = useState<PostWithVoteCount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
+    setFetchError(false);
     try {
       let q = supabase
         .from('posts')
@@ -109,10 +111,14 @@ export default function CommunityScreen() {
             }
           }
         }
-      } catch { /* quiz_votes table may not exist yet */ }
+      } catch (e) {
+        console.error('quiz_votes fetch error:', e);
+      }
 
       setPosts(fetchedPosts);
-    } catch {
+    } catch (e) {
+      console.error('fetchPosts error:', e);
+      setFetchError(true);
       setPosts([]);
     } finally {
       setLoading(false);
@@ -170,6 +176,14 @@ export default function CommunityScreen() {
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>
+      ) : fetchError ? (
+        <View style={styles.center}>
+          <Text style={styles.emptyIcon}>⚠️</Text>
+          <Text style={styles.emptyText}>게시글을 불러오지 못했어요</Text>
+          <TouchableOpacity style={styles.writeEmptyBtn} onPress={fetchPosts}>
+            <Text style={styles.writeEmptyBtnText}>다시 시도</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
           data={posts}

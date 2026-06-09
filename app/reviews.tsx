@@ -113,12 +113,16 @@ export default function ReviewsScreen() {
 
   const handleSubmitReview = async () => {
     if (!user || !itemId || !newBody.trim()) return;
+    if (newBody.trim().length < 10) {
+      Alert.alert('내용 부족', '리뷰를 10자 이상 작성해주세요.');
+      return;
+    }
     setSubmitting(true);
     let imageUrl: string | null = null;
     if (reviewImageUri) {
       imageUrl = await uploadReviewImage(reviewImageUri);
     }
-    await supabase.from('reviews').insert({
+    const { error: reviewError } = await supabase.from('reviews').insert({
       user_id: user.id,
       item_id: itemId,
       item_type: itemType,
@@ -126,6 +130,11 @@ export default function ReviewsScreen() {
       body: newBody.trim(),
       image_url: imageUrl,
     });
+    if (reviewError) {
+      Alert.alert('오류', '리뷰 등록에 실패했어요. 다시 시도해주세요.');
+      setSubmitting(false);
+      return;
+    }
     // review_count 즉시 반영
     const table = itemType === 'treatment' ? 'treatments' : 'devices';
     const { data: currentItem } = await supabase.from(table).select('review_count').eq('id', itemId).maybeSingle();

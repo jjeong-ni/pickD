@@ -30,6 +30,7 @@ export default function PostDetailScreen() {
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [networkError, setNetworkError] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -69,10 +70,16 @@ export default function PostDetailScreen() {
   };
 
   const fetchData = async () => {
+    try {
     const [p, c] = await Promise.all([
       supabase.from('posts').select('*').eq('id', id).single(),
       supabase.from('comments').select('*').eq('post_id', id).order('created_at', { ascending: true }),
     ]);
+    if (p.error && p.error.code !== 'PGRST116') {
+      setNetworkError(true);
+      setLoading(false);
+      return;
+    }
     if (!p.data) { setLoading(false); return; }
 
     // Collect all user_ids and fetch nicknames in one query
@@ -84,15 +91,28 @@ export default function PostDetailScreen() {
     setPost({ ...p.data, profile: { nickname: nickMap[p.data.user_id] ?? null } } as any);
     setComments((c.data ?? []).map((cm: any) => ({ ...cm, profile: { nickname: nickMap[cm.user_id] ?? null } })));
     setLoading(false);
+    } catch (e) {
+      console.error('fetchData error:', e);
+      setNetworkError(true);
+      setLoading(false);
+    }
   };
 
   const handleLike = async () => {
     if (!post || liked) return;
     const newLikes = post.likes + 1;
-    await supabase.from('posts').update({ likes: newLikes }).eq('id', id);
     setPost({ ...post, likes: newLikes });
     setLiked(true);
     await AsyncStorage.setItem(`liked_post_${id}`, '1');
+    const { error } = await supabase.from('posts').update({ likes: newLikes }).eq('id', id);
+    if (error) {
+      // 실패 시 롤백
+      setPost({ ...post, likes: post.likes });
+      setLiked(false);
+      await AsyncStorage.removeItem(`liked_post_${id}`);
+      console.error('handleLike error:', error);
+      return;
+    }
     // Append to liked posts list (for "하트 누른 게시물" tab)
     const raw = await AsyncStorage.getItem('liked_posts');
     const ids: string[] = raw ? JSON.parse(raw) : [];
@@ -104,18 +124,24 @@ export default function PostDetailScreen() {
   const handleComment = async () => {
     if (!user || !commentText.trim()) return;
     setSubmitting(true);
-    const { data } = await supabase
+    const { data, error: insertError } = await supabase
       .from('comments')
       .insert({ post_id: id, user_id: user.id, body: commentText.trim() })
       .select('*')
       .single();
+    if (insertError) {
+      Alert.alert('오류', '댓글 등록에 실패했어요. 다시 시도해주세요.');
+      setSubmitting(false);
+      return;
+    }
     if (data) {
       const { data: prof } = await supabase.from('profiles').select('nickname').eq('user_id', user.id).maybeSingle();
       setComments((prev) => [...prev, { ...data, profile: { nickname: prof?.nickname ?? null } }]);
       setCommentText('');
       if (post) {
-        await supabase.from('posts').update({ comment_count: post.comment_count + 1 }).eq('id', id);
-        setPost({ ...post, comment_count: post.comment_count + 1 });
+        const { error: countError } = await supabase
+          .from('posts').update({ comment_count: post.comment_count + 1 }).eq('id', id);
+        if (!countError) setPost({ ...post, comment_count: post.comment_count + 1 });
       }
       // 댓글 10pt/일 자동 지급
       const today = new Date().toISOString().split('T')[0];
@@ -223,6 +249,20 @@ export default function PostDetailScreen() {
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>;
+  if (networkError) return (
+    <View style={styles.center}>
+      <Text style={{ fontSize: 36 }}>📡</Text>
+      <Text style={{ fontSize: 15, color: '#8B7B8E', marginTop: 12, textAlign: 'center' }}>
+        네트워크 오류가 발생했어요{'\n'}연결 상태를 확인해주세요
+      </Text>
+      <TouchableOpacity
+        onPress={() => { setNetworkError(false); setLoading(true); fetchData(); }}
+        style={{ marginTop: 20, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: '#FF6B9D', borderRadius: 12 }}
+      >
+        <Text style={{ color: '#fff', fontWeight: '700' }}>다시 시도</Text>
+      </TouchableOpacity>
+    </View>
+  );
   if (!post) return <View style={styles.center}><Text>게시글을 찾을 수 없어요</Text></View>;
 
   // Quiz data
