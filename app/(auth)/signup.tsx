@@ -233,7 +233,12 @@ export default function SignupScreen() {
       skin_dehydration: null,
       created_at: new Date().toISOString(),
     };
-    await supabase.from('profiles').upsert(newProfile, { onConflict: 'user_id' });
+    const { error: profileError } = await supabase.from('profiles').upsert(newProfile, { onConflict: 'user_id' });
+    if (profileError) {
+      setLoading(false);
+      Alert.alert('오류', '프로필 생성 중 문제가 발생했어요. 다시 시도해주세요.');
+      return;
+    }
     await supabase.from('point_logs').insert({ user_id: userId, amount: 1000, reason: '신규 가입' });
     setProfile(newProfile as any);
     await AsyncStorage.setItem('signup_popup', JSON.stringify({ nickname }));
