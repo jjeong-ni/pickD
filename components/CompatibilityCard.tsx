@@ -17,6 +17,11 @@ interface Props {
   itemType: 'device' | 'treatment';
 }
 
+const bar = StyleSheet.create({
+  track: { flex: 1, height: 8, backgroundColor: '#F0E8F5', borderRadius: 4, overflow: 'hidden' },
+  fill:  { height: 8, backgroundColor: Colors.primary, borderRadius: 4 },
+});
+
 function ScoreBar({ score }: { score: number }) {
   return (
     <View style={bar.track}>
@@ -24,11 +29,6 @@ function ScoreBar({ score }: { score: number }) {
     </View>
   );
 }
-
-const bar = StyleSheet.create({
-  track: { flex: 1, height: 8, backgroundColor: '#F0E8F5', borderRadius: 4, overflow: 'hidden' },
-  fill:  { height: 8, backgroundColor: Colors.primary, borderRadius: 4 },
-});
 
 function hearts(n: number) {
   return '🩷'.repeat(n) + '🤍'.repeat(5 - n);
@@ -55,10 +55,9 @@ export default function CompatibilityCard({
 
   const handleCta = () => {
     setVisible(false);
-    if (itemType === 'device' && coupangUrl) {
-      Linking.openURL(coupangUrl).catch(() => null);
-    } else if (itemType === 'device') {
-      router.push('/(tabs)/search' as any);
+    if (itemType === 'device') {
+      const url = coupangUrl ?? `https://www.coupang.com/np/search?q=${encodeURIComponent(itemName)}`;
+      Linking.openURL(url).catch(() => null);
     } else {
       router.push({ pathname: '/clinic-map', params: { treatmentName: itemName } } as any);
     }
