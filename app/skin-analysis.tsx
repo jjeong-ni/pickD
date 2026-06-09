@@ -553,6 +553,10 @@ export default function SkinAnalysisScreen() {
             </TouchableOpacity>
           </View>
         </>
+      ) : result === null ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={Colors.primary} size="large" />
+        </View>
       ) : (
         /* ── 결과 ── */
         <>

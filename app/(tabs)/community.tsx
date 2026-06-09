@@ -153,6 +153,7 @@ export default function CommunityScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.filterBar}
         contentContainerStyle={styles.filters}
       >
         {CATEGORIES.map((item) => (
@@ -182,6 +183,7 @@ export default function CommunityScreen() {
         <FlatList
           data={posts}
           keyExtractor={(i) => i.id}
+          style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 0 }}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListHeaderComponent={<NoticeSection />}
@@ -350,11 +352,12 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '900', color: '#fff' },
   writeBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20 },
   writeBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  filters: { paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: Colors.white, flexDirection: 'row', alignItems: 'center' },
+  filterBar: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  filters: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
   filter: {
-    paddingVertical: 10, paddingHorizontal: 18, borderRadius: 20,
+    paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20,
     borderWidth: 1.5, borderColor: Colors.border,
-    minHeight: 40, justifyContent: 'center', alignItems: 'center',
+    justifyContent: 'center', alignItems: 'center',
   },
   filterActive: { borderColor: Colors.primary, backgroundColor: 'rgba(255,107,157,0.08)' },
   filterText: { fontSize: 13, color: Colors.sub },
