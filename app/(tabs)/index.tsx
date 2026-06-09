@@ -168,10 +168,70 @@ export default function HomeScreen() {
   const fetchRecommended = async () => {
     if (!profile?.concerns?.length) return;
     const concern = profile.concerns[0];
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('treatments').select('*').contains('tags', [concern])
       .order('rating', { ascending: false }).limit(5);
-    if (data && data.length > 0) setRecommended(data);
+    if (!error && data && data.length > 0) setRecommended(data);
+  };
+
+  const fetchSkinPicks = async () => {
+    if (!profile?.skin_type) return;
+    setSkinPicksLoading(true);
+    const [tRes, dRes] = await Promise.all([
+      supabase.from('treatments').select('*').order('rating', { ascending: false }).limit(25),
+      supabase.from('devices').select('*').order('rating', { ascending: false }).limit(25),
+    ]);
+    const allT: Treatment[] = tRes.data ?? [];
+    const allD: Device[] = dRes.data ?? [];
+    const skinType = profile.skin_type;
+    const concerns: string[] = profile?.concerns ?? [];
+    const scoreItem = (item: { tags?: string[]; rating: number }) => {
+      let s = item.rating;
+      if (item.tags?.some((t) => t.includes(skinType) || skinType.includes(t))) s += 2;
+      concerns.forEach((c) => {
+        if (item.tags?.some((t) => t.includes(c) || c.includes(t))) s += 1;
+      });
+      return s;
+    };
+    const bestT = [...allT].sort((a, b) => scoreItem(b) - scoreItem(a))[0] ?? null;
+    const bestD = [...allD].sort((a, b) => scoreItem(b) - scoreItem(a))[0] ?? null;
+    setSkinPicks({ treatment: bestT, device: bestD });
+    setSkinPicksLoading(false);
+  };
+
+  const handleSkinBannerPress = async () => {
+    setShowSkinModal(true);
+    if (!skinPicks) await fetchSkinPicks();
+  };
+
+  const fetchSkinPicks = async () => {
+    if (!profile?.skin_type) return;
+    setSkinPicksLoading(true);
+    const [tRes, dRes] = await Promise.all([
+      supabase.from('treatments').select('*').order('rating', { ascending: false }).limit(25),
+      supabase.from('devices').select('*').order('rating', { ascending: false }).limit(25),
+    ]);
+    const allT: Treatment[] = tRes.data ?? [];
+    const allD: Device[] = dRes.data ?? [];
+    const skinType = profile.skin_type;
+    const concerns: string[] = profile?.concerns ?? [];
+    const scoreItem = (item: { tags?: string[]; rating: number }) => {
+      let s = item.rating;
+      if (item.tags?.some((t) => t.includes(skinType) || skinType.includes(t))) s += 2;
+      concerns.forEach((c) => {
+        if (item.tags?.some((t) => t.includes(c) || c.includes(t))) s += 1;
+      });
+      return s;
+    };
+    const bestT = [...allT].sort((a, b) => scoreItem(b) - scoreItem(a))[0] ?? null;
+    const bestD = [...allD].sort((a, b) => scoreItem(b) - scoreItem(a))[0] ?? null;
+    setSkinPicks({ treatment: bestT, device: bestD });
+    setSkinPicksLoading(false);
+  };
+
+  const handleSkinBannerPress = async () => {
+    setShowSkinModal(true);
+    if (!skinPicks) await fetchSkinPicks();
   };
 
   const fetchSkinPicks = async () => {

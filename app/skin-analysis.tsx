@@ -419,6 +419,61 @@ export default function SkinAnalysisScreen() {
   const [selected, setSelected] = useState<number | null>(null);
   const [result, setResult] = useState<SkinResult | null>(null);
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({
+    metrics: true, chars: true, treatments: true, devices: true, routine: true,
+  });
+  const toggleSection = (key: string) => setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
+
+  useEffect(() => {
+    if (isViewMode && profile?.skin_type && profile?.baumann_code) {
+      const code = profile.baumann_code;
+      setResult({
+        type: profile.skin_type as SkinType,
+        code,
+        axisD: code[0] as AxisD,
+        axisS: code[1] as AxisS,
+        axisP: code[2] as AxisP,
+        axisW: code[3] as AxisW,
+        dehydration: profile.skin_dehydration ?? false,
+        metrics: (profile.skin_metrics ?? { 모공: 50, 주름: 50, 색소침착: 50, UV색소침착: 50, 탄력: 50, 피부톤: 50 }) as SkinResult['metrics'],
+      });
+      setStep(TOTAL_Q);
+    }
+  }, [isViewMode, profile?.skin_type, profile?.baumann_code]);
+
+  useEffect(() => {
+    if (isViewMode && profile?.skin_type && profile?.baumann_code) {
+      const code = profile.baumann_code;
+      setResult({
+        type: profile.skin_type as SkinType,
+        code,
+        axisD: code[0] as AxisD,
+        axisS: code[1] as AxisS,
+        axisP: code[2] as AxisP,
+        axisW: code[3] as AxisW,
+        dehydration: profile.skin_dehydration ?? false,
+        metrics: (profile.skin_metrics ?? { 모공: 50, 주름: 50, 색소침착: 50, UV색소침착: 50, 탄력: 50, 피부톤: 50 }) as SkinResult['metrics'],
+      });
+      setStep(TOTAL_Q);
+    }
+  }, [isViewMode, profile?.skin_type, profile?.baumann_code]);
+
+  useEffect(() => {
+    if (isViewMode && profile?.skin_type && profile?.baumann_code) {
+      const code = profile.baumann_code;
+      setResult({
+        type: profile.skin_type as SkinType,
+        code,
+        axisD: code[0] as AxisD,
+        axisS: code[1] as AxisS,
+        axisP: code[2] as AxisP,
+        axisW: code[3] as AxisW,
+        dehydration: profile.skin_dehydration ?? false,
+        metrics: (profile.skin_metrics ?? { 모공: 50, 주름: 50, 색소침착: 50, UV색소침착: 50, 탄력: 50, 피부톤: 50 }) as SkinResult['metrics'],
+      });
+      setStep(TOTAL_Q);
+    }
+  }, [isViewMode, profile?.skin_type, profile?.baumann_code]);
 
   useEffect(() => {
     if (isViewMode && profile?.skin_type && profile?.baumann_code) {
@@ -606,9 +661,12 @@ export default function SkinAnalysisScreen() {
 
             {/* ③ 6대 피부 지표 */}
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>📊 6대 피부 지표 분석</Text>
-              <Text style={styles.cardSubNote}>퀴즈 답변을 기반으로 추정한 피부 상태예요</Text>
-              {result && Object.entries(result.metrics).map(([key, value]) => {
+              <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('metrics')} activeOpacity={0.7}>
+                <Text style={styles.cardTitle}>📊 6대 피부 지표 분석</Text>
+                <Text style={styles.chevron}>{expanded.metrics ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+              {expanded.metrics && <Text style={styles.cardSubNote}>퀴즈 답변을 기반으로 추정한 피부 상태예요</Text>}
+              {expanded.metrics && result && Object.entries(result.metrics).map(([key, value]) => {
                 const cfg = METRIC_CONFIG[key];
                 return (
                   <View key={key} style={styles.metricRow}>
@@ -630,9 +688,9 @@ export default function SkinAnalysisScreen() {
                   </View>
                 );
               })}
-              <Text style={styles.metricDisclaimer}>
+              {expanded.metrics && <Text style={styles.metricDisclaimer}>
                 * 기기 측정이 아닌 자가진단 기반 추정치예요. 정밀 측정은 피부과 방문을 권장해요.
-              </Text>
+              </Text>}
             </View>
 
             {/* ④ 속건조 안내 */}
@@ -648,8 +706,11 @@ export default function SkinAnalysisScreen() {
 
             {/* ⑤ 피부 특징 */}
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>🔍 내 피부 특징</Text>
-              {info?.chars.map((c, i) => (
+              <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('chars')} activeOpacity={0.7}>
+                <Text style={styles.cardTitle}>🔍 내 피부 특징</Text>
+                <Text style={styles.chevron}>{expanded.chars ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+              {expanded.chars && info?.chars.map((c, i) => (
                 <View key={i} style={styles.bullet}>
                   <Text style={styles.bulletDot}>•</Text>
                   <Text style={styles.bulletText}>{c}</Text>
@@ -659,8 +720,11 @@ export default function SkinAnalysisScreen() {
 
             {/* ⑥ 추천 시술 */}
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>💉 추천 시술 TOP 3</Text>
-              {info?.treatments.map((t, i) => (
+              <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('treatments')} activeOpacity={0.7}>
+                <Text style={styles.cardTitle}>💉 추천 시술 TOP 3</Text>
+                <Text style={styles.chevron}>{expanded.treatments ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+              {expanded.treatments && info?.treatments.map((t, i) => (
                 <View key={i} style={[styles.treatRow, i < (info.treatments.length - 1) && styles.treatRowBorder]}>
                   <View style={styles.treatRank}>
                     <Text style={styles.treatRankText}>{i + 1}</Text>
@@ -679,8 +743,11 @@ export default function SkinAnalysisScreen() {
 
             {/* ⑦ 추천 디바이스 */}
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>🏠 추천 홈케어 디바이스</Text>
-              {info?.devices.map((d, i) => (
+              <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('devices')} activeOpacity={0.7}>
+                <Text style={styles.cardTitle}>🏠 추천 홈케어 디바이스</Text>
+                <Text style={styles.chevron}>{expanded.devices ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+              {expanded.devices && info?.devices.map((d, i) => (
                 <View key={i} style={[styles.deviceRow, i < (info.devices.length - 1) && styles.deviceRowBorder]}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.deviceName}>{d.name}</Text>
@@ -693,8 +760,11 @@ export default function SkinAnalysisScreen() {
 
             {/* ⑧ 스킨케어 루틴 */}
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>🧴 추천 스킨케어 루틴</Text>
-              {info?.routine.map((r, i) => (
+              <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('routine')} activeOpacity={0.7}>
+                <Text style={styles.cardTitle}>🧴 추천 스킨케어 루틴</Text>
+                <Text style={styles.chevron}>{expanded.routine ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+              {expanded.routine && info?.routine.map((r, i) => (
                 <View key={i} style={styles.routineRow}>
                   <View style={styles.routineStep}>
                     <Text style={styles.routineStepText}>{i + 1}</Text>
@@ -820,7 +890,9 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
   },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: Colors.text },
+  cardTitle: { fontSize: 15, fontWeight: '800', color: Colors.text, flex: 1 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  chevron: { fontSize: 12, color: Colors.sub, marginLeft: 8 },
   cardSubNote: { fontSize: 12, color: Colors.sub, marginTop: -4 },
 
   /* Baumann 축 */

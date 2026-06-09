@@ -422,7 +422,7 @@ export default function CompareScreen() {
                       <View style={styles.aiScoreBarWrap}>
                         <View style={[styles.aiScoreBar, { width: `${(s.score / 16) * 100}%` as any }]} />
                       </View>
-                      <Text style={styles.aiScoreNum}>{s.score}점</Text>
+                      <Text style={styles.aiScoreNum}>{'❤️'.repeat(Math.min(s.score, 5))} {s.score}점</Text>
                     </View>
                   ))}
                 </View>

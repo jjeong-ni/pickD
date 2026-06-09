@@ -37,7 +37,8 @@ export default function DeviceDetailScreen() {
         .eq('item_id', id)
         .eq('item_type', 'device')
         .maybeSingle()
-        .then(({ data }) => setFavoriteId(data?.id ?? null));
+        .then(({ data }) => setFavoriteId(data?.id ?? null))
+        .catch(() => {});
     } else {
       setFavoriteId(null);
     }
@@ -106,15 +107,17 @@ export default function DeviceDetailScreen() {
     if (!user) { router.push('/(auth)/login'); return; }
     if (!device) return;
     if (favoriteId) {
-      await supabase.from('favorites').delete().eq('id', favoriteId);
+      const prev = favoriteId;
       setFavoriteId(null);
+      const { error } = await supabase.from('favorites').delete().eq('id', favoriteId);
+      if (error) setFavoriteId(prev);
     } else {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('favorites')
         .insert({ user_id: user.id, item_id: device.id, item_type: 'device' })
         .select('id')
         .maybeSingle();
-      setFavoriteId(data?.id ?? null);
+      if (!error && data) setFavoriteId(data.id);
     }
   };
 
