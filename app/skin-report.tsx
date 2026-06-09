@@ -510,7 +510,7 @@ const DEMO_PROFILES: Record<string, { face_shape: string; skin_type: string; age
 const PAYMENT_URL = '/payment?itemName=맞춤 분석 보고서&amount=990&returnTo=skin-report';
 
 export default function SkinReportScreen() {
-  const { user, profile, fetchProfile } = useAuth();
+  const { user, profile, fetchProfile, loading: authLoading } = useAuth();
   const { demo } = useLocalSearchParams<{ demo?: string }>();
   const [accessChecked, setAccessChecked] = useState(!!demo);
 
@@ -519,9 +519,10 @@ export default function SkinReportScreen() {
     if (!demo && user?.id) fetchProfile(user.id);
   }, [user?.id]);
 
-  // 접근 권한 확인: 비로그인 → 결제, 로그인 + 미구매 → 결제
+  // 접근 권한 확인: auth 로딩 완료 후 → 비로그인 → 결제, 로그인 + 미구매 → 결제
   useEffect(() => {
     if (demo) { setAccessChecked(true); return; }
+    if (authLoading) return; // auth 초기화 전 리다이렉트 방지
     if (!user) {
       router.replace(PAYMENT_URL as any);
       return;
@@ -535,7 +536,7 @@ export default function SkinReportScreen() {
           setAccessChecked(true);
         }
       });
-  }, [demo, user?.id]);
+  }, [demo, user?.id, authLoading]);
 
   if (!accessChecked) return null;
 
