@@ -37,7 +37,8 @@ export default function TreatmentDetailScreen() {
         .eq('item_id', id)
         .eq('item_type', 'treatment')
         .maybeSingle()
-        .then(({ data }) => setFavoriteId(data?.id ?? null));
+        .then(({ data }) => setFavoriteId(data?.id ?? null))
+        .catch(() => {});
     } else {
       setFavoriteId(null);
     }
@@ -106,15 +107,17 @@ export default function TreatmentDetailScreen() {
     if (!user) { router.push('/(auth)/login'); return; }
     if (!treatment) return;
     if (favoriteId) {
-      await supabase.from('favorites').delete().eq('id', favoriteId);
+      const prev = favoriteId;
       setFavoriteId(null);
+      const { error } = await supabase.from('favorites').delete().eq('id', favoriteId);
+      if (error) setFavoriteId(prev);
     } else {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('favorites')
         .insert({ user_id: user.id, item_id: treatment.id, item_type: 'treatment' })
         .select('id')
         .maybeSingle();
-      setFavoriteId(data?.id ?? null);
+      if (!error && data) setFavoriteId(data.id);
     }
   };
 
