@@ -13,9 +13,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
 import { Treatment, Device } from '../../types';
+import { REPORT_COST } from '../../constants/app';
 
 const KAKAO_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_JS_KEY ?? '78a1bd65ed949a70fdd8b12e8538909f';
-const REPORT_COST = 990;
 
 type PairBundle = {
   concern: string;

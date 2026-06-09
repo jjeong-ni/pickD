@@ -12,8 +12,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../../constants/colors';
 import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
-
-const REPORT_COST = 990;
+import { REPORT_COST } from '../../constants/app';
 
 export default function MypageScreen() {
   const { user, profile, setProfile, fetchProfile, signOut } = useAuth();
@@ -82,8 +81,19 @@ export default function MypageScreen() {
       return;
     }
     const newPoints = currentPoints - REPORT_COST;
-    await supabase.from('profiles').update({ points: newPoints }).eq('user_id', user.id);
-    await supabase.from('point_logs').insert({ user_id: user.id, amount: -REPORT_COST, reason: '맞춤 피부 분석 보고서' });
+    const { error: deductError } = await supabase.from('profiles').update({ points: newPoints }).eq('user_id', user.id);
+    if (deductError) {
+      setReportLoading(false);
+      Alert.alert('오류', '포인트 차감 중 문제가 발생했어요. 다시 시도해주세요.');
+      return;
+    }
+    const { error: logError } = await supabase.from('point_logs').insert({ user_id: user.id, amount: -REPORT_COST, reason: '맞춤 피부 분석 보고서' });
+    if (logError) {
+      await supabase.from('profiles').update({ points: currentPoints }).eq('user_id', user.id);
+      setReportLoading(false);
+      Alert.alert('오류', '처리 중 문제가 발생했어요. 다시 시도해주세요.');
+      return;
+    }
     setProfile({ ...profile, points: newPoints });
     setReportLoading(false);
     router.push('/skin-report' as any);

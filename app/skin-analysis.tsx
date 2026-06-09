@@ -434,7 +434,7 @@ export default function SkinAnalysisScreen() {
   const handleSave = async () => {
     if (!user || !result) return;
     setSaving(true);
-    await supabase
+    const { error } = await supabase
       .from('profiles')
       .update({
         skin_type: result.type,
@@ -443,8 +443,12 @@ export default function SkinAnalysisScreen() {
         skin_dehydration: result.dehydration,
       })
       .eq('user_id', user.id);
-    await fetchProfile(user.id);
     setSaving(false);
+    if (error) {
+      Alert.alert('저장 실패', '프로필 저장 중 문제가 발생했어요. 다시 시도해주세요.');
+      return;
+    }
+    await fetchProfile(user.id);
     Alert.alert(
       '저장 완료 ✅',
       `${result.type} 타입(${result.code}) 결과가 프로필에 저장되었어요!\n리포트에서 상세 분석을 확인해보세요 📋`,

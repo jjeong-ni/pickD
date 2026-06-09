@@ -1,5 +1,5 @@
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image, Platform,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image, Platform, Alert,
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
@@ -65,8 +65,13 @@ export default function FavoritesScreen() {
   };
 
   const handleRemove = async (favId: string) => {
-    await supabase.from('favorites').delete().eq('id', favId);
-    setFavorites((prev) => prev.filter((f) => f.id !== favId));
+    const prev = favorites;
+    setFavorites((p) => p.filter((f) => f.id !== favId));
+    const { error } = await supabase.from('favorites').delete().eq('id', favId);
+    if (error) {
+      setFavorites(prev);
+      Alert.alert('오류', '찜 해제 중 문제가 발생했어요.');
+    }
   };
 
   return (
