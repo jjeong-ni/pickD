@@ -20,6 +20,7 @@ export default function PointLogsScreen() {
   const { user, profile } = useAuth();
   const [logs, setLogs] = useState<PointLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (user) fetchLogs();
@@ -27,11 +28,17 @@ export default function PointLogsScreen() {
   }, [user]);
 
   const fetchLogs = async () => {
-    const { data } = await supabase
+    setFetchError(false);
+    const { data, error } = await supabase
       .from('point_logs')
       .select('*')
       .eq('user_id', user!.id)
       .order('created_at', { ascending: false });
+    if (error) {
+      setFetchError(true);
+      setLoading(false);
+      return;
+    }
     setLogs(data ?? []);
     setLoading(false);
   };
@@ -58,6 +65,14 @@ export default function PointLogsScreen() {
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>
+      ) : fetchError ? (
+        <View style={styles.center}>
+          <Text style={{ fontSize: 40, marginBottom: 8 }}>📡</Text>
+          <Text style={styles.emptyTitle}>불러오기에 실패했어요</Text>
+          <TouchableOpacity onPress={fetchLogs} style={{ marginTop: 12, backgroundColor: Colors.primary, paddingVertical: 10, paddingHorizontal: 24, borderRadius: 12 }}>
+            <Text style={{ color: '#fff', fontWeight: '700' }}>다시 시도</Text>
+          </TouchableOpacity>
+        </View>
       ) : logs.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyIcon}>🪙</Text>

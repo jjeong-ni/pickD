@@ -129,7 +129,7 @@ export default function MissionsScreen() {
     const today = todayStr();
     const { start, end } = getWeekRange();
 
-    const [todayRes, weekRes, signupRes, postRes, weekBonusRes] = await Promise.all([
+    const [todayRes, weekRes, signupRes, postRes, weekBonusRes] = await Promise.all<any>([
       // 오늘 출석 여부
       supabase.from('point_logs').select('id').eq('user_id', user!.id)
         .eq('reason', '매일 출석').gte('created_at', `${today}T00:00:00`).limit(1),
@@ -147,6 +147,11 @@ export default function MissionsScreen() {
         .eq('reason', '7일 연속 출석').gte('created_at', `${start}T00:00:00`).limit(1),
     ]);
 
+    if (todayRes.error || weekRes.error || signupRes.error || postRes.error || weekBonusRes.error) {
+      console.error('missions loadStatus error');
+      setLoading(false);
+      return;
+    }
     setAttendedToday((todayRes.data?.length ?? 0) > 0);
 
     // 이번 주 distinct 날짜 수
@@ -159,25 +164,41 @@ export default function MissionsScreen() {
     setLoading(false);
   };
 
-  const awardPoints = async (amount: number, reason: string) => {
-    await supabase.from('point_logs').insert({ user_id: user!.id, amount, reason });
-    await supabase.from('profiles').update({ points: (profile?.points ?? 0) + amount }).eq('user_id', user!.id);
+  const awardPoints = async (amount: number, reason: string): Promise<boolean> => {
+    const currentPoints = profile?.points ?? 0;
+    const { error: logError } = await supabase.from('point_logs').insert({ user_id: user!.id, amount, reason });
+    if (logError) return false;
+    const { error: updateError } = await supabase.from('profiles').update({ points: currentPoints + amount }).eq('user_id', user!.id);
+    if (updateError) {
+      await supabase.from('point_logs').delete().eq('user_id', user!.id).eq('reason', reason).order('created_at', { ascending: false }).limit(1);
+      return false;
+    }
     await fetchProfile(user!.id);
+    return true;
   };
 
   const handleAttendance = async () => {
     if (!user) { router.push('/(auth)/login' as any); return; }
     if (attendedToday) { Alert.alert('', '오늘 이미 출석했어요! 내일 다시 와주세요 😊'); return; }
     setCheckingIn(true);
-    await awardPoints(10, '매일 출석');
+    const ok = await awardPoints(10, '매일 출석');
+    if (!ok) {
+      setCheckingIn(false);
+      Alert.alert('오류', '출석 처리 중 문제가 발생했어요. 다시 시도해주세요.');
+      return;
+    }
     setAttendedToday(true);
     const newDays = weekDays + 1;
     setWeekDays(newDays);
     // 7일 연속 출석 보너스
     if (newDays >= 7 && !weekBonusDone) {
-      await awardPoints(100, '7일 연속 출석');
-      setWeekBonusDone(true);
-      Alert.alert('🎉 7일 연속 출석!', '100pt 보너스가 지급되었어요!');
+      const bonusOk = await awardPoints(100, '7일 연속 출석');
+      if (bonusOk) {
+        setWeekBonusDone(true);
+        Alert.alert('🎉 7일 연속 출석!', '100pt 보너스가 지급되었어요!');
+      } else {
+        Alert.alert('출석 완료!', `10pt가 지급됐어요!\n7일 보너스 처리 중 오류가 발생했어요.`);
+      }
     } else {
       Alert.alert('출석 완료!', `10pt가 지급됐어요!\n이번 주 ${newDays}/7일 출석`);
     }

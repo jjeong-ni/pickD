@@ -226,9 +226,13 @@ export default function FaceAnalysisScreen() {
   const handleSave = async () => {
     if (!user || !result) return;
     setSaving(true);
-    await supabase.from('profiles').update({ face_shape: result }).eq('user_id', user.id);
-    await fetchProfile(user.id);
+    const { error } = await supabase.from('profiles').update({ face_shape: result }).eq('user_id', user.id);
     setSaving(false);
+    if (error) {
+      Alert.alert('저장 실패', '프로필 저장 중 문제가 발생했어요. 다시 시도해주세요.');
+      return;
+    }
+    await fetchProfile(user.id);
     Alert.alert('저장 완료', `${result} 분석 결과가 프로필에 저장되었어요!`, [
       { text: '확인', onPress: () => router.back() },
     ]);

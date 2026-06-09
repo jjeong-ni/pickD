@@ -52,7 +52,8 @@ export default function CompareScreen() {
     const newEntries: Record<string, Treatment | Device> = {};
     for (const ci of missing) {
       const table = ci.item_type === 'treatment' ? 'treatments' : 'devices';
-      const { data } = await supabase.from(table).select('*').eq('id', ci.item_id).single();
+      const { data, error } = await supabase.from(table).select('*').eq('id', ci.item_id).single();
+      if (error) { console.error('compare detail fetch error:', error); continue; }
       if (data) newEntries[ci.item_id] = data;
     }
     setDetailMap((prev) => ({ ...prev, ...newEntries }));
