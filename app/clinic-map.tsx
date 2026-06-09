@@ -83,7 +83,7 @@ function searchNearby(lat, lng) {
   var latlng = new kakao.maps.LatLng(lat, lng);
   var ps = new kakao.maps.services.Places();
   var badge = document.getElementById('badge');
-  if (badge) badge.innerHTML = '📍 <b>${keyword}</b> 주변 피부과 탐색 중...';
+  if (badge) badge.innerHTML = '📍 <b>${escapeHtml(keyword)}</b> 주변 피부과 탐색 중...';
 
   ps.keywordSearch('${encodeURIComponent(keyword)} 피부과', function(data, status) {
     if (status === kakao.maps.services.Status.OK) {

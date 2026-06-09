@@ -2,10 +2,11 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Share, Platform, Image,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
 import { Colors, HEADER_TOP } from '../constants/colors';
 
 // ─── 얼굴형별 핵심 데이터 ──────────────────────────────────────────────────────
@@ -506,21 +507,37 @@ const DEMO_PROFILES: Record<string, { face_shape: string; skin_type: string; age
   '계란형-복합성': { face_shape: '계란형', skin_type: '복합성', age_group: '40대', concerns: ['주름', '탄력'], nickname: '데모 회원' },
 };
 
+const PAYMENT_URL = '/payment?itemName=맞춤 분석 보고서&amount=990&returnTo=skin-report';
+
 export default function SkinReportScreen() {
   const { user, profile, fetchProfile } = useAuth();
   const { demo } = useLocalSearchParams<{ demo?: string }>();
+  const [accessChecked, setAccessChecked] = useState(!!demo);
 
   // 최신 face_photo_url 확보: 회원가입 직후 race condition 보정
   useEffect(() => {
     if (!demo && user?.id) fetchProfile(user.id);
   }, [user?.id]);
 
-  // 비로그인 + 데모 아닌 경우 → 결제 화면으로 리다이렉트
+  // 접근 권한 확인: 비로그인 → 결제, 로그인 + 미구매 → 결제
   useEffect(() => {
-    if (!demo && !user) {
-      router.replace('/payment?itemName=맞춤 분석 보고서&amount=990&returnTo=skin-report' as any);
+    if (demo) { setAccessChecked(true); return; }
+    if (!user) {
+      router.replace(PAYMENT_URL as any);
+      return;
     }
-  }, [demo, user]);
+    supabase.from('point_logs').select('id')
+      .eq('user_id', user.id).eq('reason', '맞춤 피부 분석 보고서').limit(1)
+      .then(({ data }) => {
+        if (!data || data.length === 0) {
+          router.replace(PAYMENT_URL as any);
+        } else {
+          setAccessChecked(true);
+        }
+      });
+  }, [demo, user?.id]);
+
+  if (!accessChecked) return null;
 
   const demoProfile = demo ? DEMO_PROFILES[demo] ?? DEMO_PROFILES['둥근형-지성'] : null;
 

@@ -7,8 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';
-
-const REPORT_COST = 990;
+import { REPORT_COST } from '../constants/app';
 
 export default function PaymentScreen() {
   const { user, profile, fetchProfile } = useAuth();
@@ -33,7 +32,18 @@ export default function PaymentScreen() {
       return;
     }
     setLoading(true);
-    const newPoints = profile.points - cost;
+    // 이미 구매한 경우 재차감 없이 바로 이동
+    if (isReport) {
+      const { data: existing } = await supabase.from('point_logs')
+        .select('id').eq('user_id', user.id).eq('reason', '맞춤 피부 분석 보고서').limit(1);
+      if (existing && existing.length > 0) {
+        setLoading(false);
+        router.replace('/skin-report' as any);
+        return;
+      }
+    }
+    const currentPoints = profile.points;
+    const newPoints = currentPoints - cost;
     const { error } = await supabase
       .from('profiles')
       .update({ points: newPoints })
@@ -43,11 +53,17 @@ export default function PaymentScreen() {
       Alert.alert('오류', '포인트 처리 중 문제가 발생했어요');
       return;
     }
-    await supabase.from('point_logs').insert({
+    const { error: logError } = await supabase.from('point_logs').insert({
       user_id: user.id,
       amount: -cost,
-      reason: `맞춤 피부 분석 보고서`,
-    }).throwOnError().catch(() => null);
+      reason: '맞춤 피부 분석 보고서',
+    });
+    if (logError) {
+      await supabase.from('profiles').update({ points: currentPoints }).eq('user_id', user.id);
+      setLoading(false);
+      Alert.alert('오류', '처리 중 문제가 발생했어요. 다시 시도해주세요.');
+      return;
+    }
     await fetchProfile(user.id);
     setLoading(false);
     router.replace('/skin-report' as any);
