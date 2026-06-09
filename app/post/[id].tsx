@@ -10,6 +10,13 @@ import { Colors } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { Post } from '../../types';
 
+const VIRTUAL_NAMES = ['피부미인', '뷰티고수', '피부천재', '스킨케어러', '미용러버', '피부요정', '뷰티스타', '관리러버', '피부빛나', '뷰티천재', '피부사랑', '미용전문'];
+function virtualNick(uid: string): string {
+  let n = 0;
+  for (let i = 0; i < uid.length; i++) n = (n * 31 + uid.charCodeAt(i)) >>> 0;
+  return VIRTUAL_NAMES[n % VIRTUAL_NAMES.length];
+}
+
 interface Comment {
   id: string;
   user_id: string;
@@ -88,8 +95,8 @@ export default function PostDetailScreen() {
     const nickMap: Record<string, string> = {};
     (profiles ?? []).forEach((pr: any) => { nickMap[pr.user_id] = pr.nickname; });
 
-    setPost({ ...p.data, profile: { nickname: nickMap[p.data.user_id] ?? null } } as any);
-    setComments((c.data ?? []).map((cm: any) => ({ ...cm, profile: { nickname: nickMap[cm.user_id] ?? null } })));
+    setPost({ ...p.data, profile: { nickname: nickMap[p.data.user_id] || virtualNick(p.data.user_id) } } as any);
+    setComments((c.data ?? []).map((cm: any) => ({ ...cm, profile: { nickname: nickMap[cm.user_id] || virtualNick(cm.user_id) } })));
     setLoading(false);
     } catch (e) {
       console.error('fetchData error:', e);
@@ -137,7 +144,7 @@ export default function PostDetailScreen() {
     }
     if (data) {
       const { data: prof } = await supabase.from('profiles').select('nickname').eq('user_id', user.id).maybeSingle();
-      setComments((prev) => [...prev, { ...data, profile: { nickname: prof?.nickname ?? null } }]);
+      setComments((prev) => [...prev, { ...data, profile: { nickname: prof?.nickname || virtualNick(user.id) } }]);
       setCommentText('');
       if (post) {
         const { error: countError } = await supabase
@@ -311,7 +318,7 @@ export default function PostDetailScreen() {
             </Text>
           </View>
           <Text style={styles.title}>{post.title}</Text>
-          <Text style={styles.author}>👤 {(post as any).profile?.nickname ?? '익명'}</Text>
+          <Text style={styles.author}>👤 {(post as any).profile?.nickname ?? virtualNick((post as any).user_id ?? '')}</Text>
 
           {/* Quiz UI */}
           {isQuiz ? (
@@ -422,7 +429,7 @@ export default function PostDetailScreen() {
             comments.map((c) => (
               <View key={c.id} style={styles.commentCard}>
                 <Text style={styles.commentNickname}>
-                  {c.profile?.nickname ?? '익명'}
+                  {c.profile?.nickname ?? virtualNick(c.user_id)}
                 </Text>
                 <Text style={styles.commentBody}>{c.body}</Text>
                 <Text style={styles.commentDate}>

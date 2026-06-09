@@ -375,7 +375,7 @@ export default function MypageScreen() {
               style={styles.vaultMenuItem}
               onPress={() => hasPurchasedReport
                 ? router.push('/skin-report' as any)
-                : router.push('/payment?itemName=맞춤 분석 보고서&returnTo=skin-report' as any)}
+                : router.push(`/payment?itemName=${encodeURIComponent('맞춤 분석 보고서')}&returnTo=skin-report` as any)}
               activeOpacity={0.7}
             >
               <View style={[styles.menuIcon, { backgroundColor: '#FFF0F5' }]}>
