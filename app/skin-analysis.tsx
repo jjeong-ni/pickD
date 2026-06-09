@@ -410,7 +410,7 @@ const METRIC_CONFIG: Record<string, { emoji: string; color: string; goodLabel: s
 const TOTAL_Q = QUESTIONS.length; // 8
 
 export default function SkinAnalysisScreen() {
-  const { user, profile, fetchProfile } = useAuth();
+  const { user, profile, fetchProfile, loading } = useAuth();
   const { viewResult } = useLocalSearchParams<{ viewResult?: string }>();
   const isViewMode = viewResult === 'true';
 
@@ -423,57 +423,6 @@ export default function SkinAnalysisScreen() {
     metrics: true, chars: true, treatments: true, devices: true, routine: true,
   });
   const toggleSection = (key: string) => setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
-
-  useEffect(() => {
-    if (isViewMode && profile?.skin_type && profile?.baumann_code) {
-      const code = profile.baumann_code;
-      setResult({
-        type: profile.skin_type as SkinType,
-        code,
-        axisD: code[0] as AxisD,
-        axisS: code[1] as AxisS,
-        axisP: code[2] as AxisP,
-        axisW: code[3] as AxisW,
-        dehydration: profile.skin_dehydration ?? false,
-        metrics: (profile.skin_metrics ?? { 모공: 50, 주름: 50, 색소침착: 50, UV색소침착: 50, 탄력: 50, 피부톤: 50 }) as SkinResult['metrics'],
-      });
-      setStep(TOTAL_Q);
-    }
-  }, [isViewMode, profile?.skin_type, profile?.baumann_code]);
-
-  useEffect(() => {
-    if (isViewMode && profile?.skin_type && profile?.baumann_code) {
-      const code = profile.baumann_code;
-      setResult({
-        type: profile.skin_type as SkinType,
-        code,
-        axisD: code[0] as AxisD,
-        axisS: code[1] as AxisS,
-        axisP: code[2] as AxisP,
-        axisW: code[3] as AxisW,
-        dehydration: profile.skin_dehydration ?? false,
-        metrics: (profile.skin_metrics ?? { 모공: 50, 주름: 50, 색소침착: 50, UV색소침착: 50, 탄력: 50, 피부톤: 50 }) as SkinResult['metrics'],
-      });
-      setStep(TOTAL_Q);
-    }
-  }, [isViewMode, profile?.skin_type, profile?.baumann_code]);
-
-  useEffect(() => {
-    if (isViewMode && profile?.skin_type && profile?.baumann_code) {
-      const code = profile.baumann_code;
-      setResult({
-        type: profile.skin_type as SkinType,
-        code,
-        axisD: code[0] as AxisD,
-        axisS: code[1] as AxisS,
-        axisP: code[2] as AxisP,
-        axisW: code[3] as AxisW,
-        dehydration: profile.skin_dehydration ?? false,
-        metrics: (profile.skin_metrics ?? { 모공: 50, 주름: 50, 색소침착: 50, UV색소침착: 50, 탄력: 50, 피부톤: 50 }) as SkinResult['metrics'],
-      });
-      setStep(TOTAL_Q);
-    }
-  }, [isViewMode, profile?.skin_type, profile?.baumann_code]);
 
   useEffect(() => {
     if (isViewMode && profile?.skin_type && profile?.baumann_code) {
@@ -608,9 +557,21 @@ export default function SkinAnalysisScreen() {
             </TouchableOpacity>
           </View>
         </>
-      ) : result === null ? (
+      ) : (result === null && loading) ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={Colors.primary} size="large" />
+        </View>
+      ) : result === null ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 32 }}>
+          <Text style={{ fontSize: 40 }}>🔍</Text>
+          <Text style={{ fontSize: 17, fontWeight: '800', color: Colors.text, textAlign: 'center' }}>아직 피부 분석을 완료하지 않았어요</Text>
+          <Text style={{ fontSize: 14, color: Colors.sub, textAlign: 'center', lineHeight: 22 }}>8가지 질문에 답하면{'\n'}나만의 바우만 피부 타입을 알 수 있어요</Text>
+          <TouchableOpacity
+            style={{ backgroundColor: Colors.primary, paddingVertical: 14, paddingHorizontal: 32, borderRadius: 14, marginTop: 8 }}
+            onPress={() => setStep(0)}
+          >
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>지금 분석 시작하기</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         /* ── 결과 ── */
