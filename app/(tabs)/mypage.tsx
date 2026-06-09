@@ -316,19 +316,22 @@ export default function MypageScreen() {
             <Text style={styles.sectionTitle}>내 보관함</Text>
           </View>
           <View style={styles.section}>
+            {/* 얼굴형 분석 결과 */}
             <TouchableOpacity
               style={styles.vaultMenuItem}
-              onPress={() => router.push('/analysis-report' as any)}
+              onPress={() => profile?.face_shape
+                ? router.push('/face-analysis?viewResult=true' as any)
+                : router.push('/face-analysis' as any)}
               activeOpacity={0.7}
             >
               <View style={[styles.menuIcon, { backgroundColor: '#F3EFFF' }]}>
-                <Ionicons name="analytics-outline" size={20} color="#6B4EFF" />
+                <Ionicons name="body-outline" size={20} color="#6B4EFF" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.menuLabel}>피부 분석 리포트</Text>
-                <Text style={styles.menuSub}>얼굴형 + 피부타입 AI 분석</Text>
+                <Text style={styles.menuLabel}>얼굴형 분석 결과</Text>
+                <Text style={styles.menuSub}>{profile?.face_shape ? `${profile.face_shape} · 맞춤 시술·스타일링` : '5문항으로 내 얼굴형 찾기'}</Text>
               </View>
-              {(profile?.face_shape || profile?.skin_type) ? (
+              {profile?.face_shape ? (
                 <View style={styles.vaultBadgeOpen}>
                   <Text style={styles.vaultBadgeOpenText}>열람</Text>
                 </View>
@@ -339,6 +342,35 @@ export default function MypageScreen() {
               )}
               <Text style={styles.menuArrow}>›</Text>
             </TouchableOpacity>
+
+            {/* 피부타입 분석 결과 */}
+            <TouchableOpacity
+              style={styles.vaultMenuItem}
+              onPress={() => profile?.skin_type
+                ? router.push('/skin-analysis?viewResult=true' as any)
+                : router.push('/skin-analysis' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#F0F7FF' }]}>
+                <Ionicons name="water-outline" size={20} color="#3B82F6" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>피부타입 분석 결과</Text>
+                <Text style={styles.menuSub}>{profile?.skin_type ? `${profile.skin_type}(${profile.baumann_code}) · 6대 피부 지표` : '8문항 Baumann 피부타입 분석'}</Text>
+              </View>
+              {profile?.skin_type ? (
+                <View style={styles.vaultBadgeOpen}>
+                  <Text style={styles.vaultBadgeOpenText}>열람</Text>
+                </View>
+              ) : (
+                <View style={styles.vaultBadgeLock}>
+                  <Text style={styles.vaultBadgeLockText}>진단 필요</Text>
+                </View>
+              )}
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+
+            {/* 맞춤 피부 보고서 */}
             <TouchableOpacity
               style={styles.vaultMenuItem}
               onPress={() => hasPurchasedReport

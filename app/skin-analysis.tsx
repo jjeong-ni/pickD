@@ -7,8 +7,8 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   ActivityIndicator, Alert, Dimensions,
 } from 'react-native';
-import { useState } from 'react';
-import { router } from 'expo-router';
+import { useState, useEffect } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';
@@ -410,12 +410,32 @@ const METRIC_CONFIG: Record<string, { emoji: string; color: string; goodLabel: s
 const TOTAL_Q = QUESTIONS.length; // 8
 
 export default function SkinAnalysisScreen() {
-  const { user, fetchProfile } = useAuth();
-  const [step, setStep] = useState(0);
+  const { user, profile, fetchProfile } = useAuth();
+  const { viewResult } = useLocalSearchParams<{ viewResult?: string }>();
+  const isViewMode = viewResult === 'true';
+
+  const [step, setStep] = useState(isViewMode ? TOTAL_Q : 0);
   const [answers, setAnswers] = useState<(number | null)[]>(Array(TOTAL_Q).fill(null));
   const [selected, setSelected] = useState<number | null>(null);
   const [result, setResult] = useState<SkinResult | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isViewMode && profile?.skin_type && profile?.baumann_code) {
+      const code = profile.baumann_code;
+      setResult({
+        type: profile.skin_type as SkinType,
+        code,
+        axisD: code[0] as AxisD,
+        axisS: code[1] as AxisS,
+        axisP: code[2] as AxisP,
+        axisW: code[3] as AxisW,
+        dehydration: profile.skin_dehydration ?? false,
+        metrics: (profile.skin_metrics ?? { 모공: 50, 주름: 50, 색소침착: 50, UV색소침착: 50, 탄력: 50, 피부톤: 50 }) as SkinResult['metrics'],
+      });
+      setStep(TOTAL_Q);
+    }
+  }, [isViewMode, profile?.skin_type, profile?.baumann_code]);
 
   const handleNext = () => {
     if (selected === null) return;
@@ -687,22 +707,35 @@ export default function SkinAnalysisScreen() {
           </ScrollView>
 
           <View style={styles.footer}>
-            <TouchableOpacity style={styles.retakeBtn} onPress={handleRetake}>
-              <Text style={styles.retakeBtnText}>다시하기</Text>
-            </TouchableOpacity>
-            {user ? (
-              <TouchableOpacity style={styles.nextBtn} onPress={handleSave} disabled={saving}>
-                {saving
-                  ? <ActivityIndicator color={Colors.white} />
-                  : <Text style={styles.nextBtnText}>프로필에 저장</Text>}
-              </TouchableOpacity>
+            {isViewMode ? (
+              <>
+                <TouchableOpacity style={styles.retakeBtn} onPress={() => router.back()}>
+                  <Text style={styles.retakeBtnText}>돌아가기</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.nextBtn} onPress={handleRetake}>
+                  <Text style={styles.nextBtnText}>다시 진단하기</Text>
+                </TouchableOpacity>
+              </>
             ) : (
-              <TouchableOpacity
-                style={styles.nextBtn}
-                onPress={() => router.push('/(auth)/login' as any)}
-              >
-                <Text style={styles.nextBtnText}>로그인하고 저장</Text>
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity style={styles.retakeBtn} onPress={handleRetake}>
+                  <Text style={styles.retakeBtnText}>다시하기</Text>
+                </TouchableOpacity>
+                {user ? (
+                  <TouchableOpacity style={styles.nextBtn} onPress={handleSave} disabled={saving}>
+                    {saving
+                      ? <ActivityIndicator color={Colors.white} />
+                      : <Text style={styles.nextBtnText}>프로필에 저장</Text>}
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.nextBtn}
+                    onPress={() => router.push('/(auth)/login' as any)}
+                  >
+                    <Text style={styles.nextBtnText}>로그인하고 저장</Text>
+                  </TouchableOpacity>
+                )}
+              </>
             )}
           </View>
         </>

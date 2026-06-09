@@ -1,8 +1,8 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
-import { useState } from 'react';
-import { router } from 'expo-router';
+import { useState, useEffect } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';
@@ -202,12 +202,22 @@ const RESULTS: Record<FaceShape, {
 };
 
 export default function FaceAnalysisScreen() {
-  const { user, fetchProfile } = useAuth();
-  const [step, setStep] = useState(0);
+  const { user, profile, fetchProfile } = useAuth();
+  const { viewResult } = useLocalSearchParams<{ viewResult?: string }>();
+  const isViewMode = viewResult === 'true';
+
+  const [step, setStep] = useState(isViewMode ? 5 : 0);
   const [answers, setAnswers] = useState<(number | null)[]>(Array(5).fill(null));
   const [selected, setSelected] = useState<number | null>(null);
   const [result, setResult] = useState<FaceShape | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isViewMode && profile?.face_shape) {
+      setResult(profile.face_shape as FaceShape);
+      setStep(5);
+    }
+  }, [isViewMode, profile?.face_shape]);
 
   const handleNext = () => {
     if (selected === null) return;
@@ -365,20 +375,27 @@ export default function FaceAnalysisScreen() {
           </ScrollView>
 
           <View style={styles.footer}>
-            {user ? (
-              <TouchableOpacity style={styles.nextBtn} onPress={handleSave} disabled={saving}>
-                {saving
-                  ? <ActivityIndicator color={Colors.white} />
-                  : <Text style={styles.nextBtnText}>내 프로필에 저장하기</Text>}
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={styles.nextBtn} onPress={() => router.push('/(auth)/login' as any)}>
-                <Text style={styles.nextBtnText}>로그인하고 저장하기</Text>
+            {!isViewMode && (
+              user ? (
+                <TouchableOpacity style={styles.nextBtn} onPress={handleSave} disabled={saving}>
+                  {saving
+                    ? <ActivityIndicator color={Colors.white} />
+                    : <Text style={styles.nextBtnText}>내 프로필에 저장하기</Text>}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={styles.nextBtn} onPress={() => router.push('/(auth)/login' as any)}>
+                  <Text style={styles.nextBtnText}>로그인하고 저장하기</Text>
+                </TouchableOpacity>
+              )
+            )}
+            <TouchableOpacity style={styles.retakeBtn} onPress={isViewMode ? () => router.back() : handleRetake}>
+              <Text style={styles.retakeBtnText}>{isViewMode ? '돌아가기' : '다시 진단하기'}</Text>
+            </TouchableOpacity>
+            {isViewMode && (
+              <TouchableOpacity style={[styles.retakeBtn, { marginTop: 4 }]} onPress={handleRetake}>
+                <Text style={styles.retakeBtnText}>다시 진단하기</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={styles.retakeBtn} onPress={handleRetake}>
-              <Text style={styles.retakeBtnText}>다시 진단하기</Text>
-            </TouchableOpacity>
           </View>
         </>
       )}
