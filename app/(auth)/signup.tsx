@@ -291,16 +291,18 @@ export default function SignupScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
             />
+            <Text style={styles.helper}>example@email.com 형식으로 입력해주세요</Text>
 
             <Text style={[styles.fieldLabel, { marginTop: 16 }]}>비밀번호</Text>
             <TextInput
               style={styles.input}
-              placeholder="비밀번호 (8자 이상)"
+              placeholder="비밀번호"
               placeholderTextColor={Colors.sub}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
             />
+            <Text style={styles.helper}>영문, 숫자 포함 8자 이상 입력해주세요</Text>
             <TextInput
               style={[styles.input, { marginTop: 10 }]}
               placeholder="비밀번호 확인"
