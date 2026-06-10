@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 
@@ -22,6 +23,11 @@ export default function RootLayout() {
   useEffect(() => {
     // 초기 세션: demo 파라미터가 있으면 리다이렉트 없음
     const isDemoUrl = Platform.OS === 'web' && typeof window !== 'undefined' && window.location.href.includes('demo=');
+    // 레퍼럴 코드 저장
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const ref = new URLSearchParams(window.location.search).get('ref');
+      if (ref) AsyncStorage.setItem('pendingRef', ref);
+    }
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
@@ -76,7 +82,14 @@ export default function RootLayout() {
         <Stack.Screen name="clinic-map" options={{ presentation: 'card' }} />
         <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
         <Stack.Screen name="skin-report" options={{ presentation: 'card' }} />
+        <Stack.Screen name="skin-history" options={{ presentation: 'card' }} />
+        <Stack.Screen name="ai-chat" options={{ presentation: 'card' }} />
         <Stack.Screen name="reviews" options={{ presentation: 'card' }} />
+        <Stack.Screen name="camera-skin-analysis" options={{ presentation: 'card' }} />
+        <Stack.Screen name="routine" options={{ presentation: 'card' }} />
+        <Stack.Screen name="skin-diary" options={{ presentation: 'card' }} />
+        <Stack.Screen name="ingredient-analysis" options={{ presentation: 'card' }} />
+        <Stack.Screen name="partner-clinics" options={{ presentation: 'card' }} />
       </Stack>
     </>
   );

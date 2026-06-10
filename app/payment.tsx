@@ -99,11 +99,7 @@ export default function PaymentScreen() {
               ? <ActivityIndicator color={Colors.white} />
               : <Text style={styles.mainBtnText}>{cost}pt로 보고서 받기</Text>}
           </TouchableOpacity>
-        ) : (
-          <View style={styles.comingSoonBox}>
-            <Text style={styles.comingSoonText}>토스페이먼츠 결제 기능이{'\n'}베타 오픈 후 추가될 예정이에요.</Text>
-          </View>
-        )}
+        ) : null}
 
         {!hasEnough && user && isReport && (
           <TouchableOpacity style={styles.missionBtn} onPress={() => router.push('/missions' as any)}>
@@ -150,7 +146,6 @@ const styles = StyleSheet.create({
     width: '100%', backgroundColor: Colors.bg, borderRadius: 12,
     padding: 16, alignItems: 'center',
   },
-  comingSoonText: { fontSize: 14, color: Colors.sub, textAlign: 'center', lineHeight: 22 },
   missionBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 10, paddingHorizontal: 16,

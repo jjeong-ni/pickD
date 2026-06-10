@@ -240,6 +240,16 @@ export default function SignupScreen() {
       return;
     }
     await supabase.from('point_logs').insert({ user_id: userId, amount: 1000, reason: '신규 가입' });
+
+    // 레퍼럴 처리: 초대 링크로 가입한 경우 SECURITY DEFINER RPC로 양쪽 500pt 지급
+    try {
+      const pendingRef = await AsyncStorage.getItem('pendingRef');
+      if (pendingRef) {
+        await supabase.rpc('process_referral', { p_new_user_id: userId, p_ref_code: pendingRef });
+        await AsyncStorage.removeItem('pendingRef');
+      }
+    } catch { /* 레퍼럴 실패는 무시 */ }
+
     setProfile(newProfile as any);
     await AsyncStorage.setItem('signup_popup', JSON.stringify({ nickname }));
     setLoading(false);

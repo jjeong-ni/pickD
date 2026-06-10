@@ -1,9 +1,11 @@
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
-  ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image,
 } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { usePostStore } from '../../hooks/usePostStore';
@@ -29,12 +31,35 @@ export default function CreatePostScreen() {
   const [optionA, setOptionA] = useState('');
   const [optionB, setOptionB] = useState('');
   const [loading, setLoading] = useState(false);
+  const [afterImageUri, setAfterImageUri] = useState<string | null>(null);
+  const [beforeImageUri, setBeforeImageUri] = useState<string | null>(null);
 
   const isQuiz = category === '퀴즈';
   const canSubmit = isQuiz
     ? title.trim().length >= 2 && optionA.trim().length >= 1 && optionB.trim().length >= 1 && !loading
     : title.trim().length >= 2 && body.trim().length >= 10 && !loading;
   const selectedCatDesc = CATEGORIES.find((c) => c.label === category)?.desc ?? '';
+
+  const pickImage = async (setUri: (u: string) => void) => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) { Alert.alert('권한 필요', '갤러리 접근 권한이 필요해요.'); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'] as any,
+      allowsEditing: true, quality: 0.8,
+    });
+    if (!result.canceled) setUri(result.assets[0].uri);
+  };
+
+  const uploadPostImage = async (uri: string, userId: string, suffix: string): Promise<string | null> => {
+    try {
+      const res = await fetch(uri);
+      const blob = await res.blob();
+      const path = `posts/${userId}/${Date.now()}_${suffix}.jpg`;
+      const { error } = await supabase.storage.from('face-photos').upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+      if (error) return null;
+      return supabase.storage.from('face-photos').getPublicUrl(path).data.publicUrl;
+    } catch { return null; }
+  };
 
   const handleSubmit = async () => {
     if (!canSubmit || !user) return;
@@ -80,9 +105,15 @@ export default function CreatePostScreen() {
       return;
     }
 
-    // Normal post
+    // Normal post — upload images if provided
+    let imageUrl: string | null = null;
+    let beforeImageUrl: string | null = null;
+    if (afterImageUri) imageUrl = await uploadPostImage(afterImageUri, user.id, 'after');
+    if (beforeImageUri) beforeImageUrl = await uploadPostImage(beforeImageUri, user.id, 'before');
+
     const { error } = await supabase.from('posts').insert({
       user_id: user.id, title: title.trim(), body: body.trim(), category,
+      image_url: imageUrl, before_image_url: beforeImageUrl,
     });
     if (error) {
       Alert.alert('오류', '게시글 작성 중 오류가 발생했어요');
@@ -229,6 +260,28 @@ export default function CreatePostScreen() {
           </View>
         )}
 
+        {/* Before/After 이미지 첨부 (비퀴즈) */}
+        {!isQuiz && (
+          <View style={{ gap: 10 }}>
+            <Text style={styles.sectionLabel}>사진 첨부 <Text style={{ color: Colors.sub, fontWeight: '400' }}>(선택)</Text></Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity style={styles.imgPickBtn} onPress={() => pickImage(setAfterImageUri)}>
+                {afterImageUri
+                  ? <Image source={{ uri: afterImageUri }} style={styles.imgPreview} />
+                  : <><Ionicons name="image-outline" size={24} color={Colors.sub} /><Text style={styles.imgPickLabel}>After</Text></>}
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.imgPickBtn, { borderStyle: 'dashed' }]} onPress={() => pickImage(setBeforeImageUri)}>
+                {beforeImageUri
+                  ? <Image source={{ uri: beforeImageUri }} style={styles.imgPreview} />
+                  : <><Ionicons name="image-outline" size={24} color={Colors.sub} /><Text style={styles.imgPickLabel}>Before</Text></>}
+              </TouchableOpacity>
+            </View>
+            {(afterImageUri || beforeImageUri) && (
+              <Text style={{ fontSize: 11, color: Colors.sub }}>After·Before 이미지 모두 첨부하면 B/A 슬라이더로 표시돼요</Text>
+            )}
+          </View>
+        )}
+
         {/* 등록 조건 안내 */}
         {!canSubmit && (title.length > 0 || body.length > 0 || optionA.length > 0 || optionB.length > 0) && (
           <View style={styles.conditionBox}>
@@ -309,6 +362,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg, borderRadius: 10, padding: 14,
   },
   guideText: { fontSize: 12, color: Colors.sub, lineHeight: 20 },
+  imgPickBtn: {
+    flex: 1, height: 90, borderRadius: 12, borderWidth: 1.5, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: Colors.bg, overflow: 'hidden',
+  },
+  imgPickLabel: { fontSize: 12, color: Colors.sub, fontWeight: '600' },
+  imgPreview: { width: '100%', height: '100%', borderRadius: 10 },
   quizNoticeBanner: {
     backgroundColor: 'rgba(124,92,235,0.08)', borderRadius: 10, padding: 14,
     borderLeftWidth: 3, borderLeftColor: '#7C5CEB',

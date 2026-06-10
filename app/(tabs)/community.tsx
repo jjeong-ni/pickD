@@ -230,7 +230,7 @@ export default function CommunityScreen() {
                   </View>
                   <View style={styles.postFooter}>
                     <Text style={styles.postAuthor}>
-                      👤 {(item as any).profile?.nickname ?? '익명'}
+                      👤 {(item as any).profile?.nickname ?? virtualNick((item as any).user_id ?? '')}
                     </Text>
                     <View style={styles.postMeta}>
                       <Text style={styles.postMetaText}>💬 {item.comment_count}</Text>
@@ -258,7 +258,7 @@ export default function CommunityScreen() {
                   <Text style={styles.postBody} numberOfLines={2}>{item.body}</Text>
                   <View style={styles.postFooter}>
                     <Text style={styles.postAuthor}>
-                      👤 {(item as any).profile?.nickname ?? '익명'}
+                      👤 {(item as any).profile?.nickname ?? virtualNick((item as any).user_id ?? '')}
                     </Text>
                     <View style={styles.postMeta}>
                       <Text style={styles.postMetaText}>❤️ {item.likes}</Text>

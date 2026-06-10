@@ -30,7 +30,14 @@ export interface Profile {
   skin_dehydration: boolean | null;  // 속건조 여부
   face_photo_url: string | null;     // 회원가입 시 촬영한 얼굴 사진 URL
   avatar_url: string | null;         // 프로필 사진 URL
+  routine: { am?: RoutineStep[]; pm?: RoutineStep[] } | null;
   created_at: string;
+}
+
+export interface RoutineStep {
+  category: string;
+  product: string;
+  tip: string;
 }
 
 export interface Treatment {
@@ -104,6 +111,8 @@ export interface Post {
   category: string;
   likes: number;
   comment_count: number;
+  image_url: string | null;
+  before_image_url: string | null;
   created_at: string;
   profile?: Pick<Profile, 'nickname'>;
 }

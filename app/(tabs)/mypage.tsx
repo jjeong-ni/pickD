@@ -21,12 +21,17 @@ export default function MypageScreen() {
   const [reportLoading, setReportLoading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [hasPurchasedReport, setHasPurchasedReport] = useState(false);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
     supabase.from('point_logs')
       .select('id').eq('user_id', user.id).eq('reason', '맞춤 피부 분석 보고서').limit(1)
       .then(({ data }) => setHasPurchasedReport(!!(data && data.length > 0)));
+    supabase.from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id).eq('is_read', false)
+      .then(({ count }) => setUnreadNotifCount(count ?? 0));
   }, [user?.id]);
 
   const handlePickAvatar = async () => {
@@ -343,6 +348,24 @@ export default function MypageScreen() {
               <Text style={styles.menuArrow}>›</Text>
             </TouchableOpacity>
 
+            {/* 얼굴형 재촬영·재분석 */}
+            {profile?.face_shape && (
+              <TouchableOpacity
+                style={styles.vaultMenuItem}
+                onPress={() => router.push('/face-analysis' as any)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.menuIcon, { backgroundColor: '#F3EFFF' }]}>
+                  <Ionicons name="refresh-outline" size={20} color="#6B4EFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.menuLabel}>얼굴형 재촬영·재분석</Text>
+                  <Text style={styles.menuSub}>사진 + 질문으로 다시 분석하기</Text>
+                </View>
+                <Text style={styles.menuArrow}>›</Text>
+              </TouchableOpacity>
+            )}
+
             {/* 피부타입 분석 결과 */}
             <TouchableOpacity
               style={styles.vaultMenuItem}
@@ -370,12 +393,49 @@ export default function MypageScreen() {
               <Text style={styles.menuArrow}>›</Text>
             </TouchableOpacity>
 
+            {/* 피부 변화 기록 */}
+            {profile?.skin_type && (
+              <TouchableOpacity
+                style={styles.vaultMenuItem}
+                onPress={() => router.push('/skin-history' as any)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.menuIcon, { backgroundColor: '#F0FFF4' }]}>
+                  <Ionicons name="trending-up-outline" size={20} color="#22C55E" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.menuLabel}>피부 변화 기록</Text>
+                  <Text style={styles.menuSub}>분석 이력 및 지표 변화 추이</Text>
+                </View>
+                <Text style={styles.menuArrow}>›</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* 카메라 피부 분석 */}
+            <TouchableOpacity
+              style={styles.vaultMenuItem}
+              onPress={() => router.push('/camera-skin-analysis' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#FFF0EC' }]}>
+                <Ionicons name="camera-outline" size={20} color="#F97316" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>카메라 피부 분석</Text>
+                <Text style={styles.menuSub}>사진으로 피부 톤·고민 AI 분석</Text>
+              </View>
+              <View style={[styles.vaultBadgeLock, { backgroundColor: '#FFF0EC', borderColor: '#F97316' }]}>
+                <Text style={[styles.vaultBadgeLockText, { color: '#F97316' }]}>NEW</Text>
+              </View>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+
             {/* 맞춤 피부 보고서 */}
             <TouchableOpacity
               style={styles.vaultMenuItem}
               onPress={() => hasPurchasedReport
                 ? router.push('/skin-report' as any)
-                : router.push('/payment?itemName=맞춤 분석 보고서&returnTo=skin-report' as any)}
+                : router.push(`/payment?itemName=${encodeURIComponent('맞춤 분석 보고서')}&returnTo=skin-report` as any)}
               activeOpacity={0.7}
             >
               <View style={[styles.menuIcon, { backgroundColor: '#FFF0F5' }]}>
@@ -396,9 +456,100 @@ export default function MypageScreen() {
               )}
               <Text style={styles.menuArrow}>›</Text>
             </TouchableOpacity>
+
+            {/* 나만의 루틴 */}
+            <TouchableOpacity
+              style={styles.vaultMenuItem}
+              onPress={() => router.push('/routine' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#FFF5E6' }]}>
+                <Ionicons name="list-outline" size={20} color="#F97316" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>나만의 루틴</Text>
+                <Text style={styles.menuSub}>AM/PM 맞춤 스킨케어 루틴 만들기</Text>
+              </View>
+              <View style={[styles.vaultBadgeLock, { backgroundColor: '#FFF5E6', borderColor: '#F97316' }]}>
+                <Text style={[styles.vaultBadgeLockText, { color: '#F97316' }]}>NEW</Text>
+              </View>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+
+            {/* 피부 일기 */}
+            <TouchableOpacity
+              style={styles.vaultMenuItem}
+              onPress={() => router.push('/skin-diary' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#FFF0F5' }]}>
+                <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>피부 일기</Text>
+                <Text style={styles.menuSub}>매일 피부 상태 기록하기</Text>
+              </View>
+              <View style={[styles.vaultBadgeLock, { backgroundColor: '#FFF0F5', borderColor: Colors.primary }]}>
+                <Text style={[styles.vaultBadgeLockText, { color: Colors.primary }]}>NEW</Text>
+              </View>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+
+            {/* 성분 분석 */}
+            <TouchableOpacity
+              style={styles.vaultMenuItem}
+              onPress={() => router.push('/ingredient-analysis' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#F0FFF4' }]}>
+                <Ionicons name="flask-outline" size={20} color="#22C55E" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>성분 분석</Text>
+                <Text style={styles.menuSub}>화장품 성분표 AI 안전성 분석</Text>
+              </View>
+              <View style={[styles.vaultBadgeLock, { backgroundColor: '#F0FFF4', borderColor: '#22C55E' }]}>
+                <Text style={[styles.vaultBadgeLockText, { color: '#22C55E' }]}>NEW</Text>
+              </View>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+
+            {/* 제휴 클리닉 */}
+            <TouchableOpacity
+              style={styles.vaultMenuItem}
+              onPress={() => router.push('/partner-clinics' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#F0ECFF' }]}>
+                <Ionicons name="medical-outline" size={20} color="#6B4EFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>제휴 클리닉</Text>
+                <Text style={styles.menuSub}>픽디 회원 전용 할인 클리닉 모음</Text>
+              </View>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
           </View>
           <View style={styles.divider} />
         </>
+      )}
+
+      {/* AI 상담 배너 */}
+      {user && (
+        <TouchableOpacity
+          style={styles.aiChatBanner}
+          onPress={() => router.push('/ai-chat' as any)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.aiChatBannerLeft}>
+            <Text style={styles.aiChatBannerEmoji}>✨</Text>
+            <View>
+              <Text style={styles.aiChatBannerTitle}>AI 피부 상담</Text>
+              <Text style={styles.aiChatBannerDesc}>내 프로필 기반 맞춤 상담 · 무료</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
+        </TouchableOpacity>
       )}
 
       {/* 내 활동 */}
@@ -420,7 +571,12 @@ export default function MypageScreen() {
       </View>
       <View style={styles.section}>
         <MenuItem icon="person-outline" label="계정 정보" onPress={() => router.push('/account')} />
-        <MenuItem icon="notifications-outline" label="알림 설정" onPress={() => router.push('/notifications' as any)} />
+        <MenuItem
+          icon="notifications-outline"
+          label="알림"
+          sub={unreadNotifCount > 0 ? `읽지 않은 알림 ${unreadNotifCount}개` : undefined}
+          onPress={() => router.push('/notifications' as any)}
+        />
       </View>
 
       <View style={styles.divider} />
@@ -662,6 +818,17 @@ const styles = StyleSheet.create({
   },
   faceAnalysisBannerBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.white },
   aiCardHighlight: { borderColor: Colors.primary, borderWidth: 1.5 },
+
+  /* AI 상담 배너 */
+  aiChatBanner: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: Colors.white, marginHorizontal: 16, marginTop: 12, borderRadius: 14,
+    padding: 16, borderWidth: 1.5, borderColor: Colors.primaryLight,
+  },
+  aiChatBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  aiChatBannerEmoji: { fontSize: 26 },
+  aiChatBannerTitle: { fontSize: 15, fontWeight: '700', color: Colors.text },
+  aiChatBannerDesc: { fontSize: 12, color: Colors.sub, marginTop: 1 },
 
   /* AI 피부 분석 */
   aiSection: {

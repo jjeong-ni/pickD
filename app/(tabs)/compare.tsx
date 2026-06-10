@@ -1,6 +1,6 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  ActivityIndicator, Alert, Modal,
+  ActivityIndicator, Alert, Modal, Share, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
@@ -80,6 +80,18 @@ export default function CompareScreen() {
     setConfirmTarget({ id: user.id, type: 'clear' });
   };
 
+  const handleShare = async () => {
+    const names = visibleDetails.map((d) => d.name).join(' vs ');
+    const shareText = `픽디에서 ${names} 비교해봐요!\n내 피부에 맞는 시술·기기를 찾아보세요 → https://pick-d.vercel.app`;
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
+      try { await navigator.share({ title: '픽디 비교 공유', text: shareText }); } catch { /* 취소 무시 */ }
+    } else if (Platform.OS === 'web') {
+      try { await navigator.clipboard.writeText(shareText); Alert.alert('복사 완료', '링크가 클립보드에 복사됐어요!'); } catch { Alert.alert('공유', shareText); }
+    } else {
+      try { await Share.share({ message: shareText, title: '픽디 비교 공유' }); } catch { /* 취소 무시 */ }
+    }
+  };
+
   const executeConfirm = () => {
     if (!confirmTarget) return;
     if (confirmTarget.type === 'remove') remove(confirmTarget.id);
@@ -124,11 +136,18 @@ export default function CompareScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>비교함</Text>
-        {items.length > 0 && (
-          <TouchableOpacity onPress={handleClear}>
-            <Text style={styles.clearBtn}>전체 삭제</Text>
-          </TouchableOpacity>
-        )}
+        <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
+          {visibleDetails.length >= 2 && (
+            <TouchableOpacity onPress={handleShare}>
+              <Ionicons name="share-social-outline" size={22} color={Colors.primary} />
+            </TouchableOpacity>
+          )}
+          {items.length > 0 && (
+            <TouchableOpacity onPress={handleClear}>
+              <Text style={styles.clearBtn}>전체 삭제</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {items.length === 0 ? (
@@ -316,30 +335,36 @@ export default function CompareScreen() {
               </View>
             </View>
           )}
-          {/* 전문가 상담 */}
-          <View style={styles.consultCard}>
+          {/* AI 상담 */}
+          <TouchableOpacity
+            style={styles.consultCard}
+            activeOpacity={0.85}
+            onPress={() => {
+              const ctx = encodeURIComponent(JSON.stringify(
+                tableEntries.map(({ ci, detail: d }) => ({
+                  name: d.name,
+                  type: ci.item_type === 'treatment' ? '시술' : '기기',
+                }))
+              ));
+              router.push(`/ai-chat?context=${ctx}` as any);
+            }}
+          >
             <View style={styles.consultHeader}>
-              <Text style={styles.consultTitle}>👩‍⚕️ 전문가 상담</Text>
-              <View style={styles.consultBadge}><Text style={styles.consultBadgeText}>20분 · 5,000원</Text></View>
+              <Text style={styles.consultTitle}>✨ AI 피부 상담</Text>
+              <View style={[styles.consultBadge, { backgroundColor: Colors.primaryLight }]}>
+                <Text style={[styles.consultBadgeText, { color: Colors.primary }]}>무료</Text>
+              </View>
             </View>
-            <Text style={styles.consultDesc}>비교 중인 시술·기기에 대해 전문가에게 직접 물어보세요</Text>
+            <Text style={styles.consultDesc}>
+              비교 중인 항목으로 AI에게 바로 물어보세요{'\n'}내 피부 프로필 기반 맞춤 답변을 받을 수 있어요
+            </Text>
             <View style={styles.consultBtns}>
-              <TouchableOpacity
-                style={styles.consultBtn}
-                onPress={() => Alert.alert('전화 상담', '전화 상담 연결 준비 중이에요.\n베타 종료 후 오픈될 예정입니다.')}
-              >
-                <Ionicons name="call-outline" size={20} color={Colors.text} />
-                <Text style={styles.consultBtnText}>전화 상담</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.consultBtn, styles.consultBtnKakao]}
-                onPress={() => Alert.alert('카카오톡 상담', '카카오톡 상담 연결 준비 중이에요.\n베타 종료 후 오픈될 예정입니다.')}
-              >
-                <Ionicons name="chatbubble-ellipses-outline" size={20} color={Colors.text} />
-                <Text style={styles.consultBtnText}>카카오 톡톡</Text>
-              </TouchableOpacity>
+              <View style={[styles.consultBtn, { flex: 1, backgroundColor: Colors.primaryLight }]}>
+                <Ionicons name="chatbubble-ellipses-outline" size={20} color={Colors.primary} />
+                <Text style={[styles.consultBtnText, { color: Colors.primary }]}>AI 상담 시작하기 →</Text>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
 
         </ScrollView>
       )}
@@ -422,7 +447,7 @@ export default function CompareScreen() {
                       <View style={styles.aiScoreBarWrap}>
                         <View style={[styles.aiScoreBar, { width: `${(s.score / 16) * 100}%` as any }]} />
                       </View>
-                      <Text style={styles.aiScoreNum}>{'❤️'.repeat(Math.min(s.score, 5))} {s.score}점</Text>
+                      <Text style={styles.aiScoreNum}>{s.score}점</Text>
                     </View>
                   ))}
                 </View>

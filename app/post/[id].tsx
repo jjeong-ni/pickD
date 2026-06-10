@@ -1,6 +1,6 @@
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable,
+  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, Image,
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -9,6 +9,13 @@ import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { Post } from '../../types';
+
+const VIRTUAL_NAMES = ['피부미인', '뷰티고수', '피부천재', '스킨케어러', '미용러버', '피부요정', '뷰티스타', '관리러버', '피부빛나', '뷰티천재', '피부사랑', '미용전문'];
+function virtualNick(uid: string): string {
+  let n = 0;
+  for (let i = 0; i < uid.length; i++) n = (n * 31 + uid.charCodeAt(i)) >>> 0;
+  return VIRTUAL_NAMES[n % VIRTUAL_NAMES.length];
+}
 
 interface Comment {
   id: string;
@@ -34,6 +41,7 @@ export default function PostDetailScreen() {
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [showBefore, setShowBefore] = useState(false);
 
   // Quiz state
   const [quizVotes, setQuizVotes] = useState<QuizVote[]>([]);
@@ -88,8 +96,8 @@ export default function PostDetailScreen() {
     const nickMap: Record<string, string> = {};
     (profiles ?? []).forEach((pr: any) => { nickMap[pr.user_id] = pr.nickname; });
 
-    setPost({ ...p.data, profile: { nickname: nickMap[p.data.user_id] ?? null } } as any);
-    setComments((c.data ?? []).map((cm: any) => ({ ...cm, profile: { nickname: nickMap[cm.user_id] ?? null } })));
+    setPost({ ...p.data, profile: { nickname: nickMap[p.data.user_id] || virtualNick(p.data.user_id) } } as any);
+    setComments((c.data ?? []).map((cm: any) => ({ ...cm, profile: { nickname: nickMap[cm.user_id] || virtualNick(cm.user_id) } })));
     setLoading(false);
     } catch (e) {
       console.error('fetchData error:', e);
@@ -137,7 +145,7 @@ export default function PostDetailScreen() {
     }
     if (data) {
       const { data: prof } = await supabase.from('profiles').select('nickname').eq('user_id', user.id).maybeSingle();
-      setComments((prev) => [...prev, { ...data, profile: { nickname: prof?.nickname ?? null } }]);
+      setComments((prev) => [...prev, { ...data, profile: { nickname: prof?.nickname || virtualNick(user.id) } }]);
       setCommentText('');
       if (post) {
         const { error: countError } = await supabase
@@ -311,7 +319,42 @@ export default function PostDetailScreen() {
             </Text>
           </View>
           <Text style={styles.title}>{post.title}</Text>
-          <Text style={styles.author}>👤 {(post as any).profile?.nickname ?? '익명'}</Text>
+          <Text style={styles.author}>👤 {(post as any).profile?.nickname ?? virtualNick((post as any).user_id ?? '')}</Text>
+
+          {/* Before/After 이미지 */}
+          {!isQuiz && ((post as any).image_url || (post as any).before_image_url) && (
+            <View style={styles.imgSection}>
+              {(post as any).image_url && (post as any).before_image_url ? (
+                <>
+                  <View style={styles.imgToggleRow}>
+                    <TouchableOpacity
+                      style={[styles.imgToggleBtn, !showBefore && styles.imgToggleBtnActive]}
+                      onPress={() => setShowBefore(false)}
+                    >
+                      <Text style={[styles.imgToggleTxt, !showBefore && styles.imgToggleTxtActive]}>After</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.imgToggleBtn, showBefore && styles.imgToggleBtnActive]}
+                      onPress={() => setShowBefore(true)}
+                    >
+                      <Text style={[styles.imgToggleTxt, showBefore && styles.imgToggleTxtActive]}>Before</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Image
+                    source={{ uri: showBefore ? (post as any).before_image_url : (post as any).image_url }}
+                    style={styles.postImage}
+                    resizeMode="cover"
+                  />
+                </>
+              ) : (
+                <Image
+                  source={{ uri: (post as any).image_url || (post as any).before_image_url }}
+                  style={styles.postImage}
+                  resizeMode="cover"
+                />
+              )}
+            </View>
+          )}
 
           {/* Quiz UI */}
           {isQuiz ? (
@@ -422,7 +465,7 @@ export default function PostDetailScreen() {
             comments.map((c) => (
               <View key={c.id} style={styles.commentCard}>
                 <Text style={styles.commentNickname}>
-                  {c.profile?.nickname ?? '익명'}
+                  {c.profile?.nickname ?? virtualNick(c.user_id)}
                 </Text>
                 <Text style={styles.commentBody}>{c.body}</Text>
                 <Text style={styles.commentDate}>
@@ -554,6 +597,16 @@ const styles = StyleSheet.create({
   commentNickname: { fontSize: 13, fontWeight: '700', color: Colors.text, marginBottom: 4 },
   commentBody: { fontSize: 14, color: Colors.sub, lineHeight: 20 },
   commentDate: { fontSize: 11, color: Colors.sub, marginTop: 4 },
+  imgSection: { marginBottom: 16, gap: 10 },
+  imgToggleRow: { flexDirection: 'row', gap: 8 },
+  imgToggleBtn: {
+    paddingVertical: 6, paddingHorizontal: 16, borderRadius: 20,
+    borderWidth: 1.5, borderColor: Colors.border,
+  },
+  imgToggleBtnActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
+  imgToggleTxt: { fontSize: 13, fontWeight: '700', color: Colors.sub },
+  imgToggleTxtActive: { color: Colors.primary },
+  postImage: { width: '100%', height: 220, borderRadius: 12 },
   commentInput: {
     flexDirection: 'row', gap: 8, padding: 12, paddingBottom: 28,
     backgroundColor: Colors.white, borderTopWidth: 1, borderTopColor: Colors.border,
