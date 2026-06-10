@@ -298,20 +298,40 @@ export default function MypageScreen() {
 
       {/* 맞춤 보고서 CTA */}
       <TouchableOpacity
-        style={[styles.reportBanner, { marginHorizontal: hPad }]}
+        style={[styles.reportBanner, hasPurchasedReport && styles.reportBannerOwned, { marginHorizontal: hPad }]}
         onPress={handleGetReport}
         activeOpacity={0.85}
         disabled={reportLoading}
       >
-        <View style={styles.reportBannerLeft}>
-          <Text style={styles.reportBannerBadge}>베타 한정</Text>
-          <Text style={styles.reportBannerTitle}>📋 맞춤 피부 분석 보고서</Text>
-          <Text style={styles.reportBannerDesc}>베타테스트 기간 동안 현금 대신 포인트로!</Text>
-        </View>
-        <View style={styles.reportBannerRight}>
-          <Text style={styles.reportBannerPrice}>990pt</Text>
-          <Text style={styles.reportBannerArrow}>›</Text>
-        </View>
+        {reportLoading ? (
+          <ActivityIndicator color="#fff" style={{ flex: 1 }} />
+        ) : (
+          <>
+            <View style={styles.reportBannerLeft}>
+              <Text style={[styles.reportBannerBadge, hasPurchasedReport && styles.reportBannerBadgeOwned]}>
+                {hasPurchasedReport ? '구매 완료' : '베타 한정'}
+              </Text>
+              <Text style={styles.reportBannerTitle}>📋 맞춤 피부 분석 보고서</Text>
+              <Text style={styles.reportBannerDesc}>
+                {hasPurchasedReport
+                  ? '내 피부·얼굴형 맞춤 분석 결과 확인하기'
+                  : '베타테스트 기간 동안 현금 대신 포인트로!'}
+              </Text>
+            </View>
+            <View style={styles.reportBannerRight}>
+              {hasPurchasedReport ? (
+                <View style={styles.reportBannerViewBtn}>
+                  <Text style={styles.reportBannerViewBtnText}>열람하기</Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.reportBannerPrice}>990pt</Text>
+                  <Text style={styles.reportBannerArrow}>›</Text>
+                </>
+              )}
+            </View>
+          </>
+        )}
       </TouchableOpacity>
 
       {/* 내 보관함 */}
@@ -785,6 +805,13 @@ const styles = StyleSheet.create({
   reportBannerTitle: { fontSize: 15, fontWeight: '800', color: '#fff' },
   reportBannerDesc: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
   reportBannerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  reportBannerOwned: { backgroundColor: '#1A2E1A', borderColor: '#22C55E' },
+  reportBannerBadgeOwned: { color: '#22C55E', backgroundColor: 'rgba(34,197,94,0.15)' },
+  reportBannerViewBtn: {
+    backgroundColor: '#22C55E', borderRadius: 10,
+    paddingVertical: 8, paddingHorizontal: 14,
+  },
+  reportBannerViewBtnText: { fontSize: 14, fontWeight: '800', color: '#fff' },
   reportBannerPrice: { fontSize: 18, fontWeight: '900', color: '#FF6B9D' },
   reportBannerArrow: { fontSize: 18, color: 'rgba(255,255,255,0.5)' },
 
