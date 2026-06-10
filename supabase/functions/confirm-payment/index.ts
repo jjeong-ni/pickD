@@ -3,10 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const TOSS_SECRET_KEY = Deno.env.get('TOSS_SECRET_KEY') ?? '';
 const TOSS_CONFIRM_URL = 'https://api.tosspayments.com/v1/payments/confirm';
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? 'https://pick-d.vercel.app';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
@@ -33,6 +32,12 @@ serve(async (req) => {
     if (authError || !authUser) {
       return new Response(JSON.stringify({ error: '유효하지 않은 인증입니다' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!TOSS_SECRET_KEY) {
+      return new Response(JSON.stringify({ error: '결제 서비스가 아직 준비 중이에요.' }), {
+        status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 

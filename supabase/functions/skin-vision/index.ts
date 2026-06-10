@@ -2,11 +2,28 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const GOOGLE_VISION_API_KEY = Deno.env.get('GOOGLE_VISION_API_KEY') ?? '';
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? 'https://pick-d.vercel.app';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Fallback responses when Google Vision API key is not configured
+const FALLBACK_SKIN_TONE = {
+  label: '분석 준비 중',
+  desc: '피부 톤 분석 서비스가 준비 중이에요',
+  hex: '#f5d0a9',
+  warmth: 'neutral',
+  brightness: 180,
+};
+
+const FALLBACK_ANALYSIS = {
+  hasFace: false,
+  imageQuality: null,
+  skinTone: FALLBACK_SKIN_TONE,
+  faceShape: null,
+  concerns: [],
+  topLabels: [],
 };
 
 serve(async (req) => {
@@ -33,6 +50,18 @@ serve(async (req) => {
     if (!imageBase64) {
       return new Response(JSON.stringify({ error: 'Missing imageBase64' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // API 키가 없으면 폴백 응답 반환
+    if (!GOOGLE_VISION_API_KEY) {
+      if (feature === 'text') {
+        return new Response(JSON.stringify({ text: '' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify(FALLBACK_ANALYSIS), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -178,8 +207,8 @@ function analyzeFaceShape(face: any): { shape: string; desc: string; confidence:
   if (!faceWidth || !faceHeight) return { shape: '분석 불가', desc: '측정에 필요한 특징점을 찾지 못했어요', confidence: 40 };
 
   const ratio = faceHeight / faceWidth;
-  const fwRatio = foreheadW / faceWidth;  // 이마 너비 / 얼굴 전체 너비
-  const jwRatio = jawW / faceWidth;        // 턱 너비 / 얼굴 전체 너비
+  const fwRatio = foreheadW / faceWidth;
+  const jwRatio = jawW / faceWidth;
 
   let shape: string;
   let desc: string;

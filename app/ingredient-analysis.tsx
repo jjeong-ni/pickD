@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { supabase } from '../lib/supabase';
 import { Colors, HEADER_TOP } from '../constants/colors';
 
 interface IngredientResult {
@@ -124,12 +125,14 @@ export default function IngredientAnalysisScreen() {
         reader.readAsDataURL(blob);
       });
 
+      const { data: { session } } = await supabase.auth.getSession();
       const apiUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/skin-vision`;
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer ${session?.access_token ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+          apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
         },
         body: JSON.stringify({ imageBase64: base64, feature: 'text' }),
       });
