@@ -458,15 +458,21 @@ export default function SkinAnalysisScreen() {
   const handleSave = async () => {
     if (!user || !result) return;
     setSaving(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update({
+    const [{ error }] = await Promise.all([
+      supabase.from('profiles').update({
         skin_type: result.type,
         baumann_code: result.code,
         skin_metrics: result.metrics,
         skin_dehydration: result.dehydration,
-      })
-      .eq('user_id', user.id);
+      }).eq('user_id', user.id),
+      supabase.from('skin_analysis_history').insert({
+        user_id: user.id,
+        skin_type: result.type,
+        baumann_code: result.code,
+        skin_metrics: result.metrics,
+        skin_dehydration: result.dehydration,
+      }),
+    ]);
     setSaving(false);
     if (error) {
       Alert.alert('저장 실패', '프로필 저장 중 문제가 발생했어요. 다시 시도해주세요.');

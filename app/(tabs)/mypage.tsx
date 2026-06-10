@@ -370,6 +370,24 @@ export default function MypageScreen() {
               <Text style={styles.menuArrow}>›</Text>
             </TouchableOpacity>
 
+            {/* 피부 변화 기록 */}
+            {profile?.skin_type && (
+              <TouchableOpacity
+                style={styles.vaultMenuItem}
+                onPress={() => router.push('/skin-history' as any)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.menuIcon, { backgroundColor: '#F0FFF4' }]}>
+                  <Ionicons name="trending-up-outline" size={20} color="#22C55E" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.menuLabel}>피부 변화 기록</Text>
+                  <Text style={styles.menuSub}>분석 이력 및 지표 변화 추이</Text>
+                </View>
+                <Text style={styles.menuArrow}>›</Text>
+              </TouchableOpacity>
+            )}
+
             {/* 맞춤 피부 보고서 */}
             <TouchableOpacity
               style={styles.vaultMenuItem}
