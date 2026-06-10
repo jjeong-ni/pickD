@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Alert, ActivityIndicator, Clipboard, Platform,
+  Alert, ActivityIndicator, Clipboard, Platform, Linking,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,13 +47,17 @@ export default function PartnerClinicsScreen() {
     setLoading(false);
   };
 
-  const handleCopyCode = (code: string) => {
-    if (Platform.OS === 'web') {
-      try { navigator.clipboard.writeText(code); } catch {}
-    } else {
-      Clipboard.setString(code);
+  const handleCopyCode = async (code: string) => {
+    try {
+      if (Platform.OS === 'web') {
+        await navigator.clipboard.writeText(code);
+      } else {
+        Clipboard.setString(code);
+      }
+      Alert.alert('복사 완료', `쿠폰 코드 "${code}"가 복사됐어요!`);
+    } catch {
+      Alert.alert('복사 실패', '수동으로 코드를 선택해 복사해주세요: ' + code);
     }
-    Alert.alert('복사 완료', `쿠폰 코드 "${code}"가 복사됐어요!`);
   };
 
   const filtered = selectedDistrict === '전체'
@@ -159,10 +163,12 @@ export default function PartnerClinicsScreen() {
                 <TouchableOpacity
                   style={styles.phoneBtn}
                   onPress={() => {
-                    if (Platform.OS !== 'web') {
+                    if (Platform.OS === 'web') {
+                      Linking.openURL(`tel:${clinic.phone}`);
+                    } else {
                       Alert.alert('전화 연결', `${clinic.name}\n${clinic.phone}`, [
                         { text: '취소', style: 'cancel' },
-                        { text: '전화하기', onPress: () => {} },
+                        { text: '전화하기', onPress: () => Linking.openURL(`tel:${clinic.phone}`) },
                       ]);
                     }
                   }}

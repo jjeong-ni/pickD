@@ -1,6 +1,6 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  ActivityIndicator, Alert, Modal, Share,
+  ActivityIndicator, Alert, Modal, Share, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
@@ -82,12 +82,14 @@ export default function CompareScreen() {
 
   const handleShare = async () => {
     const names = visibleDetails.map((d) => d.name).join(' vs ');
-    try {
-      await Share.share({
-        message: `픽디에서 ${names} 비교해봐요!\n내 피부에 맞는 시술·기기를 찾아보세요 → https://pick-d.vercel.app`,
-        title: '픽디 비교 공유',
-      });
-    } catch { /* 공유 취소 무시 */ }
+    const shareText = `픽디에서 ${names} 비교해봐요!\n내 피부에 맞는 시술·기기를 찾아보세요 → https://pick-d.vercel.app`;
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
+      try { await navigator.share({ title: '픽디 비교 공유', text: shareText }); } catch { /* 취소 무시 */ }
+    } else if (Platform.OS === 'web') {
+      try { await navigator.clipboard.writeText(shareText); Alert.alert('복사 완료', '링크가 클립보드에 복사됐어요!'); } catch { Alert.alert('공유', shareText); }
+    } else {
+      try { await Share.share({ message: shareText, title: '픽디 비교 공유' }); } catch { /* 취소 무시 */ }
+    }
   };
 
   const executeConfirm = () => {

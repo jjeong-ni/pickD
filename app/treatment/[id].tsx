@@ -31,15 +31,13 @@ export default function TreatmentDetailScreen() {
 
   useEffect(() => {
     if (user && id) {
-      supabase
-        .from('favorites')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('item_id', id)
-        .eq('item_type', 'treatment')
-        .maybeSingle()
-        .then(({ data }) => setFavoriteId(data?.id ?? null))
-        .catch(() => {});
+      (async () => {
+        const { data } = await supabase
+          .from('favorites').select('id')
+          .eq('user_id', user.id).eq('item_id', id).eq('item_type', 'treatment')
+          .maybeSingle();
+        setFavoriteId(data?.id ?? null);
+      })();
     } else {
       setFavoriteId(null);
     }
