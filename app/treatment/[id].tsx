@@ -13,6 +13,7 @@ import { useCompare } from '../../hooks/useCompare';
 import { Treatment, Device } from '../../types';
 import MediaGallery from '../../components/MediaGallery';
 import CompatibilityCard from '../../components/CompatibilityCard';
+import PriceReports from '../../components/PriceReports';
 
 export default function TreatmentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -276,6 +277,11 @@ export default function TreatmentDetailScreen() {
           </View>
           <Text style={styles.reviewLinkArrow}>›</Text>
         </TouchableOpacity>
+
+        {/* 커뮤니티 가격 제보 */}
+        <View style={{ paddingHorizontal: 8, marginTop: 0 }}>
+          <PriceReports itemId={id!} itemType="treatment" itemName={treatment.name} />
+        </View>
 
         {/* 집에서 비슷한 효과 — 관련 기기 */}
         {relatedDevices.length > 0 && (
