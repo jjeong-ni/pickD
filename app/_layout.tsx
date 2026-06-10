@@ -79,6 +79,7 @@ export default function RootLayout() {
         <Stack.Screen name="skin-history" options={{ presentation: 'card' }} />
         <Stack.Screen name="ai-chat" options={{ presentation: 'card' }} />
         <Stack.Screen name="reviews" options={{ presentation: 'card' }} />
+        <Stack.Screen name="camera-skin-analysis" options={{ presentation: 'card' }} />
       </Stack>
     </>
   );

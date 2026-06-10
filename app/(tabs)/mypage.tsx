@@ -393,6 +393,25 @@ export default function MypageScreen() {
               </TouchableOpacity>
             )}
 
+            {/* 카메라 피부 분석 */}
+            <TouchableOpacity
+              style={styles.vaultMenuItem}
+              onPress={() => router.push('/camera-skin-analysis' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#FFF0EC' }]}>
+                <Ionicons name="camera-outline" size={20} color="#F97316" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>카메라 피부 분석</Text>
+                <Text style={styles.menuSub}>사진으로 피부 톤·고민 AI 분석</Text>
+              </View>
+              <View style={[styles.vaultBadgeLock, { backgroundColor: '#FFF0EC', borderColor: '#F97316' }]}>
+                <Text style={[styles.vaultBadgeLockText, { color: '#F97316' }]}>NEW</Text>
+              </View>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+
             {/* 맞춤 피부 보고서 */}
             <TouchableOpacity
               style={styles.vaultMenuItem}
