@@ -90,7 +90,7 @@ export default function SearchScreen() {
             req = (req as any).or(`name.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`);
           }
         }
-        if (category !== '전체') req = (req as any).eq('category', category);
+        if (category !== '전체') req = (req as any).ilike('category', `%${category}%`);
         const { data } = await req.order('rating', { ascending: false }).limit(20);
         if (!cancelled) setResults(data ?? []);
       } catch {

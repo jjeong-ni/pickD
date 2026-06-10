@@ -429,10 +429,10 @@ export default function HomeScreen() {
             </GlassCard>
           </TouchableOpacity>
         ) : user && !profile?.skin_type ? (
-          <TouchableOpacity onPress={() => router.push('/profile-setup' as any)} activeOpacity={0.85}>
+          <TouchableOpacity onPress={() => router.push('/skin-analysis' as any)} activeOpacity={0.85}>
             <GlassCard style={styles.banner} intensity="low">
-              <Text style={styles.bannerLabel}>✨ 피부 프로필 완성하기</Text>
-              <Text style={styles.bannerValue}>맞춤 시술·기기 추천을 받아보세요 →</Text>
+              <Text style={styles.bannerLabel}>✨ 피부 분석 솔루션</Text>
+              <Text style={styles.bannerValue}>내 피부타입 분석하고 맞춤 추천 받기 →</Text>
             </GlassCard>
           </TouchableOpacity>
         ) : !user ? (
@@ -491,30 +491,6 @@ export default function HomeScreen() {
         </Section>
       )}
 
-      {/* 맞춤 피부 분석 보고서 섹션 */}
-      <View style={[styles.reportSection, { marginHorizontal: hPad }]}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>맞춤 피부 분석 보고서</Text>
-        </View>
-        <TouchableOpacity onPress={handleGetReport} activeOpacity={0.85} disabled={reportLoading}>
-          <View style={styles.reportCard}>
-            <View style={styles.reportCardLeft}>
-              <Text style={styles.reportCardEmoji}>📋</Text>
-              <View style={styles.reportCardText}>
-                <Text style={styles.reportCardTitle}>AI 피부 분석 보고서</Text>
-                <Text style={styles.reportCardDesc}>피부 타입·고민·얼굴형을 종합{'\n'}분석한 나만의 맞춤 리포트</Text>
-                <View style={styles.reportCardBadge}>
-                  <Text style={styles.reportCardBadgeText}>베타 한정 990pt</Text>
-                </View>
-              </View>
-            </View>
-            {reportLoading
-              ? <ActivityIndicator color={Colors.primary} />
-              : <Ionicons name="chevron-forward" size={22} color={Colors.primary} />}
-          </View>
-        </TouchableOpacity>
-      </View>
-
       {/* 인기 기기 */}
       <Section title="인기 기기" onMore={() => router.push('/search' as any)} hPad={hPad}>
         {devices.length > 0 ? (
@@ -569,6 +545,30 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      {/* 처음 이용 가이드 */}
+      <View style={[styles.guideSection, { marginHorizontal: hPad }]}>
+        <Text style={styles.guideTitle}>🗺️ 픽디 이렇게 써보세요</Text>
+        <View style={styles.guideGrid}>
+          {[
+            { emoji: '🧬', title: '피부타입 분석', desc: '8문항으로 바우만 피부 진단', route: '/skin-analysis' },
+            { emoji: '💎', title: '얼굴형 분석', desc: '얼굴형별 맞춤 시술 추천', route: '/face-analysis' },
+            { emoji: '🔍', title: '시술·기기 검색', desc: '카테고리별 비교 & 리뷰', route: '/search' as any },
+            { emoji: '📋', title: 'AI 피부 보고서', desc: '종합 분석 리포트 990pt', route: '/skin-report' as any },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.title}
+              style={styles.guideCard}
+              onPress={() => router.push(item.route as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.guideCardEmoji}>{item.emoji}</Text>
+              <Text style={styles.guideCardTitle}>{item.title}</Text>
+              <Text style={styles.guideCardDesc}>{item.desc}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
       <View style={{ height: 32 }} />
     </ScrollView>
 
@@ -620,8 +620,21 @@ export default function HomeScreen() {
                   <Ionicons name="chevron-forward" size={20} color={Colors.sub} />
                 </TouchableOpacity>
               )}
+              {!skinPicks.treatment && !skinPicks.device && (
+                <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 13, color: Colors.sub, textAlign: 'center' }}>
+                    아직 매칭된 상품이 없어요{'\n'}전체 상품에서 직접 찾아보세요
+                  </Text>
+                </View>
+              )}
             </View>
-          ) : null}
+          ) : (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <Text style={{ fontSize: 13, color: Colors.sub, textAlign: 'center' }}>
+                추천 상품을 불러오지 못했어요{'\n'}전체 상품에서 직접 찾아보세요
+              </Text>
+            </View>
+          )}
           <TouchableOpacity
             style={styles.skinPicksMoreBtn}
             onPress={() => { setShowSkinModal(false); router.push('/search' as any); }}
@@ -832,26 +845,6 @@ const styles = StyleSheet.create({
   reportBannerDesc: { fontSize: 12, color: 'rgba(255,255,255,0.75)' },
   reportBannerArrow: { fontSize: 22, color: 'rgba(255,255,255,0.7)', marginLeft: 8 },
 
-  // 보고서 섹션 카드
-  reportSection: { marginTop: 28 },
-  reportCard: {
-    backgroundColor: Colors.white, borderRadius: 18, padding: 18,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    borderWidth: 1.5, borderColor: Colors.primaryLight,
-    shadowColor: '#FF6B9D', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12, shadowRadius: 12, elevation: 3,
-  },
-  reportCardLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
-  reportCardEmoji: { fontSize: 40 },
-  reportCardText: { gap: 4, flex: 1 },
-  reportCardTitle: { fontSize: 15, fontWeight: '800', color: Colors.text },
-  reportCardDesc: { fontSize: 12, color: Colors.sub, lineHeight: 18 },
-  reportCardBadge: {
-    alignSelf: 'flex-start', backgroundColor: Colors.primaryLight,
-    borderRadius: 8, paddingVertical: 3, paddingHorizontal: 8, marginTop: 2,
-  },
-  reportCardBadgeText: { fontSize: 11, fontWeight: '800', color: Colors.primary },
-
   // 섹션
   sectionHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -956,6 +949,20 @@ const styles = StyleSheet.create({
     paddingVertical: 14, alignItems: 'center', marginTop: 16,
   },
   skinPicksMoreBtnText: { fontSize: 15, fontWeight: '700', color: Colors.primary },
+
+  // 이용 가이드
+  guideSection: { marginTop: 28 },
+  guideTitle: { fontSize: 16, fontWeight: '800', color: Colors.text, marginBottom: 14 },
+  guideGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  guideCard: {
+    width: '47%', backgroundColor: Colors.white, borderRadius: 16, padding: 16,
+    gap: 6, borderWidth: 1, borderColor: Colors.border,
+    shadowColor: Colors.cardShadow,
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2,
+  },
+  guideCardEmoji: { fontSize: 28 },
+  guideCardTitle: { fontSize: 13, fontWeight: '800', color: Colors.text },
+  guideCardDesc: { fontSize: 11, color: Colors.sub, lineHeight: 16 },
 
   // 회원가입 완료 팝업
   popupOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
