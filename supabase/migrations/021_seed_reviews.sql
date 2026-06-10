@@ -10,9 +10,15 @@ DO $$
 DECLARE
   v_uid UUID;
 BEGIN
-  SELECT user_id INTO v_uid FROM profiles ORDER BY created_at LIMIT 1;
+  -- auth.users와 profiles 양쪽에 존재하는 유저만 사용
+  SELECT au.id INTO v_uid
+  FROM auth.users au
+  INNER JOIN profiles p ON p.user_id = au.id
+  ORDER BY au.created_at
+  LIMIT 1;
+
   IF v_uid IS NULL THEN
-    RAISE NOTICE '프로필이 없어 시드 리뷰를 건너뜁니다. 가입 후 다시 실행하세요.';
+    RAISE NOTICE '유효한 가입 유저가 없어 시드 리뷰를 건너뜁니다. 가입 후 다시 실행하세요.';
     RETURN;
   END IF;
 
