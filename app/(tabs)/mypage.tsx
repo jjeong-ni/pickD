@@ -456,6 +456,79 @@ export default function MypageScreen() {
               )}
               <Text style={styles.menuArrow}>›</Text>
             </TouchableOpacity>
+
+            {/* 나만의 루틴 */}
+            <TouchableOpacity
+              style={styles.vaultMenuItem}
+              onPress={() => router.push('/routine' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#FFF5E6' }]}>
+                <Ionicons name="list-outline" size={20} color="#F97316" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>나만의 루틴</Text>
+                <Text style={styles.menuSub}>AM/PM 맞춤 스킨케어 루틴 만들기</Text>
+              </View>
+              <View style={[styles.vaultBadgeLock, { backgroundColor: '#FFF5E6', borderColor: '#F97316' }]}>
+                <Text style={[styles.vaultBadgeLockText, { color: '#F97316' }]}>NEW</Text>
+              </View>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+
+            {/* 피부 일기 */}
+            <TouchableOpacity
+              style={styles.vaultMenuItem}
+              onPress={() => router.push('/skin-diary' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#FFF0F5' }]}>
+                <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>피부 일기</Text>
+                <Text style={styles.menuSub}>매일 피부 상태 기록하기</Text>
+              </View>
+              <View style={[styles.vaultBadgeLock, { backgroundColor: '#FFF0F5', borderColor: Colors.primary }]}>
+                <Text style={[styles.vaultBadgeLockText, { color: Colors.primary }]}>NEW</Text>
+              </View>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+
+            {/* 성분 분석 */}
+            <TouchableOpacity
+              style={styles.vaultMenuItem}
+              onPress={() => router.push('/ingredient-analysis' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#F0FFF4' }]}>
+                <Ionicons name="flask-outline" size={20} color="#22C55E" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>성분 분석</Text>
+                <Text style={styles.menuSub}>화장품 성분표 AI 안전성 분석</Text>
+              </View>
+              <View style={[styles.vaultBadgeLock, { backgroundColor: '#F0FFF4', borderColor: '#22C55E' }]}>
+                <Text style={[styles.vaultBadgeLockText, { color: '#22C55E' }]}>NEW</Text>
+              </View>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+
+            {/* 제휴 클리닉 */}
+            <TouchableOpacity
+              style={styles.vaultMenuItem}
+              onPress={() => router.push('/partner-clinics' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#F0ECFF' }]}>
+                <Ionicons name="medical-outline" size={20} color="#6B4EFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>제휴 클리닉</Text>
+                <Text style={styles.menuSub}>픽디 회원 전용 할인 클리닉 모음</Text>
+              </View>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
           </View>
           <View style={styles.divider} />
         </>

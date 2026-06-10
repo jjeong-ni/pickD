@@ -28,10 +28,35 @@ serve(async (req) => {
       });
     }
 
-    const { imageBase64 } = await req.json();
+    const body = await req.json();
+    const { imageBase64, feature } = body;
     if (!imageBase64) {
       return new Response(JSON.stringify({ error: 'Missing imageBase64' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // TEXT_DETECTION mode for ingredient analysis
+    if (feature === 'text') {
+      const visionRes = await fetch(
+        `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requests: [{
+              image: { content: imageBase64 },
+              features: [{ type: 'TEXT_DETECTION', maxResults: 1 }],
+            }],
+          }),
+        },
+      );
+      const visionData = await visionRes.json();
+      const annotation = visionData.responses?.[0];
+      if (!annotation || annotation.error) throw new Error(annotation?.error?.message ?? 'Vision API error');
+      const fullText = annotation.textAnnotations?.[0]?.description ?? '';
+      return new Response(JSON.stringify({ text: fullText }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 

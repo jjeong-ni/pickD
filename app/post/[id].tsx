@@ -1,6 +1,6 @@
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable,
+  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, Image,
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -41,6 +41,7 @@ export default function PostDetailScreen() {
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [showBefore, setShowBefore] = useState(false);
 
   // Quiz state
   const [quizVotes, setQuizVotes] = useState<QuizVote[]>([]);
@@ -320,6 +321,41 @@ export default function PostDetailScreen() {
           <Text style={styles.title}>{post.title}</Text>
           <Text style={styles.author}>👤 {(post as any).profile?.nickname ?? virtualNick((post as any).user_id ?? '')}</Text>
 
+          {/* Before/After 이미지 */}
+          {!isQuiz && ((post as any).image_url || (post as any).before_image_url) && (
+            <View style={styles.imgSection}>
+              {(post as any).image_url && (post as any).before_image_url ? (
+                <>
+                  <View style={styles.imgToggleRow}>
+                    <TouchableOpacity
+                      style={[styles.imgToggleBtn, !showBefore && styles.imgToggleBtnActive]}
+                      onPress={() => setShowBefore(false)}
+                    >
+                      <Text style={[styles.imgToggleTxt, !showBefore && styles.imgToggleTxtActive]}>After</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.imgToggleBtn, showBefore && styles.imgToggleBtnActive]}
+                      onPress={() => setShowBefore(true)}
+                    >
+                      <Text style={[styles.imgToggleTxt, showBefore && styles.imgToggleTxtActive]}>Before</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Image
+                    source={{ uri: showBefore ? (post as any).before_image_url : (post as any).image_url }}
+                    style={styles.postImage}
+                    resizeMode="cover"
+                  />
+                </>
+              ) : (
+                <Image
+                  source={{ uri: (post as any).image_url || (post as any).before_image_url }}
+                  style={styles.postImage}
+                  resizeMode="cover"
+                />
+              )}
+            </View>
+          )}
+
           {/* Quiz UI */}
           {isQuiz ? (
             <View style={styles.quizSection}>
@@ -561,6 +597,16 @@ const styles = StyleSheet.create({
   commentNickname: { fontSize: 13, fontWeight: '700', color: Colors.text, marginBottom: 4 },
   commentBody: { fontSize: 14, color: Colors.sub, lineHeight: 20 },
   commentDate: { fontSize: 11, color: Colors.sub, marginTop: 4 },
+  imgSection: { marginBottom: 16, gap: 10 },
+  imgToggleRow: { flexDirection: 'row', gap: 8 },
+  imgToggleBtn: {
+    paddingVertical: 6, paddingHorizontal: 16, borderRadius: 20,
+    borderWidth: 1.5, borderColor: Colors.border,
+  },
+  imgToggleBtnActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
+  imgToggleTxt: { fontSize: 13, fontWeight: '700', color: Colors.sub },
+  imgToggleTxtActive: { color: Colors.primary },
+  postImage: { width: '100%', height: 220, borderRadius: 12 },
   commentInput: {
     flexDirection: 'row', gap: 8, padding: 12, paddingBottom: 28,
     backgroundColor: Colors.white, borderTopWidth: 1, borderTopColor: Colors.border,

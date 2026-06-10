@@ -1,6 +1,6 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  ActivityIndicator, Alert, Modal,
+  ActivityIndicator, Alert, Modal, Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
@@ -80,6 +80,16 @@ export default function CompareScreen() {
     setConfirmTarget({ id: user.id, type: 'clear' });
   };
 
+  const handleShare = async () => {
+    const names = visibleDetails.map((d) => d.name).join(' vs ');
+    try {
+      await Share.share({
+        message: `픽디에서 ${names} 비교해봐요!\n내 피부에 맞는 시술·기기를 찾아보세요 → https://pick-d.vercel.app`,
+        title: '픽디 비교 공유',
+      });
+    } catch { /* 공유 취소 무시 */ }
+  };
+
   const executeConfirm = () => {
     if (!confirmTarget) return;
     if (confirmTarget.type === 'remove') remove(confirmTarget.id);
@@ -124,11 +134,18 @@ export default function CompareScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>비교함</Text>
-        {items.length > 0 && (
-          <TouchableOpacity onPress={handleClear}>
-            <Text style={styles.clearBtn}>전체 삭제</Text>
-          </TouchableOpacity>
-        )}
+        <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
+          {visibleDetails.length >= 2 && (
+            <TouchableOpacity onPress={handleShare}>
+              <Ionicons name="share-social-outline" size={22} color={Colors.primary} />
+            </TouchableOpacity>
+          )}
+          {items.length > 0 && (
+            <TouchableOpacity onPress={handleClear}>
+              <Text style={styles.clearBtn}>전체 삭제</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {items.length === 0 ? (

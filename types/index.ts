@@ -104,6 +104,8 @@ export interface Post {
   category: string;
   likes: number;
   comment_count: number;
+  image_url: string | null;
+  before_image_url: string | null;
   created_at: string;
   profile?: Pick<Profile, 'nickname'>;
 }
