@@ -1,8 +1,10 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Platform,
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';
@@ -206,11 +208,13 @@ export default function FaceAnalysisScreen() {
   const { viewResult } = useLocalSearchParams<{ viewResult?: string }>();
   const isViewMode = viewResult === 'true';
 
-  const [step, setStep] = useState(isViewMode ? 5 : 0);
+  // step: -1 = 방법 선택, 0~4 = 퀴즈, 5 = 결과
+  const [step, setStep] = useState(isViewMode ? 5 : -1);
   const [answers, setAnswers] = useState<(number | null)[]>(Array(5).fill(null));
   const [selected, setSelected] = useState<number | null>(null);
   const [result, setResult] = useState<FaceShape | null>(null);
   const [saving, setSaving] = useState(false);
+  const [photoAnalyzing, setPhotoAnalyzing] = useState(false);
 
   useEffect(() => {
     if (isViewMode && profile?.face_shape) {
@@ -249,10 +253,73 @@ export default function FaceAnalysisScreen() {
   };
 
   const handleRetake = () => {
-    setStep(0);
+    setStep(-1);
     setAnswers(Array(5).fill(null));
     setSelected(null);
     setResult(null);
+  };
+
+  const handlePhotoAnalysis = async () => {
+    if (!user) { router.push('/(auth)/login' as any); return; }
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        const libPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!libPerm.granted) { Alert.alert('권한 필요', '카메라 또는 갤러리 접근 권한이 필요해요.'); return; }
+      }
+    }
+    Alert.alert('사진 선택', '얼굴 사진을 선택해주세요', [
+      ...(Platform.OS !== 'web' ? [{
+        text: '📸 카메라로 촬영', onPress: () => launchAndAnalyze(true),
+      }] : []),
+      { text: '🖼️ 갤러리에서 선택', onPress: () => launchAndAnalyze(false) },
+      { text: '취소', style: 'cancel' as const },
+    ]);
+  };
+
+  const launchAndAnalyze = async (fromCamera: boolean) => {
+    const picker = fromCamera ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
+    const res = await picker({
+      mediaTypes: ['images'] as any,
+      quality: 0.7,
+      base64: true,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (res.canceled || !res.assets[0]?.base64) return;
+
+    setPhotoAnalyzing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = (supabase as any).supabaseUrl as string;
+      const apiRes = await fetch(`${supabaseUrl}/functions/v1/skin-vision`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ imageBase64: res.assets[0].base64 }),
+      });
+      const data = await apiRes.json();
+      if (data.error) throw new Error(data.error);
+
+      if (!data.hasFace || !data.faceShape || data.faceShape.shape === '분석 불가') {
+        Alert.alert('감지 실패', '얼굴을 감지하지 못했어요. 정면 얼굴 사진으로 다시 시도해주세요.');
+        return;
+      }
+
+      const detectedShape = data.faceShape.shape as FaceShape;
+      if (ALL_SHAPES.includes(detectedShape)) {
+        setResult(detectedShape);
+        setStep(5);
+      } else {
+        Alert.alert('분석 실패', '얼굴형을 특정하지 못했어요. 질문 방식을 이용해보세요.');
+      }
+    } catch (e: any) {
+      Alert.alert('오류', e.message ?? '분석 중 오류가 발생했어요.');
+    } finally {
+      setPhotoAnalyzing(false);
+    }
   };
 
   const info = result ? RESULTS[result] : null;
@@ -268,7 +335,50 @@ export default function FaceAnalysisScreen() {
         <View style={{ width: 32 }} />
       </View>
 
-      {step < 5 ? (
+      {step === -1 ? (
+        /* ── 방법 선택 ── */
+        <ScrollView contentContainerStyle={styles.quizContent} showsVerticalScrollIndicator={false}>
+          <Text style={styles.chooseTitle}>얼굴형 분석 방법을 선택하세요</Text>
+          <Text style={styles.chooseDesc}>사진 분석과 질문 방식 중 원하는 방법을 선택해요</Text>
+
+          <TouchableOpacity style={styles.chooseCard} onPress={handlePhotoAnalysis} disabled={photoAnalyzing}>
+            <View style={styles.chooseCardIcon}>
+              {photoAnalyzing
+                ? <ActivityIndicator color={Colors.primary} />
+                : <Ionicons name="camera" size={32} color={Colors.primary} />}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.chooseCardTitle}>📸 사진으로 빠른 분석</Text>
+              <Text style={styles.chooseCardDesc}>
+                얼굴 사진 1장으로 AI가 즉시 얼굴형을 분석해요{'\n'}
+                피부 톤도 함께 분석됩니다
+              </Text>
+            </View>
+            <View style={styles.chooseBadge}>
+              <Text style={styles.chooseBadgeText}>NEW</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.chooseCard, { borderColor: Colors.border }]} onPress={() => setStep(0)}>
+            <View style={[styles.chooseCardIcon, { backgroundColor: '#F0F7FF' }]}>
+              <Ionicons name="list" size={32} color="#3B82F6" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.chooseCardTitle, { color: '#3B82F6' }]}>📝 질문으로 정밀 분석</Text>
+              <Text style={styles.chooseCardDesc}>
+                5가지 질문에 답해 더 정밀하게{'\n'}
+                얼굴형을 진단해요
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.chooseTip}>
+            <Text style={styles.chooseTipText}>
+              💡 사진 분석 팁: 밝은 조명 아래 정면을 바라본 맨 얼굴 사진을 사용하면 더 정확해요
+            </Text>
+          </View>
+        </ScrollView>
+      ) : step < 5 ? (
         /* ── 퀴즈 ── */
         <>
           <ScrollView contentContainerStyle={styles.quizContent} showsVerticalScrollIndicator={false}>
@@ -414,6 +524,30 @@ const styles = StyleSheet.create({
   },
   back: { fontSize: 24, color: Colors.text, width: 32 },
   title: { fontSize: 17, fontWeight: '700', color: Colors.text },
+
+  /* 방법 선택 */
+  chooseTitle: { fontSize: 22, fontWeight: '800', color: Colors.text, marginBottom: 4 },
+  chooseDesc: { fontSize: 13, color: Colors.sub, marginBottom: 24, lineHeight: 20 },
+  chooseCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: Colors.white, borderRadius: 16, padding: 18,
+    borderWidth: 1.5, borderColor: Colors.primaryLight, marginBottom: 12,
+  },
+  chooseCardIcon: {
+    width: 60, height: 60, borderRadius: 16, backgroundColor: Colors.primaryLight,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  chooseCardTitle: { fontSize: 15, fontWeight: '800', color: Colors.primary, marginBottom: 4 },
+  chooseCardDesc: { fontSize: 12, color: Colors.sub, lineHeight: 18 },
+  chooseBadge: {
+    backgroundColor: Colors.primary, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3,
+  },
+  chooseBadgeText: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  chooseTip: {
+    backgroundColor: '#FFF8E1', borderRadius: 12, padding: 12,
+    borderLeftWidth: 3, borderLeftColor: '#F9A825', marginTop: 4,
+  },
+  chooseTipText: { fontSize: 12, color: '#7B6200', lineHeight: 18 },
 
   /* 퀴즈 */
   quizContent: { padding: 24, paddingBottom: 20 },

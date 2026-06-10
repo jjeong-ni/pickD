@@ -24,10 +24,17 @@ interface ImageQuality {
   confidence: number;
 }
 
+interface FaceShape {
+  shape: string;
+  desc: string;
+  confidence: number;
+}
+
 interface AnalysisResult {
   hasFace: boolean;
   imageQuality: ImageQuality | null;
   skinTone: SkinTone;
+  faceShape: FaceShape | null;
   concerns: { label: string; score: number }[];
   topLabels: string[];
 }
@@ -280,6 +287,30 @@ export default function CameraSkinAnalysisScreen() {
               })()}
             </View>
 
+            {/* 얼굴형 */}
+            {result.faceShape && result.faceShape.shape !== '분석 불가' && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>🫦 얼굴형 분석</Text>
+                <View style={styles.faceShapeRow}>
+                  <View style={styles.faceShapeEmoji}>
+                    <Text style={styles.faceShapeEmojiText}>
+                      {({'계란형':'🥚','둥근형':'⭕','사각형':'⬜','하트형':'💖','긴형':'🖼️','다이아몬드형':'💎'} as any)[result.faceShape.shape] ?? '🫦'}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.faceShapeLabel}>{result.faceShape.shape}</Text>
+                    <Text style={styles.faceShapeDesc}>{result.faceShape.desc}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.searchBtn}
+                  onPress={() => router.push('/face-analysis?viewResult=true' as any)}
+                >
+                  <Text style={styles.searchBtnText}>얼굴형 맞춤 시술 보기 →</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* 피부 고민 */}
             <View style={styles.card}>
               <Text style={styles.cardTitle}>🔍 감지된 피부 고민</Text>
@@ -491,6 +522,15 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.border,
   },
   labelChipText: { fontSize: 12, color: Colors.sub },
+
+  faceShapeRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  faceShapeEmoji: {
+    width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.primaryLight,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  faceShapeEmojiText: { fontSize: 28 },
+  faceShapeLabel: { fontSize: 18, fontWeight: '800', color: Colors.text },
+  faceShapeDesc: { fontSize: 13, color: Colors.sub, marginTop: 3, lineHeight: 20 },
 
   resetBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
