@@ -36,39 +36,16 @@ export default function MypageScreen() {
 
   const handlePickAvatar = async () => {
     if (!user) return;
-    // 카메라 또는 갤러리 선택 옵션 제공
-    Alert.alert('프로필 사진', '사진을 선택해주세요\n(사진으로 피부·얼굴형 분석도 가능해요)', [
-      ...(Platform.OS !== 'web' ? [{
-        text: '📸 카메라로 촬영하기',
-        onPress: () => pickAndUploadAvatar(true),
-      }] : []),
-      { text: '🖼️ 갤러리에서 선택', onPress: () => pickAndUploadAvatar(false) },
-      { text: '취소', style: 'cancel' as const },
-    ]);
-  };
-
-  const pickAndUploadAvatar = async (fromCamera: boolean) => {
-    if (!user) return;
-    if (fromCamera) {
-      const camPerm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!camPerm.granted) {
-        Alert.alert('권한 필요', '카메라 접근 권한이 필요해요.');
-        return;
-      }
-    } else {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert('권한 필요', '갤러리 접근 권한이 필요해요.');
-        return;
-      }
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('권한 필요', '갤러리 접근 권한이 필요해요.');
+      return;
     }
-    const picker = fromCamera ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
-    const result = await picker({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'] as any,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
-      base64: true,
     });
     if (result.canceled) return;
     setAvatarUploading(true);
@@ -86,17 +63,6 @@ export default function MypageScreen() {
       const { error: dbErr } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('user_id', user.id);
       if (dbErr) throw dbErr;
       setProfile({ ...profile!, avatar_url: cacheBustedUrl });
-      // 업로드 완료 후 AI 분석 유도
-      if (result.assets[0].base64) {
-        Alert.alert(
-          '✅ 프로필 사진 저장 완료',
-          '이 사진으로 피부 톤 및 얼굴형 AI 분석을 받아볼까요?',
-          [
-            { text: '분석 시작', onPress: () => router.push('/camera-skin-analysis' as any) },
-            { text: '나중에', style: 'cancel' },
-          ],
-        );
-      }
     } catch {
       Alert.alert('오류', '프로필 사진 업로드에 실패했어요.');
     } finally {
@@ -381,6 +347,24 @@ export default function MypageScreen() {
               )}
               <Text style={styles.menuArrow}>›</Text>
             </TouchableOpacity>
+
+            {/* 얼굴형 재촬영·재분석 */}
+            {profile?.face_shape && (
+              <TouchableOpacity
+                style={styles.vaultMenuItem}
+                onPress={() => router.push('/face-analysis' as any)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.menuIcon, { backgroundColor: '#F3EFFF' }]}>
+                  <Ionicons name="refresh-outline" size={20} color="#6B4EFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.menuLabel}>얼굴형 재촬영·재분석</Text>
+                  <Text style={styles.menuSub}>사진 + 질문으로 다시 분석하기</Text>
+                </View>
+                <Text style={styles.menuArrow}>›</Text>
+              </TouchableOpacity>
+            )}
 
             {/* 피부타입 분석 결과 */}
             <TouchableOpacity

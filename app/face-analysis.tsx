@@ -208,13 +208,16 @@ export default function FaceAnalysisScreen() {
   const { viewResult } = useLocalSearchParams<{ viewResult?: string }>();
   const isViewMode = viewResult === 'true';
 
-  // step: -1 = 방법 선택, 0~4 = 퀴즈, 5 = 결과
+  // step: -1 = 사진 촬영, 0~4 = 퀴즈, 5 = 결과
   const [step, setStep] = useState(isViewMode ? 5 : -1);
   const [answers, setAnswers] = useState<(number | null)[]>(Array(5).fill(null));
   const [selected, setSelected] = useState<number | null>(null);
   const [result, setResult] = useState<FaceShape | null>(null);
   const [saving, setSaving] = useState(false);
-  const [photoAnalyzing, setPhotoAnalyzing] = useState(false);
+  const [photoCapturing, setPhotoCapturing] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [skinTone, setSkinTone] = useState<{ label: string; hex: string; desc: string } | null>(null);
+  const [skinAnalyzing, setSkinAnalyzing] = useState(false);
 
   useEffect(() => {
     if (isViewMode && profile?.face_shape) {
@@ -257,69 +260,63 @@ export default function FaceAnalysisScreen() {
     setAnswers(Array(5).fill(null));
     setSelected(null);
     setResult(null);
+    setPhotoUri(null);
+    setSkinTone(null);
   };
 
-  const handlePhotoAnalysis = async () => {
+  // 사진 촬영 → Vision API 백그라운드 → 퀴즈 시작
+  const capturePhoto = async () => {
     if (!user) { router.push('/(auth)/login' as any); return; }
-    if (Platform.OS !== 'web') {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        const libPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!libPerm.granted) { Alert.alert('권한 필요', '카메라 또는 갤러리 접근 권한이 필요해요.'); return; }
+    setPhotoCapturing(true);
+    try {
+      let res;
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status === 'granted') {
+          res = await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'] as any, quality: 0.7, base64: true,
+            allowsEditing: true, aspect: [1, 1],
+          });
+        } else {
+          // 카메라 권한 없으면 갤러리 fallback
+          const libPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!libPerm.granted) { Alert.alert('권한 필요', '카메라 또는 갤러리 접근 권한이 필요해요.'); return; }
+          res = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'] as any, quality: 0.7, base64: true,
+            allowsEditing: true, aspect: [1, 1],
+          });
+        }
+      } else {
+        res = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'] as any, quality: 0.7, base64: true,
+          allowsEditing: true, aspect: [1, 1],
+        });
       }
+      if (!res || res.canceled || !res.assets[0]) return;
+      setPhotoUri(res.assets[0].uri);
+      // 퀴즈 즉시 시작
+      setStep(0);
+      // Vision API 백그라운드 실행
+      if (res.assets[0].base64) runSkinVision(res.assets[0].base64);
+    } finally {
+      setPhotoCapturing(false);
     }
-    Alert.alert('사진 선택', '얼굴 사진을 선택해주세요', [
-      ...(Platform.OS !== 'web' ? [{
-        text: '📸 카메라로 촬영', onPress: () => launchAndAnalyze(true),
-      }] : []),
-      { text: '🖼️ 갤러리에서 선택', onPress: () => launchAndAnalyze(false) },
-      { text: '취소', style: 'cancel' as const },
-    ]);
   };
 
-  const launchAndAnalyze = async (fromCamera: boolean) => {
-    const picker = fromCamera ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
-    const res = await picker({
-      mediaTypes: ['images'] as any,
-      quality: 0.7,
-      base64: true,
-      allowsEditing: true,
-      aspect: [1, 1],
-    });
-    if (res.canceled || !res.assets[0]?.base64) return;
-
-    setPhotoAnalyzing(true);
+  const runSkinVision = async (base64: string) => {
+    setSkinAnalyzing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const supabaseUrl = (supabase as any).supabaseUrl as string;
       const apiRes = await fetch(`${supabaseUrl}/functions/v1/skin-vision`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ imageBase64: res.assets[0].base64 }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ imageBase64: base64 }),
       });
       const data = await apiRes.json();
-      if (data.error) throw new Error(data.error);
-
-      if (!data.hasFace || !data.faceShape || data.faceShape.shape === '분석 불가') {
-        Alert.alert('감지 실패', '얼굴을 감지하지 못했어요. 정면 얼굴 사진으로 다시 시도해주세요.');
-        return;
-      }
-
-      const detectedShape = data.faceShape.shape as FaceShape;
-      if (ALL_SHAPES.includes(detectedShape)) {
-        setResult(detectedShape);
-        setStep(5);
-      } else {
-        Alert.alert('분석 실패', '얼굴형을 특정하지 못했어요. 질문 방식을 이용해보세요.');
-      }
-    } catch (e: any) {
-      Alert.alert('오류', e.message ?? '분석 중 오류가 발생했어요.');
-    } finally {
-      setPhotoAnalyzing(false);
-    }
+      if (!data.error && data.skinTone) setSkinTone(data.skinTone);
+    } catch { /* 피부 톤 분석 실패는 무시 — 퀴즈 결과에 영향 없음 */ }
+    finally { setSkinAnalyzing(false); }
   };
 
   const info = result ? RESULTS[result] : null;
@@ -336,47 +333,42 @@ export default function FaceAnalysisScreen() {
       </View>
 
       {step === -1 ? (
-        /* ── 방법 선택 ── */
+        /* ── 사진 촬영 (필수 첫 단계) ── */
         <ScrollView contentContainerStyle={styles.quizContent} showsVerticalScrollIndicator={false}>
-          <Text style={styles.chooseTitle}>얼굴형 분석 방법을 선택하세요</Text>
-          <Text style={styles.chooseDesc}>사진 분석과 질문 방식 중 원하는 방법을 선택해요</Text>
-
-          <TouchableOpacity style={styles.chooseCard} onPress={handlePhotoAnalysis} disabled={photoAnalyzing}>
-            <View style={styles.chooseCardIcon}>
-              {photoAnalyzing
-                ? <ActivityIndicator color={Colors.primary} />
-                : <Ionicons name="camera" size={32} color={Colors.primary} />}
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.chooseCardTitle}>📸 사진으로 빠른 분석</Text>
-              <Text style={styles.chooseCardDesc}>
-                얼굴 사진 1장으로 AI가 즉시 얼굴형을 분석해요{'\n'}
-                피부 톤도 함께 분석됩니다
-              </Text>
-            </View>
-            <View style={styles.chooseBadge}>
-              <Text style={styles.chooseBadgeText}>NEW</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.chooseCard, { borderColor: Colors.border }]} onPress={() => setStep(0)}>
-            <View style={[styles.chooseCardIcon, { backgroundColor: '#F0F7FF' }]}>
-              <Ionicons name="list" size={32} color="#3B82F6" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.chooseCardTitle, { color: '#3B82F6' }]}>📝 질문으로 정밀 분석</Text>
-              <Text style={styles.chooseCardDesc}>
-                5가지 질문에 답해 더 정밀하게{'\n'}
-                얼굴형을 진단해요
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.chooseTip}>
-            <Text style={styles.chooseTipText}>
-              💡 사진 분석 팁: 밝은 조명 아래 정면을 바라본 맨 얼굴 사진을 사용하면 더 정확해요
+          <View style={styles.photoStepHeader}>
+            <Ionicons name="camera" size={52} color={Colors.primary} />
+            <Text style={styles.photoStepTitle}>먼저 얼굴 사진을 찍어주세요</Text>
+            <Text style={styles.photoStepDesc}>
+              사진으로 피부 톤을 분석하고{'\n'}
+              이어서 5가지 질문으로 얼굴형을 정밀 진단해요
             </Text>
           </View>
+
+          <View style={styles.photoTipsCard}>
+            <Text style={styles.photoTipsTitle}>📌 좋은 사진 찍는 법</Text>
+            {[
+              '밝은 자연광 또는 실내 조명 아래에서 찍어요',
+              '정면을 바라보고 표정 없이 찍어요',
+              '메이크업을 하지 않은 맨 얼굴이 더 정확해요',
+              '얼굴 전체가 화면에 들어오게 해요',
+            ].map((t, i) => (
+              <View key={i} style={styles.tipRow}>
+                <Text style={styles.tipDot}>•</Text>
+                <Text style={styles.tipText}>{t}</Text>
+              </View>
+            ))}
+          </View>
+
+          <TouchableOpacity style={styles.photoBtn} onPress={capturePhoto} disabled={photoCapturing}>
+            {photoCapturing
+              ? <ActivityIndicator color="#fff" />
+              : <>
+                  <Ionicons name={Platform.OS !== 'web' ? 'camera' : 'image'} size={22} color="#fff" />
+                  <Text style={styles.photoBtnText}>
+                    {Platform.OS !== 'web' ? '카메라로 촬영하기' : '갤러리에서 선택하기'}
+                  </Text>
+                </>}
+          </TouchableOpacity>
         </ScrollView>
       ) : step < 5 ? (
         /* ── 퀴즈 ── */
@@ -384,11 +376,13 @@ export default function FaceAnalysisScreen() {
           <ScrollView contentContainerStyle={styles.quizContent} showsVerticalScrollIndicator={false}>
             {/* 진행 표시 */}
             <View style={styles.progressRow}>
+              {/* 사진 단계 (완료) */}
+              <View style={[styles.dot, styles.dotDone, { flex: 0, width: 28 }]} />
               {QUESTIONS.map((_, i) => (
                 <View key={i} style={[styles.dot, i < step && styles.dotDone, i === step && styles.dotActive]} />
               ))}
             </View>
-            <Text style={styles.stepLabel}>질문 {step + 1} / {QUESTIONS.length}</Text>
+            <Text style={styles.stepLabel}>📸 사진 완료 · 질문 {step + 1} / {QUESTIONS.length}</Text>
 
             <Text style={styles.question}>{QUESTIONS[step].q}</Text>
             <Text style={styles.hint}>{QUESTIONS[step].hint}</Text>
@@ -435,6 +429,27 @@ export default function FaceAnalysisScreen() {
               </View>
               <Text style={styles.resultDesc}>{info?.desc}</Text>
             </View>
+
+            {/* 피부 톤 (사진 분석 결과) */}
+            {(skinTone || skinAnalyzing) && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>🎨 피부 톤 분석</Text>
+                {skinAnalyzing ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <ActivityIndicator color={Colors.primary} />
+                    <Text style={{ fontSize: 13, color: Colors.sub }}>사진 분석 중...</Text>
+                  </View>
+                ) : skinTone ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                    <View style={[styles.toneCircle, { backgroundColor: skinTone.hex }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.text }}>{skinTone.label}</Text>
+                      <Text style={{ fontSize: 13, color: Colors.sub, marginTop: 3 }}>{skinTone.desc}</Text>
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+            )}
 
             {/* 보완 포인트 */}
             <View style={styles.card}>
@@ -525,29 +540,25 @@ const styles = StyleSheet.create({
   back: { fontSize: 24, color: Colors.text, width: 32 },
   title: { fontSize: 17, fontWeight: '700', color: Colors.text },
 
-  /* 방법 선택 */
-  chooseTitle: { fontSize: 22, fontWeight: '800', color: Colors.text, marginBottom: 4 },
-  chooseDesc: { fontSize: 13, color: Colors.sub, marginBottom: 24, lineHeight: 20 },
-  chooseCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: Colors.white, borderRadius: 16, padding: 18,
-    borderWidth: 1.5, borderColor: Colors.primaryLight, marginBottom: 12,
+  /* 사진 촬영 단계 */
+  photoStepHeader: { alignItems: 'center', gap: 12, marginBottom: 28, paddingTop: 12 },
+  photoStepTitle: { fontSize: 22, fontWeight: '800', color: Colors.text, textAlign: 'center' },
+  photoStepDesc: { fontSize: 14, color: Colors.sub, textAlign: 'center', lineHeight: 22 },
+  photoTipsCard: {
+    backgroundColor: Colors.bg, borderRadius: 16, padding: 16, gap: 10, marginBottom: 24,
   },
-  chooseCardIcon: {
-    width: 60, height: 60, borderRadius: 16, backgroundColor: Colors.primaryLight,
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  photoTipsTitle: { fontSize: 13, fontWeight: '700', color: Colors.text, marginBottom: 2 },
+  tipRow: { flexDirection: 'row', gap: 8 },
+  tipDot: { fontSize: 13, color: Colors.primary, marginTop: 1 },
+  tipText: { flex: 1, fontSize: 13, color: Colors.sub, lineHeight: 20 },
+  photoBtn: {
+    backgroundColor: Colors.primary, borderRadius: 16, paddingVertical: 18,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
   },
-  chooseCardTitle: { fontSize: 15, fontWeight: '800', color: Colors.primary, marginBottom: 4 },
-  chooseCardDesc: { fontSize: 12, color: Colors.sub, lineHeight: 18 },
-  chooseBadge: {
-    backgroundColor: Colors.primary, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3,
+  photoBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  toneCircle: {
+    width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: Colors.border, flexShrink: 0,
   },
-  chooseBadgeText: { fontSize: 10, fontWeight: '800', color: '#fff' },
-  chooseTip: {
-    backgroundColor: '#FFF8E1', borderRadius: 12, padding: 12,
-    borderLeftWidth: 3, borderLeftColor: '#F9A825', marginTop: 4,
-  },
-  chooseTipText: { fontSize: 12, color: '#7B6200', lineHeight: 18 },
 
   /* 퀴즈 */
   quizContent: { padding: 24, paddingBottom: 20 },
