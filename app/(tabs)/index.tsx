@@ -14,6 +14,8 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { GlassCard } from '../../components/GlassCard';
 import { Treatment, Device } from '../../types';
 import { REPORT_COST } from '../../constants/app';
+import { WebView } from 'react-native-webview';
+import * as Location from 'expo-location';
 
 const KAKAO_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_JS_KEY ?? '';
 
@@ -107,6 +109,100 @@ function HomeClinicMap() {
   return (
     // @ts-ignore
     <div ref={mapRef} style={{ width: '100%', height: 220, borderRadius: 18, overflow: 'hidden' }} />
+  );
+}
+
+const KAKAO_JS_KEY_NATIVE = process.env.EXPO_PUBLIC_KAKAO_JS_KEY ?? '78a1bd65ed949a70fdd8b12e8538909f';
+const DEFAULT_COORDS = { lat: 37.5665, lng: 126.9780 };
+
+function buildMiniMapHtml(lat: number, lng: number): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1.0,user-scalable=no,maximum-scale=1,width=device-width">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; }
+    #map { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+var script = document.createElement('script');
+script.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY_NATIVE}&libraries=services&autoload=false';
+script.onload = function() {
+  kakao.maps.load(function() {
+    var center = new kakao.maps.LatLng(${lat}, ${lng});
+    var map = new kakao.maps.Map(document.getElementById('map'), { center: center, level: 5, draggable: false, scrollwheel: false, disableDoubleClick: true });
+    new kakao.maps.CustomOverlay({
+      map: map, position: center,
+      content: '<div style="width:12px;height:12px;background:#4A90E2;border:2.5px solid #fff;border-radius:50%;box-shadow:0 0 0 3px rgba(74,144,226,0.3)"></div>',
+    });
+    var ps = new kakao.maps.services.Places();
+    ps.keywordSearch('피부과', function(data, status) {
+      if (status !== kakao.maps.services.Status.OK) return;
+      data.slice(0, 6).forEach(function(place) {
+        new kakao.maps.Marker({ map: map, position: new kakao.maps.LatLng(place.y, place.x), title: place.place_name });
+      });
+    }, { location: center, radius: 2000 });
+  });
+};
+document.head.appendChild(script);
+</script>
+</body>
+</html>`;
+}
+
+function HomeClinicMapNative() {
+  const [html, setHtml] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          setHtml(buildMiniMapHtml(pos.coords.latitude, pos.coords.longitude));
+        } else {
+          setHtml(buildMiniMapHtml(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng));
+        }
+      } catch {
+        setHtml(buildMiniMapHtml(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng));
+      }
+    })();
+  }, []);
+
+  if (Platform.OS === 'web') return null;
+
+  return (
+    <TouchableOpacity
+      style={styles.nativeMapContainer}
+      onPress={() => router.push('/clinic-map' as any)}
+      activeOpacity={0.95}
+    >
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        {html ? (
+          <WebView
+            source={{ html }}
+            style={{ flex: 1 }}
+            scrollEnabled={false}
+            bounces={false}
+            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
+            overScrollMode="never"
+          />
+        ) : (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F5F5' }}>
+            <ActivityIndicator color={Colors.primary} />
+          </View>
+        )}
+      </View>
+      <View style={styles.nativeMapOverlay}>
+        <Text style={styles.nativeMapOverlayText}>📍 지도 전체 화면으로 보기 →</Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -444,18 +540,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </>
           ) : (
-            <TouchableOpacity
-              style={styles.clinicNativeBanner}
-              onPress={() => router.push('/clinic-map' as any)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.clinicNativeEmoji}>📍</Text>
-              <View style={styles.clinicNativeText}>
-                <Text style={styles.clinicNativeTitle}>내 주변 피부과·클리닉 찾기</Text>
-                <Text style={styles.clinicNativeDesc}>현재 위치 기반으로 주변 클리닉 보기</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
-            </TouchableOpacity>
+            <HomeClinicMapNative />
           )}
         </View>
       </View>
@@ -775,17 +860,19 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primaryLight, alignItems: 'center',
   },
   clinicMoreBtnText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
-  clinicNativeBanner: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: Colors.white, borderRadius: 18, padding: 18,
+  nativeMapContainer: {
+    borderRadius: 18, overflow: 'hidden', height: 210,
     borderWidth: 1.5, borderColor: Colors.primaryLight,
     shadowColor: Colors.cardShadow,
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 12, elevation: 3,
   },
-  clinicNativeEmoji: { fontSize: 36 },
-  clinicNativeText: { flex: 1, gap: 3 },
-  clinicNativeTitle: { fontSize: 15, fontWeight: '800', color: Colors.text },
-  clinicNativeDesc: { fontSize: 12, color: Colors.sub },
+  nativeMapWebView: { flex: 1 },
+  nativeMapOverlay: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingVertical: 10, alignItems: 'center',
+  },
+  nativeMapOverlayText: { fontSize: 13, fontWeight: '700', color: Colors.primary },
 
   // 카드
   card: {
