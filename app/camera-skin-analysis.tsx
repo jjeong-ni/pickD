@@ -81,6 +81,52 @@ function getToneCareAdvice(warmth: string): { foundation: string; care: string }
   };
 }
 
+interface FaceShapeDetail {
+  ratio: string;
+  weakness: string;
+  treatments: string[];
+  styling: string;
+}
+
+const FACE_SHAPE_DETAIL: Record<string, FaceShapeDetail> = {
+  '계란형': {
+    ratio: '세로:가로 비율 약 1.3:1, 상·중·하안 길이가 균등한 황금 비율형이에요',
+    weakness: '이상적인 얼굴형이지만 나이가 들면서 볼륨 소실과 처짐이 도드라질 수 있어요',
+    treatments: ['스킨부스터로 수분·탄력 유지', '초음파 리프팅으로 노화 예방', '필러로 꺼진 볼륨 보충'],
+    styling: '어떤 헤어스타일도 잘 어울려요. 자신의 이목구비를 강조하는 스타일을 선택하세요',
+  },
+  '둥근형': {
+    ratio: '세로:가로 비율이 1:1에 가깝고, 광대·이마·턱 너비가 비슷해요',
+    weakness: '얼굴이 통통하고 짧아 보이며 세로 길이감이 부족해 보일 수 있어요',
+    treatments: ['교근 보톡스로 가로 너비 축소', '턱 필러로 세로 라인 연장', '볼 리프팅으로 처진 볼 개선'],
+    styling: '세로로 긴 헤어스타일과 사이드 파팅이 얼굴을 갸름해 보이게 해줘요. 하이라이터는 T존에 세로로 길게 적용하세요',
+  },
+  '사각형': {
+    ratio: '세로:가로 비율이 1.05:1 이하, 각진 턱선과 넓은 광대가 특징이에요',
+    weakness: '얼굴이 크고 남성적으로 보이거나 강한 인상을 줄 수 있어요',
+    treatments: ['교근 보톡스로 사각 턱선 축소', 'HIFU 리프팅으로 하안면 슬림', '볼·팔자 필러로 부드러운 윤곽'],
+    styling: '볼륨 웨이브 헤어로 각진 턱선을 커버하세요. 컨투어링 섀도를 턱선과 이마 가장자리에 적용해 윤곽을 슬림하게 만들어요',
+  },
+  '하트형': {
+    ratio: '이마 너비 > 광대 너비 > 턱 너비 순으로, 위가 넓고 아래로 갈수록 좁아요',
+    weakness: '이마가 넓어 보이고 상하 불균형한 인상을 줄 수 있어요',
+    treatments: ['턱·볼 필러로 하안면 볼륨 보충', '이마 보톡스로 상안면 너비 조절', '스킨부스터로 전체 균형감 개선'],
+    styling: '앞머리나 사이드 뱅으로 이마를 커버하세요. 하이라이터를 턱과 하안면 중심에 적용해 아래쪽에 볼륨감을 주세요',
+  },
+  '긴형': {
+    ratio: '세로:가로 비율 1.45:1 이상, 세로가 지나치게 길어 좌우 폭이 좁아 보여요',
+    weakness: '얼굴이 길고 좁아 보이며 피곤해 보이는 인상을 줄 수 있어요',
+    treatments: ['볼·광대 필러로 가로 볼륨 강조', '이마 필러로 이마 비율 조정', 'RF 리프팅으로 전체 탄력 개선'],
+    styling: '옆머리와 레이어드 컷으로 가로 볼륨을 만들어주세요. 컨투어링 섀도를 이마 상단과 턱 끝에 넣어 세로를 시각적으로 줄이세요',
+  },
+  '다이아몬드형': {
+    ratio: '광대가 가장 넓고 이마·턱으로 갈수록 좁아지는 마름모형이에요',
+    weakness: '광대가 지나치게 도드라져 보이고 이마와 턱이 빈약해 보일 수 있어요',
+    treatments: ['이마 필러로 상안면 볼륨 보충', '턱 필러로 하안면 라인 완성', '광대 보톡스로 중안면 너비 완화'],
+    styling: '볼륨 있는 앞머리로 이마를 채워주세요. 하이라이터를 이마 중앙과 턱 끝에 집중해 상하로 길어 보이는 효과를 주세요',
+  },
+};
+
 export default function CameraSkinAnalysisScreen() {
   const { user } = useAuth();
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -287,28 +333,67 @@ export default function CameraSkinAnalysisScreen() {
             </View>
 
             {/* 얼굴형 */}
-            {result.faceShape && result.faceShape.shape !== '분석 불가' && (
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>🫦 얼굴형 분석</Text>
-                <View style={styles.faceShapeRow}>
-                  <View style={styles.faceShapeEmoji}>
-                    <Text style={styles.faceShapeEmojiText}>
-                      {({'계란형':'🥚','둥근형':'⭕','사각형':'⬜','하트형':'💖','긴형':'🖼️','다이아몬드형':'💎'} as any)[result.faceShape.shape] ?? '🫦'}
-                    </Text>
+            {result.faceShape && result.faceShape.shape !== '분석 불가' && (() => {
+              const detail = FACE_SHAPE_DETAIL[result.faceShape!.shape];
+              return (
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>🫦 얼굴형 분석</Text>
+
+                  {/* 얼굴형 타이틀 */}
+                  <View style={styles.faceShapeRow}>
+                    <View style={styles.faceShapeEmoji}>
+                      <Text style={styles.faceShapeEmojiText}>
+                        {({'계란형':'🥚','둥근형':'⭕','사각형':'⬜','하트형':'💖','긴형':'🖼️','다이아몬드형':'💎'} as any)[result.faceShape!.shape] ?? '🫦'}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.faceShapeLabel}>{result.faceShape!.shape}</Text>
+                      <Text style={styles.faceShapeDesc}>{result.faceShape!.desc}</Text>
+                    </View>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.faceShapeLabel}>{result.faceShape.shape}</Text>
-                    <Text style={styles.faceShapeDesc}>{result.faceShape.desc}</Text>
-                  </View>
+
+                  {detail && (
+                    <>
+                      {/* 황금 비율 */}
+                      <View style={styles.faceRatioBox}>
+                        <Text style={styles.faceRatioTitle}>📐 황금 비율 기준</Text>
+                        <Text style={styles.faceRatioText}>{detail.ratio}</Text>
+                      </View>
+
+                      {/* 단점 */}
+                      <View style={styles.faceWeaknessBox}>
+                        <Text style={styles.faceWeaknessTitle}>⚠️ 보완 포인트</Text>
+                        <Text style={styles.faceWeaknessText}>{detail.weakness}</Text>
+                      </View>
+
+                      {/* 추천 시술 */}
+                      <View style={styles.faceTreatSection}>
+                        <Text style={styles.faceSectionLabel}>💉 추천 시술</Text>
+                        {detail.treatments.map((t, i) => (
+                          <View key={i} style={styles.faceBulletRow}>
+                            <Text style={styles.faceBulletDot}>•</Text>
+                            <Text style={styles.faceBulletText}>{t}</Text>
+                          </View>
+                        ))}
+                      </View>
+
+                      {/* 스타일링 팁 */}
+                      <View style={styles.faceStylingBox}>
+                        <Text style={styles.faceSectionLabel}>✨ 스타일링 팁</Text>
+                        <Text style={styles.faceStylingText}>{detail.styling}</Text>
+                      </View>
+                    </>
+                  )}
+
+                  <TouchableOpacity
+                    style={styles.searchBtn}
+                    onPress={() => router.push('/face-analysis?viewResult=true' as any)}
+                  >
+                    <Text style={styles.searchBtnText}>얼굴형 맞춤 시술 보기 →</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={styles.searchBtn}
-                  onPress={() => router.push('/face-analysis?viewResult=true' as any)}
-                >
-                  <Text style={styles.searchBtnText}>얼굴형 맞춤 시술 보기 →</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+              );
+            })()}
 
             {/* 피부 고민 */}
             <View style={styles.card}>
@@ -530,6 +615,28 @@ const styles = StyleSheet.create({
   faceShapeEmojiText: { fontSize: 28 },
   faceShapeLabel: { fontSize: 18, fontWeight: '800', color: Colors.text },
   faceShapeDesc: { fontSize: 13, color: Colors.sub, marginTop: 3, lineHeight: 20 },
+
+  faceRatioBox: {
+    marginTop: 14, backgroundColor: '#F0F4FF', borderRadius: 10, padding: 12,
+    borderLeftWidth: 3, borderLeftColor: '#6C8EFF',
+  },
+  faceRatioTitle: { fontSize: 12, fontWeight: '700', color: '#3B5BDB', marginBottom: 4 },
+  faceRatioText: { fontSize: 12, color: '#3B5BDB', lineHeight: 18 },
+
+  faceWeaknessBox: {
+    marginTop: 10, backgroundColor: '#FFF8E7', borderRadius: 10, padding: 12,
+    borderLeftWidth: 3, borderLeftColor: '#FFC107',
+  },
+  faceWeaknessTitle: { fontSize: 12, fontWeight: '700', color: '#E65100', marginBottom: 4 },
+  faceWeaknessText: { fontSize: 12, color: '#E65100', lineHeight: 18 },
+
+  faceTreatSection: { marginTop: 14 },
+  faceStylingBox: { marginTop: 10, backgroundColor: Colors.bg, borderRadius: 10, padding: 12 },
+  faceStylingText: { fontSize: 12, color: Colors.sub, lineHeight: 18, marginTop: 4 },
+  faceSectionLabel: { fontSize: 12, fontWeight: '700', color: Colors.text, marginBottom: 6 },
+  faceBulletRow: { flexDirection: 'row', gap: 6, marginBottom: 4 },
+  faceBulletDot: { fontSize: 12, color: Colors.primary, lineHeight: 18 },
+  faceBulletText: { fontSize: 12, color: Colors.sub, lineHeight: 18, flex: 1 },
 
   resetBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
