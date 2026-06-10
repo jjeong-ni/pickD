@@ -214,6 +214,15 @@ export default function DeviceDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>기기 설명</Text>
           <Text style={styles.description}>{device.description}</Text>
+          {device.website_url && (
+            <TouchableOpacity
+              style={styles.websiteBtn}
+              onPress={() => Linking.openURL(device.website_url!)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.websiteBtnText}>🔗 사용법 알아보기</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* 기기 상세 정보 */}
@@ -467,6 +476,11 @@ const styles = StyleSheet.create({
   section: { backgroundColor: Colors.white, padding: 20, marginTop: 8 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 },
   description: { fontSize: 14, color: Colors.sub, lineHeight: 22 },
+  websiteBtn: {
+    marginTop: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: Colors.primary, borderRadius: 10, paddingVertical: 10,
+  },
+  websiteBtnText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
   reviewLinkRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: Colors.white, paddingHorizontal: 20, paddingVertical: 18,

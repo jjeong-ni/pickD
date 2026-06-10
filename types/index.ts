@@ -53,6 +53,7 @@ export interface Treatment {
   image_url: string | null;
   images: string[];           // 갤러리 이미지 배열
   video_url: string | null;   // YouTube URL
+  website_url: string | null;
   rating: number;
   review_count: number;
   pain_level: string | null;
@@ -75,6 +76,7 @@ export interface Device {
   images: string[];           // 갤러리 이미지 배열
   video_url: string | null;   // YouTube URL
   coupang_url: string | null; // 쿠팡파트너스 URL
+  website_url: string | null;
   rating: number;
   review_count: number;
   usage_frequency: string | null;
