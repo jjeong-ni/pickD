@@ -8,8 +8,8 @@
 
 DO $$
 DECLARE
-  t text := 'https://YOUR_PROJECT_REF.supabase.co/storage/v1/object/public/treatments/';
-  d text := 'https://YOUR_PROJECT_REF.supabase.co/storage/v1/object/public/devices/';
+  t text := 'https://cnjykhdvbvewagfbbxwr.supabase.co/storage/v1/object/public/treatments/';
+  d text := 'https://cnjykhdvbvewagfbbxwr.supabase.co/storage/v1/object/public/devices/';
 BEGIN
 
   -- ── 시술 (treatments) ──────────────────────────────────────────
