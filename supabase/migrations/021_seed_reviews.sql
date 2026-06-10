@@ -10,17 +10,27 @@ DO $$
 DECLARE
   v_uid UUID;
 BEGIN
-  -- auth.users와 profiles 양쪽에 존재하는 유저만 사용
+  -- 1) auth.users에 있는 첫 번째 실제 유저 사용
   SELECT au.id INTO v_uid
   FROM auth.users au
   INNER JOIN profiles p ON p.user_id = au.id
   ORDER BY au.created_at
   LIMIT 1;
 
+  -- 2) profiles.user_id로도 시도 (auth.users 접근 불가 환경 대비)
+  IF v_uid IS NULL THEN
+    SELECT user_id INTO v_uid FROM profiles ORDER BY created_at LIMIT 1;
+  END IF;
+
   IF v_uid IS NULL THEN
     RAISE NOTICE '유효한 가입 유저가 없어 시드 리뷰를 건너뜁니다. 가입 후 다시 실행하세요.';
     RETURN;
   END IF;
+
+  RAISE NOTICE '시드 리뷰 삽입 시도 (user_id: %)', v_uid;
+
+  -- 3) FK 오류 등 어떤 오류든 시드 데이터는 gracefully skip
+  BEGIN
 
   INSERT INTO reviews (user_id, item_id, item_type, rating, body, image_url, created_at) VALUES
 
@@ -173,6 +183,13 @@ BEGIN
 
   ON CONFLICT DO NOTHING;
 
-  RAISE NOTICE '시드 리뷰 30개 삽입 완료 (user_id: %)', v_uid;
+  RAISE NOTICE '시드 리뷰 삽입 완료 (user_id: %)', v_uid;
+
+  EXCEPTION
+    WHEN foreign_key_violation THEN
+      RAISE NOTICE 'FK 위반 발생 (user_id: %) — 시드 리뷰를 건너뜁니다. reviews.user_id FK 설정을 확인하세요.', v_uid;
+    WHEN OTHERS THEN
+      RAISE NOTICE '시드 리뷰 오류 발생 (user_id: %, 오류: %) — 건너뜁니다.', v_uid, SQLERRM;
+  END;
 END;
 $$;
