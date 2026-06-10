@@ -21,12 +21,17 @@ export default function MypageScreen() {
   const [reportLoading, setReportLoading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [hasPurchasedReport, setHasPurchasedReport] = useState(false);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
     supabase.from('point_logs')
       .select('id').eq('user_id', user.id).eq('reason', '맞춤 피부 분석 보고서').limit(1)
       .then(({ data }) => setHasPurchasedReport(!!(data && data.length > 0)));
+    supabase.from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id).eq('is_read', false)
+      .then(({ count }) => setUnreadNotifCount(count ?? 0));
   }, [user?.id]);
 
   const handlePickAvatar = async () => {
@@ -456,7 +461,12 @@ export default function MypageScreen() {
       </View>
       <View style={styles.section}>
         <MenuItem icon="person-outline" label="계정 정보" onPress={() => router.push('/account')} />
-        <MenuItem icon="notifications-outline" label="알림 설정" onPress={() => router.push('/notifications' as any)} />
+        <MenuItem
+          icon="notifications-outline"
+          label="알림"
+          sub={unreadNotifCount > 0 ? `읽지 않은 알림 ${unreadNotifCount}개` : undefined}
+          onPress={() => router.push('/notifications' as any)}
+        />
       </View>
 
       <View style={styles.divider} />
