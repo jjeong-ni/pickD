@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';
+import { REPORT_COST } from '../constants/app';
 
 // ─── 얼굴형별 핵심 데이터 ──────────────────────────────────────────────────────
 
