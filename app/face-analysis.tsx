@@ -307,8 +307,7 @@ export default function FaceAnalysisScreen() {
     setSkinAnalyzing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const supabaseUrl = (supabase as any).supabaseUrl as string;
-      const apiRes = await fetch(`${supabaseUrl}/functions/v1/skin-vision`, {
+      const apiRes = await fetch(`${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/skin-vision`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
         body: JSON.stringify({ imageBase64: base64 }),
