@@ -415,18 +415,31 @@ export default function FaceAnalysisScreen() {
             </TouchableOpacity>
           </View>
         </>
+      ) : !result ? (
+        /* ── 결과 없음 (뷰 모드인데 아직 분석 안 함) ── */
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 32 }}>
+          <Text style={{ fontSize: 40 }}>🔍</Text>
+          <Text style={{ fontSize: 17, fontWeight: '800', color: Colors.text, textAlign: 'center' }}>아직 얼굴형 분석을 완료하지 않았어요</Text>
+          <Text style={{ fontSize: 14, color: Colors.sub, textAlign: 'center', lineHeight: 22 }}>사진 촬영 후 5가지 질문에 답하면{'\n'}나만의 얼굴형을 진단해 드려요</Text>
+          <TouchableOpacity
+            style={{ backgroundColor: Colors.primary, paddingVertical: 14, paddingHorizontal: 32, borderRadius: 14, marginTop: 8 }}
+            onPress={handleRetake}
+          >
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>지금 분석 시작하기</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         /* ── 결과 ── */
         <>
           <ScrollView contentContainerStyle={styles.resultContent} showsVerticalScrollIndicator={false}>
             {/* 결과 헤더 */}
             <View style={styles.resultHeader}>
-              <Text style={styles.resultEmoji}>{info?.emoji}</Text>
+              <Text style={styles.resultEmoji}>{info?.emoji ?? '🔍'}</Text>
               <Text style={styles.resultType}>{result}</Text>
               <View style={styles.resultBadge}>
-                <Text style={styles.resultBadgeText}>{info?.subtitle}</Text>
+                <Text style={styles.resultBadgeText}>{info?.subtitle ?? ''}</Text>
               </View>
-              <Text style={styles.resultDesc}>{info?.desc}</Text>
+              <Text style={styles.resultDesc}>{info?.desc ?? ''}</Text>
             </View>
 
             {/* 피부 톤 (사진 분석 결과) */}
@@ -451,49 +464,55 @@ export default function FaceAnalysisScreen() {
             )}
 
             {/* 보완 포인트 */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>💡 보완 포인트</Text>
-              {info?.concerns.map((c, i) => (
-                <View key={i} style={styles.bullet}>
-                  <Text style={styles.bulletDot}>•</Text>
-                  <Text style={styles.bulletText}>{c}</Text>
-                </View>
-              ))}
-            </View>
+            {info?.concerns && info.concerns.length > 0 && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>💡 보완 포인트</Text>
+                {info.concerns.map((c, i) => (
+                  <View key={i} style={styles.bullet}>
+                    <Text style={styles.bulletDot}>•</Text>
+                    <Text style={styles.bulletText}>{c}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
             {/* 추천 시술 */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>💉 추천 시술 TOP 3</Text>
-              {info?.treatments.map((t, i) => (
-                <View key={i} style={[styles.treatRow, i < (info.treatments.length - 1) && styles.treatRowBorder]}>
-                  <View style={styles.treatRank}>
-                    <Text style={styles.treatRankText}>{i + 1}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.treatName}>{t.name}</Text>
-                    <View style={styles.treatMeta}>
-                      <Text style={styles.treatTag}>⏱ {t.duration}</Text>
-                      <Text style={styles.treatTag}>🌿 다운타임 {t.downtime}</Text>
+            {info?.treatments && info.treatments.length > 0 && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>💉 추천 시술 TOP 3</Text>
+                {info.treatments.map((t, i) => (
+                  <View key={i} style={[styles.treatRow, i < (info.treatments.length - 1) && styles.treatRowBorder]}>
+                    <View style={styles.treatRank}>
+                      <Text style={styles.treatRankText}>{i + 1}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.treatName}>{t.name}</Text>
+                      <View style={styles.treatMeta}>
+                        <Text style={styles.treatTag}>⏱ {t.duration}</Text>
+                        <Text style={styles.treatTag}>🌿 다운타임 {t.downtime}</Text>
+                      </View>
                     </View>
                   </View>
+                ))}
+                <View style={styles.budgetRow}>
+                  <Text style={styles.budgetLabel}>💰 예상 비용</Text>
+                  <Text style={styles.budgetText}>{info?.budget}</Text>
                 </View>
-              ))}
-              <View style={styles.budgetRow}>
-                <Text style={styles.budgetLabel}>💰 예상 비용</Text>
-                <Text style={styles.budgetText}>{info?.budget}</Text>
               </View>
-            </View>
+            )}
 
             {/* 추천 디바이스 */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>🏠 추천 홈케어 디바이스</Text>
-              {info?.devices.map((d, i) => (
-                <View key={i} style={[styles.deviceRow, i < (info.devices.length - 1) && styles.deviceRowBorder]}>
-                  <Text style={styles.deviceName}>{d.name}</Text>
-                  <Text style={styles.deviceFreq}>{d.freq}</Text>
-                </View>
-              ))}
-            </View>
+            {info?.devices && info.devices.length > 0 && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>🏠 추천 홈케어 디바이스</Text>
+                {info.devices.map((d, i) => (
+                  <View key={i} style={[styles.deviceRow, i < (info.devices.length - 1) && styles.deviceRowBorder]}>
+                    <Text style={styles.deviceName}>{d.name}</Text>
+                    <Text style={styles.deviceFreq}>{d.freq}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
             <View style={{ height: 8 }} />
           </ScrollView>
