@@ -316,30 +316,36 @@ export default function CompareScreen() {
               </View>
             </View>
           )}
-          {/* 전문가 상담 */}
-          <View style={styles.consultCard}>
+          {/* AI 상담 */}
+          <TouchableOpacity
+            style={styles.consultCard}
+            activeOpacity={0.85}
+            onPress={() => {
+              const ctx = encodeURIComponent(JSON.stringify(
+                tableEntries.map(({ ci, detail: d }) => ({
+                  name: d.name,
+                  type: ci.item_type === 'treatment' ? '시술' : '기기',
+                }))
+              ));
+              router.push(`/ai-chat?context=${ctx}` as any);
+            }}
+          >
             <View style={styles.consultHeader}>
-              <Text style={styles.consultTitle}>👩‍⚕️ 전문가 상담</Text>
-              <View style={styles.consultBadge}><Text style={styles.consultBadgeText}>20분 · 5,000원</Text></View>
+              <Text style={styles.consultTitle}>✨ AI 피부 상담</Text>
+              <View style={[styles.consultBadge, { backgroundColor: Colors.primaryLight }]}>
+                <Text style={[styles.consultBadgeText, { color: Colors.primary }]}>무료</Text>
+              </View>
             </View>
-            <Text style={styles.consultDesc}>비교 중인 시술·기기에 대해 전문가에게 직접 물어보세요</Text>
+            <Text style={styles.consultDesc}>
+              비교 중인 항목으로 AI에게 바로 물어보세요{'\n'}내 피부 프로필 기반 맞춤 답변을 받을 수 있어요
+            </Text>
             <View style={styles.consultBtns}>
-              <TouchableOpacity
-                style={styles.consultBtn}
-                onPress={() => Alert.alert('전화 상담', '전화 상담 연결 준비 중이에요.\n베타 종료 후 오픈될 예정입니다.')}
-              >
-                <Ionicons name="call-outline" size={20} color={Colors.text} />
-                <Text style={styles.consultBtnText}>전화 상담</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.consultBtn, styles.consultBtnKakao]}
-                onPress={() => Alert.alert('카카오톡 상담', '카카오톡 상담 연결 준비 중이에요.\n베타 종료 후 오픈될 예정입니다.')}
-              >
-                <Ionicons name="chatbubble-ellipses-outline" size={20} color={Colors.text} />
-                <Text style={styles.consultBtnText}>카카오 톡톡</Text>
-              </TouchableOpacity>
+              <View style={[styles.consultBtn, { flex: 1, backgroundColor: Colors.primaryLight }]}>
+                <Ionicons name="chatbubble-ellipses-outline" size={20} color={Colors.primary} />
+                <Text style={[styles.consultBtnText, { color: Colors.primary }]}>AI 상담 시작하기 →</Text>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
 
         </ScrollView>
       )}

@@ -419,6 +419,24 @@ export default function MypageScreen() {
         </>
       )}
 
+      {/* AI 상담 배너 */}
+      {user && (
+        <TouchableOpacity
+          style={styles.aiChatBanner}
+          onPress={() => router.push('/ai-chat' as any)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.aiChatBannerLeft}>
+            <Text style={styles.aiChatBannerEmoji}>✨</Text>
+            <View>
+              <Text style={styles.aiChatBannerTitle}>AI 피부 상담</Text>
+              <Text style={styles.aiChatBannerDesc}>내 프로필 기반 맞춤 상담 · 무료</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
+        </TouchableOpacity>
+      )}
+
       {/* 내 활동 */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>내 활동</Text>
@@ -680,6 +698,17 @@ const styles = StyleSheet.create({
   },
   faceAnalysisBannerBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.white },
   aiCardHighlight: { borderColor: Colors.primary, borderWidth: 1.5 },
+
+  /* AI 상담 배너 */
+  aiChatBanner: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: Colors.white, marginHorizontal: 16, marginTop: 12, borderRadius: 14,
+    padding: 16, borderWidth: 1.5, borderColor: Colors.primaryLight,
+  },
+  aiChatBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  aiChatBannerEmoji: { fontSize: 26 },
+  aiChatBannerTitle: { fontSize: 15, fontWeight: '700', color: Colors.text },
+  aiChatBannerDesc: { fontSize: 12, color: Colors.sub, marginTop: 1 },
 
   /* AI 피부 분석 */
   aiSection: {
