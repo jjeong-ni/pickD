@@ -240,6 +240,26 @@ export default function SignupScreen() {
       return;
     }
     await supabase.from('point_logs').insert({ user_id: userId, amount: 1000, reason: '신규 가입' });
+
+    // 레퍼럴 처리: 초대 링크로 가입한 경우 양쪽 500pt 지급
+    try {
+      const pendingRef = await AsyncStorage.getItem('pendingRef');
+      if (pendingRef) {
+        const { data: refProfiles } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .ilike('user_id', `${pendingRef}%`)
+          .neq('user_id', userId)
+          .limit(1);
+        if (refProfiles?.length) {
+          const referrerId = refProfiles[0].user_id;
+          await supabase.rpc('add_points', { p_user_id: userId, p_amount: 500, p_reason: '친구 초대 수신' });
+          await supabase.rpc('add_points', { p_user_id: referrerId, p_amount: 500, p_reason: '친구 초대 발신' });
+        }
+        await AsyncStorage.removeItem('pendingRef');
+      }
+    } catch { /* 레퍼럴 실패는 무시 */ }
+
     setProfile(newProfile as any);
     await AsyncStorage.setItem('signup_popup', JSON.stringify({ nickname }));
     setLoading(false);
