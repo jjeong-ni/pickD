@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Alert, Platform,
@@ -422,6 +423,7 @@ export default function AnalysisReportScreen() {
                   <StyleRow icon="💄" label="메이크업" text={faceInfo.styling.makeup} />
                   <StyleRow icon="⚠️" label="주의" text={faceInfo.styling.avoid} warn />
                 </View>
+                <StylingGlossary />
               </>
             )}
 
@@ -603,6 +605,61 @@ function StyleRow({ icon, label, text, warn }: { icon: string; label: string; te
     </View>
   );
 }
+
+const STYLING_GLOSSARY: { term: string; desc: string }[] = [
+  { term: '하이라이터', desc: '빛을 반사하는 밝은 파우더나 크림. 코끝·이마 중앙·광대 위에 올려 얼굴에 광채와 입체감을 만들어요.' },
+  { term: '쉐이딩', desc: '피부보다 어두운 파우더를 특정 부위에 발라 그 부분이 후퇴해 보이게 하는 기법. 광대·하악각 등에 사용해 갸름한 인상을 만들어요.' },
+  { term: '컨투어링', desc: '하이라이터와 쉐이딩을 함께 사용해 얼굴 골격을 조각하듯 입체적으로 만드는 메이크업 기법이에요.' },
+  { term: '사이드 파팅 / 사이드 가르마', desc: '머리카락을 이마 한쪽으로 가르는 방법 (7:3·6:4 비율). 얼굴에 비대칭 볼륨을 줘 입체적인 인상을 만들어요.' },
+  { term: '센터 파팅', desc: '머리카락을 이마 정중앙으로 가르는 방법. 좌우 대칭이 강조되어 단정하고 세련된 인상을 줘요.' },
+  { term: '레이어드컷', desc: '머리카락을 층층이(레이어) 잘라 아래로 갈수록 길어지는 헤어스타일. 볼륨과 움직임이 생겨 얼굴을 자연스럽게 감싸줘요.' },
+  { term: '사이드뱅', desc: '앞머리를 정면이 아닌 한쪽 방향으로 비스듬히 흘리는 스타일. 넓은 이마를 자연스럽게 커버하고 부드러운 라인을 만들어요.' },
+  { term: 'C컬', desc: '머리카락 끝을 C자 모양으로 안쪽 또는 바깥쪽으로 말아주는 스타일링. 단발·미디엄 헤어에서 세련되고 여성스러운 느낌을 줘요.' },
+];
+
+function StylingGlossary() {
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={glossaryStyles.wrap}>
+      <TouchableOpacity
+        style={glossaryStyles.toggle}
+        onPress={() => setOpen(v => !v)}
+        activeOpacity={0.8}
+      >
+        <Text style={glossaryStyles.toggleLabel}>💡 스타일링 용어 해설</Text>
+        <Text style={glossaryStyles.chevron}>{open ? '▲' : '▼'}</Text>
+      </TouchableOpacity>
+      {open && (
+        <View style={glossaryStyles.body}>
+          {STYLING_GLOSSARY.map(({ term, desc }) => (
+            <View key={term} style={glossaryStyles.item}>
+              <Text style={glossaryStyles.term}>{term}</Text>
+              <Text style={glossaryStyles.desc}>{desc}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+const glossaryStyles = StyleSheet.create({
+  wrap: {
+    marginHorizontal: 16, marginBottom: 10,
+    backgroundColor: '#FFFBF0', borderRadius: 16,
+    borderWidth: 1, borderColor: '#FFE082', overflow: 'hidden',
+  },
+  toggle: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 14,
+  },
+  toggleLabel: { fontSize: 13, fontWeight: '700', color: '#B45309' },
+  chevron: { fontSize: 10, color: '#B45309' },
+  body: { paddingHorizontal: 16, paddingBottom: 14, gap: 10 },
+  item: { paddingTop: 10, borderTopWidth: 1, borderTopColor: '#FFF0C0', gap: 3 },
+  term: { fontSize: 13, fontWeight: '700', color: '#333' },
+  desc: { fontSize: 12, color: '#666', lineHeight: 18 },
+});
 
 // ─── StyleSheet ─────────────────────────────────────────────────────────────
 
