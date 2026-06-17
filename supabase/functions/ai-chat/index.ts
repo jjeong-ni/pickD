@@ -6,6 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const ANTHROPIC_API_KEY = () => Deno.env.get('ANTHROPIC_API_KEY') ?? '';
+const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+
 interface Profile {
   skin_type?: string;
   baumann_code?: string;
@@ -68,7 +71,7 @@ function getRuleBasedResponse(
   messages: { role: string; content: string }[],
   profile?: Profile,
   compareItems?: { name: string; type: string }[],
-): string {
+): string | null {
   const msg = [...messages].reverse().find(m => m.role === 'user')?.content ?? '';
 
   const b = (profile?.baumann_code ?? '').toUpperCase();
@@ -142,59 +145,64 @@ function getRuleBasedResponse(
     return `홈케어 기기 추천드릴게요 🏠\n\n• LED 마스크: 피부 재생·진정·항균 (매일 가능, 가성비 최고)\n• EMS 미세전류: 리프팅·탄력 (매일 5~10분)\n• 초음파 스크러버: 각질·흡수력 향상\n• 가정용 RF: 모공·리프팅 (주 2~3회)\n• 스팀기: 각질 연화·흡수력 향상${extra}\n\n💡 가정용 기기 효과는 클리닉의 30~50% 수준이에요. 꾸준함이 핵심!`;
   }
 
-  // 10. 스킨부스터
+  // 10. 남성 피부·시술
+  if (has(msg, ['남자', '남성', '남자도', '남자한테', '남성도', '남자 피부', '남성 시술'])) {
+    return `남성 피부·시술 가이드예요 🙆‍♂️\n\n남성에게 인기 있는 시술:\n• 보톡스 (눈가·미간·이마 주름)\n• 레이저 토닝 (피지·모공·색소)\n• 사각턱 보톡스 (V라인)\n• 스킨부스터 (피부 기본기)\n• 탈모 메조테라피 (헤어라인 관리)\n\n남성 홈케어 기기:\n• 고주파 RF (탄력·모공)\n• LED 마스크 (피지·여드름 살균)\n• EMS (얼굴 라인 정리)\n\n💡 남성도 모든 시술·기기를 자유롭게 받을 수 있어요!\n피부 고민(여드름·주름·탈모 등)을 말씀해주시면 더 구체적으로 추천해드릴게요 😊`;
+  }
+
+  // 11. 스킨부스터
   if (has(msg, ['스킨부스터', '쥬베룩', '리쥬란', '수분 주사', '물광주사', '물광', '엑소좀'])) {
     return `스킨부스터 상담이시군요! 💧\n\n스킨부스터는 피부 속 직접 수분·성분을 공급해요.\n\n주요 종류:\n• 리쥬란: 연어 DNA → 피부 재생·탄력 (6개월 이상)\n• 쥬베룩: PLLA → 콜라겐 생성 자극 (2년+)\n• 보톡스 물광: 보툴리눔+HA → 모공·수분 동시\n• 엑소좀: 피부 재생·줄기세포 인자\n\n효과: 피부 톤·수분·탄력·광채 개선\n주기: 3~4회 초기 집중 → 3~6개월 유지\n\n💡 피부 기본기를 올리는 데 가장 좋은 시술이에요!`;
   }
 
-  // 11. 얼굴형
+  // 12. 얼굴형
   if (has(msg, ['얼굴형', '얼굴 모양', '내 얼굴형', '얼굴형에 맞는'])) {
     if (faceShape) return getFaceShapeResponse(faceShape);
     return `얼굴형 분석을 먼저 해주세요 💎\n\n마이페이지 → AI 피부 분석 → 얼굴형 분석\n\n5가지 질문으로 내 얼굴형(계란형·둥근형·사각형·하트형·긴형·다이아몬드형)을 진단해드려요!\n분석 완료 후 오시면 얼굴형에 딱 맞는 시술을 추천해드릴게요 ✨`;
   }
 
-  // 12. 여드름·모공
+  // 13. 여드름·모공
   if (has(msg, ['여드름', '트러블', '뾰루지', '피지', '모공', '블랙헤드'])) {
     const note = isSensitive ? '\n\n⚠️ 민감성 피부이시니 저자극 LED 블루광이나 IPL부터 시도해보세요!' : '';
     const note2 = isOily ? '\n\n💡 지성 피부이시니 BHA(살리실산) 스킨케어와 병행하면 효과 UP!' : '';
     return `여드름·모공 고민 해결 방법이에요 🌿\n\n클리닉 시술:\n• 아그네스 RF: 피지선 파괴 → 근본 치료 (최고 효과)\n• 레이저 토닝: 피지 조절·피부 톤 개선\n• 프락셀: 모공·흉터 개선\n\n홈케어:\n• BHA(살리실산) 세럼·토너\n• LED 블루광 기기로 살균\n• 나이아신아마이드로 모공 관리${note}${note2}\n\n😊 식단·수면·스트레스 관리도 여드름에 큰 영향을 줘요!`;
   }
 
-  // 13. 색소·미백
+  // 14. 색소·미백
   if (has(msg, ['색소', '미백', '기미', '잡티', '칙칙', '어두운', '피부 톤', '얼룩', '멜라닌'])) {
     const note = isPigmented ? '\n\n✨ 색소성 피부이시니 레이저 토닝이나 피코레이저가 특히 도움될 거예요!' : '';
     return `색소·미백 고민이시군요! ✨\n\n효과적인 시술:\n• 레이저 토닝: 기미·잡티 전반적 개선 (다운타임 거의 없음)\n• 피코레이저: 강한 색소 집중 제거\n• IPL: 홍조+색소 복합 케어\n• 스킨부스터: 광채·투명도 향상${note}\n\n홈케어:\n• 비타민C 세럼 (아침)\n• 나이아신아마이드 (미백+모공)\n• SPF50+ 자외선차단제 (가장 중요!)\n\n☀️ 자외선 차단 없으면 색소는 재발해요. 차단제가 핵심!`;
   }
 
-  // 14. 주름·탄력·처짐
+  // 15. 주름·탄력·처짐
   if (has(msg, ['주름', '노화', '처짐', '탄력', '팔자주름', '눈가주름', '이마주름', '나이 들어'])) {
     const note = isWrinkled ? '\n\n💡 주름성 피부이시니 보톡스 예방 관리를 지금 시작하는 게 가성비 최고예요!' : '';
     return `주름·탄력 고민이시군요! 💪\n\n효과 순서:\n1. 보톡스: 주름 예방·완화 (즉각 효과, 4~6개월 지속)\n2. 리프팅 시술: 처짐·탄력 개선 (울쎄라·HIFU·써마지)\n3. 스킨부스터: 볼륨·탄력 동시 개선 (쥬베룩·리쥬란)\n4. 필러: 깊은 주름 볼륨 채움${note}\n\n홈케어:\n• 레티놀·레티날 (항노화 핵심)\n• EMS 미세전류 기기\n• 펩타이드 크림\n\n💡 30대부터 보톡스 예방 관리가 가성비 최고예요!`;
   }
 
-  // 15. 피부타입·맞춤 추천
+  // 16. 피부타입·맞춤 추천
   if (has(msg, ['추천', '맞는', '좋은 시술', '어떤 시술', '뭐가 좋', '맞춤', '피부에 맞', '내 피부', '피부타입', '피부 타입'])) {
     if (b) return getBaumannRecommendation(b, skinType, concerns);
     if (skinType) return getBaumannRecommendation('', skinType, concerns);
     return `맞춤 추천을 위해 피부타입 분석을 먼저 해주세요 🧬\n\n마이페이지 → AI 피부 분석 → 피부타입 분석\n\n8가지 질문으로 바우만 피부타입을 진단해드려요!\n진단 완료 후 오시면 훨씬 정확한 맞춤 시술을 추천해드릴게요 ✨`;
   }
 
-  // 16. 비교
+  // 17. 비교
   if (has(msg, ['비교', '차이', '어떻게 다르', '뭐가 나아', '어떤 게 좋아', '어느 게 좋아'])) {
     return `시술 비교 상담이시군요! ⚖️\n\n자주 비교되는 조합:\n• 울쎄라 vs 써마지 (리프팅)\n• 보톡스 vs 필러 (볼륨·주름)\n• 피코레이저 vs 레이저 토닝 (색소)\n• 프락셀 vs 아그네스RF (모공·흉터)\n• HIFU vs 슈링크 (가성비 리프팅)\n\n비교하고 싶은 시술을 구체적으로 말씀해주시면 상세히 비교해드릴게요 😊`;
   }
 
-  // 17. 건성 피부 특화
+  // 18. 건성 피부 특화
   if (has(msg, ['건성', '피부 건조', '건조한 피부', '수분 부족', '당기는'])) {
     return `건성 피부 관리 방법이에요 💧\n\n추천 시술:\n1. 스킨부스터 (리쥬란·쥬베룩·물광): 피부 속 수분 직접 공급\n2. 수분 보톡스 (물광보톡스): 모공 수축 + 수분 동시\n3. LED 마스크: 장벽 강화·진정\n\n홈케어:\n• 세라마이드·히알루론산 보습제\n• 오일 클렌징 (계면활성제 최소화)\n• 수분 미스트 상시 사용\n\n💡 건성 피부는 세정 후 3분 내 보습이 핵심이에요!`;
   }
 
-  // 18. 지성 피부 특화
+  // 19. 지성 피부 특화
   if (has(msg, ['지성', '기름진', '피지 많은', '번들거리는', '피지 과다'])) {
     return `지성 피부 관리 방법이에요 🌿\n\n추천 시술:\n1. 레이저 토닝: 피지선 크기 축소·모공 관리\n2. 아그네스 RF: 피지선 직접 파괴\n3. 고주파 RF: 피지 조절\n\n홈케어:\n• BHA(살리실산) 함유 토너·세럼\n• 나이아신아마이드 (모공+피지)\n• 가벼운 젤 타입 보습제\n• 과도한 세안 금지 (오히려 피지 ↑)\n\n💡 지성이라도 보습은 필수예요! 수분이 부족하면 피지 분비가 더 많아져요.`;
   }
 
-  // 19. 민감성 피부 특화
+  // 20. 민감성 피부 특화
   if (has(msg, ['민감성', '민감한 피부', '예민한', '자극에 민감', '피부가 예민'])) {
     return `민감성 피부 관리 방법이에요 🌸\n\n추천 시술:\n1. LED 마스크: 진정·장벽 강화 (가장 저자극)\n2. 저출력 레이저 토닝: 에너지 낮게 시작\n3. 리쥬란 스킨부스터: 피부 장벽 재생\n\n피해야 할 것:\n• 강한 레이저 (프락셀 등) 처음부터 X\n• 고에너지 HIFU 주의\n• 스크럽·필링 과도한 사용\n\n홈케어:\n• 무향·무알코올 제품 선택\n• 세라마이드·판테놀 장벽 강화\n\n💡 민감성 피부는 시술 전 패치 테스트를 꼭 요청하세요!`;
   }
@@ -210,7 +218,7 @@ function getRuleBasedResponse(
   }
 
   // 22. 눈 주위 시술
-  if (has(msg, ['다크서클', '눈 밑', '눈가', '눈 주위', '눈물고랑', '애교살', '눈가 주름', '눈 아래', '팬더'])) {
+  if (has(msg, ['다크서클', '눈 밑', '눈가', '눈 주위', '눈물고랑', '눈가 주름', '눈 아래', '팬더'])) {
     return `눈 주위 시술 안내해드릴게요 👁️\n\n• 눈물고랑 필러: 꺼진 눈 아래 볼륨 채움 → 다크서클 개선\n  (고도의 기술 필요 — 숙련 의사 필수!)\n• 애교살 필러: 눈 아래 볼록한 라인 → 눈 커 보이는 효과\n• 눈가 보톡스 (까마귀발): 눈꼬리 주름 완화, 4~6개월 유지\n• 이마·미간 보톡스: 눈살 찌푸림 완화, 눈 주위 세로 주름\n• 스킨부스터 (리쥬란·쥬베룩): 눈가 피부 재생·탄력\n\n⚠️ 눈 주위는 혈관 밀집 구역 — 필러 시술은 반드시 경험 많은 전문의에게!\n\n💡 다크서클 원인(색소형 vs 혈관형 vs 꺼짐형)에 따라 적합한 시술이 달라요. 시술 전 정확한 진단을 받으세요 😊`;
   }
 
@@ -256,12 +264,110 @@ function getRuleBasedResponse(
     return `기본 스킨케어 루틴이에요 🧴\n\n☀️ 아침 루틴:\n1. 폼 클렌저 or 물 세안\n2. 토너 (수분 공급)\n3. 비타민C 세럼 (미백·항산화)\n4. 아이크림\n5. 보습 크림/젤\n6. SPF50+ 자외선차단제 ← 가장 중요!\n\n🌙 저녁 루틴:\n1. 오일/밤 클렌저 (이중 세안)\n2. 폼 클렌저\n3. 토너\n4. 레티놀 or 나이아신아마이드 세럼\n5. 아이크림\n6. 보습 크림 (아침보다 진하게)\n\n주 1~2회:\n• 각질 제거 (AHA or BHA 토너)\n• 마스크팩 또는 LED 마스크${extra}`;
   }
 
-  // Default
-  const personalized = skinType || faceShape
-    ? `\n\n${skinType ? `${skinType} 피부` : ''}${skinType && faceShape ? ' · ' : ''}${faceShape ? `${faceShape} 얼굴형` : ''} 기반 맞춤 상담 가능해요!`
-    : '';
+  // rule-based 매칭 없음 → Claude fallback
+  return null;
+}
 
-  return `안녕하세요! 픽디 AI 상담사예요 ✨${personalized}\n\n아래 내용을 물어보세요:\n\n• 내 피부타입에 맞는 시술 추천\n• 리프팅 시술 비교 (울쎄라 vs 써마지)\n• 홈케어 기기·스킨케어 루틴 추천\n• 시술 통증·비용·회복기간\n• 시술 전 준비 / 시술 후 케어\n• 보톡스 / 필러 / 레이저 / 스킨부스터\n• 얼굴형별 시술·나이대별 추천\n• 피부 고민(여드름·흉터·색소·주름) 해결법\n• 눈 주위 시술·두피·탈모 관리\n• 임신·수유 중 안전 시술 정보\n\n궁금한 점을 편하게 물어보세요 😊`;
+async function fetchRagContext(
+  supabase: ReturnType<typeof createClient>,
+  userMessage: string,
+): Promise<string> {
+  const keywords = userMessage.slice(0, 100);
+  const [{ data: treatments }, { data: devices }] = await Promise.all([
+    supabase
+      .from('treatments')
+      .select('name, category, description, price_min, price_max, tags')
+      .or(`name.ilike.%${keywords}%,description.ilike.%${keywords}%,tags.cs.{${keywords}}`)
+      .limit(3),
+    supabase
+      .from('devices')
+      .select('name, brand, category, description, price, tags')
+      .or(`name.ilike.%${keywords}%,description.ilike.%${keywords}%`)
+      .limit(3),
+  ]);
+
+  const parts: string[] = [];
+  if (treatments && treatments.length > 0) {
+    parts.push('## 관련 시술');
+    treatments.forEach((t: any) => {
+      parts.push(`- ${t.name} (${t.category}): ${t.description?.slice(0, 80) ?? ''} | 가격: ${t.price_min}~${t.price_max}만원`);
+    });
+  }
+  if (devices && devices.length > 0) {
+    parts.push('## 관련 기기');
+    devices.forEach((d: any) => {
+      parts.push(`- ${d.name} (${d.brand}): ${d.description?.slice(0, 80) ?? ''} | 가격: ${d.price}만원`);
+    });
+  }
+  return parts.join('\n');
+}
+
+async function callClaudeWithRag(
+  messages: { role: string; content: string }[],
+  profile: Profile | undefined,
+  ragContext: string,
+): Promise<{ reply: string; tokensUsed: number }> {
+  const profileNote = [
+    profile?.skin_type ? `피부타입: ${profile.skin_type}` : '',
+    profile?.baumann_code ? `바우만코드: ${profile.baumann_code}` : '',
+    profile?.face_shape ? `얼굴형: ${profile.face_shape}` : '',
+    profile?.concerns?.length ? `고민: ${profile.concerns.join(', ')}` : '',
+    profile?.age_group ? `연령대: ${profile.age_group}` : '',
+  ].filter(Boolean).join(' | ');
+
+  const systemPrompt = `당신은 픽디 뷰티 앱의 전문 AI 상담사입니다.
+한국 뷰티·시술·스킨케어 분야 전문가로서 친절하고 정확하게 답변하세요.
+응답은 반드시 한국어로, 200자 이내로 핵심만 간결하게 작성하세요.
+의학적 시술은 반드시 전문의 상담을 권고하고, 과도한 효과 주장은 삼가세요.
+${profileNote ? `\n사용자 프로필: ${profileNote}` : ''}
+${ragContext ? `\n픽디 DB 참고 데이터:\n${ragContext}` : ''}`;
+
+  const apiMessages = messages.map(m => ({ role: m.role, content: m.content }));
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': ANTHROPIC_API_KEY(),
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: 400,
+      system: systemPrompt,
+      messages: apiMessages,
+    }),
+  });
+
+  const data = await res.json();
+  const reply = data.content?.[0]?.text ?? '죄송해요, 잠시 후 다시 시도해주세요 😊';
+  const tokensUsed = (data.usage?.input_tokens ?? 0) + (data.usage?.output_tokens ?? 0);
+  return { reply, tokensUsed };
+}
+
+async function logChat(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  sessionId: string,
+  userMsg: string,
+  assistantReply: string,
+  category: string,
+  usedClaude: boolean,
+  tokensUsed: number,
+) {
+  await supabase.from('chat_logs').insert([
+    { user_id: userId, session_id: sessionId, role: 'user', content: userMsg, category, used_claude: false, tokens_used: 0 },
+    { user_id: userId, session_id: sessionId, role: 'assistant', content: assistantReply, category, used_claude: usedClaude, tokens_used: tokensUsed },
+  ]);
+}
+
+function detectCategory(msg: string): string {
+  if (has(msg, ['보톡스', '필러', '리프팅', '울쎄라', '써마지', 'HIFU', '레이저', '피코', '스킨부스터'])) return '시술';
+  if (has(msg, ['기기', '홈케어', '가정용', 'LED', 'EMS', 'RF'])) return '기기';
+  if (has(msg, ['가격', '비용', '얼마'])) return '가격';
+  if (has(msg, ['통증', '부작용', '회복', '다운타임'])) return '안전';
+  if (has(msg, ['피부타입', '추천', '맞춤'])) return '추천';
+  return '일반';
 }
 
 serve(async (req) => {
@@ -289,10 +395,11 @@ serve(async (req) => {
       });
     }
 
-    const { messages, profile, compareItems } = await req.json() as {
+    const { messages, profile, compareItems, sessionId } = await req.json() as {
       messages: { role: 'user' | 'assistant'; content: string }[];
       profile?: Profile;
       compareItems?: { name: string; type: string }[];
+      sessionId?: string;
     };
 
     if (!messages || messages.length === 0) {
@@ -301,9 +408,53 @@ serve(async (req) => {
       });
     }
 
-    const reply = getRuleBasedResponse(messages, profile, compareItems);
+    const userMsg = [...messages].reverse().find(m => m.role === 'user')?.content ?? '';
+    const sid = sessionId ?? `${user.id}_${Date.now()}`;
 
-    return new Response(JSON.stringify({ reply }), {
+    // Rule-based engine (primary, no API cost)
+    const ruleReply = getRuleBasedResponse(messages, profile, compareItems);
+
+    let reply: string;
+    let usedClaude = false;
+    let tokensUsed = 0;
+
+    if (ruleReply !== null) {
+      reply = ruleReply;
+    } else if (ANTHROPIC_API_KEY()) {
+      // Claude fallback with DB RAG
+      const serviceClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      );
+      const ragContext = await fetchRagContext(serviceClient, userMsg);
+      const result = await callClaudeWithRag(messages, profile, ragContext);
+      reply = result.reply;
+      tokensUsed = result.tokensUsed;
+      usedClaude = true;
+    } else {
+      const personalized = (profile?.skin_type || profile?.face_shape)
+        ? `\n\n${profile?.skin_type ? `${profile.skin_type} 피부` : ''}${profile?.skin_type && profile?.face_shape ? ' · ' : ''}${profile?.face_shape ? `${profile.face_shape} 얼굴형` : ''} 기반 맞춤 상담 가능해요!`
+        : '';
+      reply = `안녕하세요! 픽디 AI 상담사예요 ✨${personalized}\n\n아래 내용을 물어보세요:\n\n• 내 피부타입에 맞는 시술 추천\n• 리프팅 시술 비교 (울쎄라 vs 써마지)\n• 홈케어 기기·스킨케어 루틴 추천\n• 시술 통증·비용·회복기간\n• 시술 전 준비 / 시술 후 케어\n• 보톡스 / 필러 / 레이저 / 스킨부스터\n• 얼굴형별 시술·나이대별 추천\n• 피부 고민(여드름·흉터·색소·주름) 해결법\n• 눈 주위 시술·두피·탈모 관리\n• 임신·수유 중 안전 시술 정보\n\n궁금한 점을 편하게 물어보세요 😊`;
+    }
+
+    // 대화 로그 기록 (비동기, 응답 지연 없음)
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    logChat(
+      serviceClient,
+      user.id,
+      sid,
+      userMsg,
+      reply,
+      detectCategory(userMsg),
+      usedClaude,
+      tokensUsed,
+    ).catch(() => null);
+
+    return new Response(JSON.stringify({ reply, sessionId: sid }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

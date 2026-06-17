@@ -238,6 +238,91 @@ export default function CompareScreen() {
             ))}
           </View>
 
+          {/* 스펙 비교 표 */}
+          {tableEntries.length >= 2 && (
+            <View style={styles.specTable}>
+              <Text style={styles.specTableTitle}>📊 스펙 비교</Text>
+
+              {/* 헤더 행: 아이템명 */}
+              <View style={styles.specRow}>
+                <View style={styles.specLabelCell} />
+                {tableEntries.map(({ detail: d }, i) => (
+                  <View key={i} style={styles.specHeaderCell}>
+                    <Text style={styles.specHeaderText} numberOfLines={2}>{d.name}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* 가격 */}
+              <SpecRow
+                label="가격"
+                even
+                values={tableEntries.map(({ ci, detail: d }) =>
+                  ci.item_type === 'treatment'
+                    ? `${(d as Treatment).price_min.toLocaleString()}~${(d as Treatment).price_max.toLocaleString()}원`
+                    : `${(d as Device).price.toLocaleString()}원`
+                )}
+              />
+
+              {/* 평점 */}
+              <SpecRow
+                label="평점"
+                values={tableEntries.map(({ detail: d }) => `⭐ ${d.rating.toFixed(1)}`)}
+              />
+
+              {/* 카테고리 */}
+              <SpecRow
+                label="카테고리"
+                even
+                values={tableEntries.map(({ detail: d }) => d.category ?? '-')}
+              />
+
+              {/* 시술 시간 / 사용 주기 */}
+              <SpecRow
+                label="시술 시간 / 사용 주기"
+                values={tableEntries.map(({ ci, detail: d }) =>
+                  ci.item_type === 'treatment'
+                    ? ((d as Treatment).duration_min != null && (d as Treatment).duration_max != null
+                        ? `${(d as Treatment).duration_min}~${(d as Treatment).duration_max}분`
+                        : '-')
+                    : ((d as Device).usage_frequency ?? '-')
+                )}
+              />
+
+              {/* 통증 수준 */}
+              <SpecRow
+                label="통증 수준"
+                even
+                values={tableEntries.map(({ ci, detail: d }) =>
+                  ci.item_type === 'treatment'
+                    ? ((d as Treatment).pain_level ?? '-')
+                    : '-'
+                )}
+              />
+
+              {/* 다운타임 */}
+              <SpecRow
+                label="다운타임"
+                values={tableEntries.map(({ ci, detail: d }) =>
+                  ci.item_type === 'treatment'
+                    ? ((d as Treatment).downtime ?? '-')
+                    : '-'
+                )}
+              />
+
+              {/* 지속 기간 */}
+              <SpecRow
+                label="지속 기간"
+                even
+                values={tableEntries.map(({ ci, detail: d }) =>
+                  ci.item_type === 'treatment'
+                    ? ((d as Treatment).duration ?? '-')
+                    : ((d as Device).results_timeline ?? '-')
+                )}
+              />
+            </View>
+          )}
+
           {/* 비용 환산 비교 */}
           {tableEntries.length >= 2 && tableEntries.some(({ ci }) => ci.item_type === 'treatment') && tableEntries.some(({ ci }) => ci.item_type === 'device') && (
             <View style={styles.costCard}>
@@ -611,6 +696,21 @@ function CompareRow({ label, values, highlight }: { label: string; values: strin
   );
 }
 
+function SpecRow({ label, values, even }: { label: string; values: string[]; even?: boolean }) {
+  return (
+    <View style={[styles.specRow, even && styles.specRowEven]}>
+      <View style={styles.specLabelCell}>
+        <Text style={styles.specLabelText}>{label}</Text>
+      </View>
+      {values.map((v, i) => (
+        <View key={i} style={styles.specValueCell}>
+          <Text style={styles.specValueText}>{v}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   header: {
@@ -641,6 +741,41 @@ const styles = StyleSheet.create({
   },
   emptySlotIcon: { fontSize: 28, color: Colors.border },
   emptySlotText: { fontSize: 13, color: Colors.sub },
+
+  /* 스펙 비교 표 */
+  specTable: {
+    backgroundColor: Colors.white, borderRadius: 14, overflow: 'hidden',
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  specTableTitle: {
+    fontSize: 15, fontWeight: '800', color: Colors.text,
+    paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10,
+  },
+  specRow: {
+    flexDirection: 'row', borderTopWidth: 1, borderTopColor: Colors.border,
+    backgroundColor: Colors.white,
+  },
+  specRowEven: { backgroundColor: '#FAFAFA' },
+  specLabelCell: {
+    width: 96, paddingVertical: 11, paddingHorizontal: 14,
+    justifyContent: 'center', backgroundColor: Colors.bg,
+    borderRightWidth: 1, borderRightColor: Colors.border,
+  },
+  specLabelText: { fontSize: 12, fontWeight: '600', color: Colors.sub },
+  specHeaderCell: {
+    flex: 1, paddingVertical: 10, paddingHorizontal: 6,
+    alignItems: 'center', justifyContent: 'center',
+    borderRightWidth: 1, borderRightColor: Colors.border,
+    backgroundColor: Colors.bg,
+  },
+  specHeaderText: { fontSize: 12, fontWeight: '700', color: Colors.text, textAlign: 'center' },
+  specValueCell: {
+    flex: 1, paddingVertical: 11, paddingHorizontal: 6,
+    alignItems: 'center', justifyContent: 'center',
+    borderRightWidth: 1, borderRightColor: Colors.border,
+  },
+  specValueText: { fontSize: 12, color: Colors.text, fontWeight: '500', textAlign: 'center', lineHeight: 17 },
+
   aiResultBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: '#FFF0F7', borderRadius: 16, padding: 16,
