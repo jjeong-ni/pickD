@@ -265,19 +265,47 @@ export default function CreatePostScreen() {
           <View style={{ gap: 10 }}>
             <Text style={styles.sectionLabel}>사진 첨부 <Text style={{ color: Colors.sub, fontWeight: '400' }}>(선택)</Text></Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity style={styles.imgPickBtn} onPress={() => pickImage(setAfterImageUri)}>
-                {afterImageUri
-                  ? <Image source={{ uri: afterImageUri }} style={styles.imgPreview} />
-                  : <><Ionicons name="image-outline" size={24} color={Colors.sub} /><Text style={styles.imgPickLabel}>After</Text></>}
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.imgPickBtn, { borderStyle: 'dashed' }]} onPress={() => pickImage(setBeforeImageUri)}>
-                {beforeImageUri
-                  ? <Image source={{ uri: beforeImageUri }} style={styles.imgPreview} />
-                  : <><Ionicons name="image-outline" size={24} color={Colors.sub} /><Text style={styles.imgPickLabel}>Before</Text></>}
-              </TouchableOpacity>
+              {/* Before 이미지 */}
+              <View style={{ flex: 1, gap: 6 }}>
+                <Text style={styles.imgSectionLabel}>
+                  Before 사진 <Text style={{ color: Colors.sub, fontWeight: '400' }}>(선택)</Text>
+                </Text>
+                <TouchableOpacity
+                  style={[styles.imgPickBtn, { borderStyle: 'dashed' }]}
+                  onPress={() => pickImage(setBeforeImageUri)}
+                >
+                  {beforeImageUri
+                    ? <Image source={{ uri: beforeImageUri }} style={styles.imgPreview} />
+                    : (
+                      <>
+                        <Ionicons name="camera-outline" size={26} color={Colors.sub} />
+                        <Text style={styles.imgPickLabel}>Before</Text>
+                      </>
+                    )}
+                </TouchableOpacity>
+              </View>
+              {/* After 이미지 */}
+              <View style={{ flex: 1, gap: 6 }}>
+                <Text style={styles.imgSectionLabel}>
+                  After 사진 <Text style={{ color: Colors.sub, fontWeight: '400' }}>(선택)</Text>
+                </Text>
+                <TouchableOpacity
+                  style={styles.imgPickBtn}
+                  onPress={() => pickImage(setAfterImageUri)}
+                >
+                  {afterImageUri
+                    ? <Image source={{ uri: afterImageUri }} style={styles.imgPreview} />
+                    : (
+                      <>
+                        <Ionicons name="camera-outline" size={26} color={Colors.sub} />
+                        <Text style={styles.imgPickLabel}>After</Text>
+                      </>
+                    )}
+                </TouchableOpacity>
+              </View>
             </View>
-            {(afterImageUri || beforeImageUri) && (
-              <Text style={{ fontSize: 11, color: Colors.sub }}>After·Before 이미지 모두 첨부하면 B/A 슬라이더로 표시돼요</Text>
+            {(beforeImageUri && afterImageUri) && (
+              <Text style={{ fontSize: 11, color: Colors.sub }}>Before·After 이미지 모두 첨부하면 B/A 슬라이더로 표시돼요</Text>
             )}
           </View>
         )}
@@ -363,10 +391,11 @@ const styles = StyleSheet.create({
   },
   guideText: { fontSize: 12, color: Colors.sub, lineHeight: 20 },
   imgPickBtn: {
-    flex: 1, height: 90, borderRadius: 12, borderWidth: 1.5, borderColor: Colors.border,
+    height: 120, borderRadius: 12, borderWidth: 1.5, borderColor: Colors.border,
     alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: Colors.bg, overflow: 'hidden',
   },
   imgPickLabel: { fontSize: 12, color: Colors.sub, fontWeight: '600' },
+  imgSectionLabel: { fontSize: 11, fontWeight: '700', color: Colors.sub, letterSpacing: 0.3 },
   imgPreview: { width: '100%', height: '100%', borderRadius: 10 },
   quizNoticeBanner: {
     backgroundColor: 'rgba(124,92,235,0.08)', borderRadius: 10, padding: 14,

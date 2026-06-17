@@ -3,6 +3,14 @@ import {
   TouchableOpacity, ActivityIndicator, Image, Platform,
 } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
+
+const ACRONYM_TOOLTIPS: Record<string, string> = {
+  'RF': '고주파 에너지로 피부 탄력·리프팅',
+  'LED': '광선 치료로 미백·진정·항균',
+  'EMS': '미세전류로 근육 자극·리프팅',
+  'IPL': '빛 에너지로 색소·홍조 개선',
+  'HIFU': '초음파로 깊은 층 리프팅',
+};
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -63,6 +71,7 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [tooltipCategory, setTooltipCategory] = useState<string | null>(null);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -227,16 +236,40 @@ export default function SearchScreen() {
             keyExtractor={(i) => i.value}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filtersContent}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.filter, item.value === category && styles.filterActive]}
-                onPress={() => setCategory(item.value)}
-              >
-                <Text style={[styles.filterText, item.value === category && styles.filterTextActive]}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => {
+              const hasTooltip = item.value in ACRONYM_TOOLTIPS;
+              const isTooltipOpen = tooltipCategory === item.value;
+              return (
+                <View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity
+                      style={[styles.filter, item.value === category && styles.filterActive]}
+                      onPress={() => {
+                        setCategory(item.value);
+                        if (isTooltipOpen) setTooltipCategory(null);
+                      }}
+                    >
+                      <Text style={[styles.filterText, item.value === category && styles.filterTextActive]}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                    {hasTooltip && (
+                      <TouchableOpacity
+                        style={styles.tooltipTrigger}
+                        onPress={() => setTooltipCategory(isTooltipOpen ? null : item.value)}
+                      >
+                        <Text style={styles.tooltipTriggerText}>?</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  {hasTooltip && isTooltipOpen && (
+                    <View style={styles.tooltipBox}>
+                      <Text style={styles.tooltipText}>{ACRONYM_TOOLTIPS[item.value]}</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            }}
           />
         </View>
         {tab === 'treatment' && (
@@ -403,4 +436,16 @@ const styles = StyleSheet.create({
   compareBtnActive: { borderColor: Colors.border, backgroundColor: Colors.bg },
   compareBtnText: { fontSize: 12, fontWeight: '700', color: Colors.primary },
   compareBtnTextActive: { color: Colors.sub },
+  tooltipTrigger: {
+    marginLeft: 4, width: 18, height: 18, borderRadius: 9,
+    backgroundColor: Colors.sub, alignItems: 'center', justifyContent: 'center',
+  },
+  tooltipTriggerText: { fontSize: 11, fontWeight: '700', color: Colors.white },
+  tooltipBox: {
+    position: 'absolute', top: 38, left: 0, zIndex: 999,
+    backgroundColor: '#333', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4,
+    elevation: 4, minWidth: 160, maxWidth: 220,
+  },
+  tooltipText: { fontSize: 12, color: Colors.white, lineHeight: 17 },
 });

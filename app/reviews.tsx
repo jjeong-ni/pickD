@@ -1,7 +1,10 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  ActivityIndicator, Image, Modal, TextInput, Alert, Platform,
+  ActivityIndicator, Image, Modal, TextInput, Alert, Platform, FlatList,
 } from 'react-native';
+
+const SKIN_TYPE_FILTERS = ['전체', '건성', '지성', '복합성', '민감성', '중성'] as const;
+type SkinTypeFilter = typeof SKIN_TYPE_FILTERS[number];
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -31,6 +34,7 @@ export default function ReviewsScreen() {
   const [reviewTotal, setReviewTotal] = useState(0);
   const [reviewPage, setReviewPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [skinTypeFilter, setSkinTypeFilter] = useState<SkinTypeFilter>('전체');
 
   // Write review modal state
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -61,7 +65,7 @@ export default function ReviewsScreen() {
     if (userIds.length > 0) {
       const { data: profileRows } = await supabase
         .from('profiles')
-        .select('user_id, nickname')
+        .select('user_id, nickname, skin_type')
         .in('user_id', userIds);
       profileMap = Object.fromEntries((profileRows ?? []).map((p: any) => [p.user_id, p]));
     }
@@ -161,6 +165,11 @@ export default function ReviewsScreen() {
     setShowReviewModal(false);
   };
 
+  // 피부타입 필터링된 리뷰
+  const filteredReviews = skinTypeFilter === '전체'
+    ? reviews
+    : reviews.filter((r) => (r as any).profile?.skin_type === skinTypeFilter);
+
   // Rating summary
   const avgRating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
@@ -229,12 +238,33 @@ export default function ReviewsScreen() {
           </View>
         </View>
 
+        {/* 피부타입 필터 */}
+        <View style={styles.skinFilterWrap}>
+          <FlatList
+            horizontal
+            data={SKIN_TYPE_FILTERS as unknown as SkinTypeFilter[]}
+            keyExtractor={(item) => item}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.skinFilterContent}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[styles.skinFilterChip, item === skinTypeFilter && styles.skinFilterChipActive]}
+                onPress={() => setSkinTypeFilter(item)}
+              >
+                <Text style={[styles.skinFilterText, item === skinTypeFilter && styles.skinFilterTextActive]}>
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+
         {/* Review list */}
         {loading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator color={Colors.primary} />
           </View>
-        ) : reviews.length === 0 ? (
+        ) : filteredReviews.length === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyEmoji}>💬</Text>
             <Text style={styles.emptyText}>아직 리뷰가 없어요{'\n'}첫 번째 리뷰를 남겨보세요!</Text>
@@ -250,7 +280,7 @@ export default function ReviewsScreen() {
           </View>
         ) : (
           <View style={styles.reviewList}>
-            {reviews.map((r) => (
+            {filteredReviews.map((r) => (
               <View key={r.id} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
                   <Text style={styles.reviewNickname}>
@@ -271,7 +301,7 @@ export default function ReviewsScreen() {
             ))}
 
             {/* Load more */}
-            {reviews.length < reviewTotal && (
+            {skinTypeFilter === '전체' && reviews.length < reviewTotal && (
               <TouchableOpacity
                 style={styles.loadMoreBtn}
                 onPress={() => fetchReviews(reviewPage + 1)}
@@ -451,6 +481,17 @@ const styles = StyleSheet.create({
     borderRadius: 10, paddingVertical: 12, alignItems: 'center',
   },
   writeReviewBtnText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+  skinFilterWrap: {
+    backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  skinFilterContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  skinFilterChip: {
+    paddingVertical: 5, paddingHorizontal: 14, borderRadius: 20,
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white,
+  },
+  skinFilterChipActive: { borderColor: Colors.primary, backgroundColor: 'rgba(255,107,157,0.08)' },
+  skinFilterText: { fontSize: 13, color: Colors.sub },
+  skinFilterTextActive: { color: Colors.primary, fontWeight: '600' },
   // Review modal
   reviewModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   reviewSheet: {

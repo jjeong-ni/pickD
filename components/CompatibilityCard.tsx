@@ -34,6 +34,13 @@ function hearts(n: number) {
   return '🩷'.repeat(n) + '🤍'.repeat(5 - n);
 }
 
+/** 점수 기준 레이블 */
+function getScoreLabel(score: number): { label: string; color: string } {
+  if (score >= 80) return { label: '매우 적합', color: Colors.primary };
+  if (score >= 65) return { label: '적합',      color: '#FF9500' };
+  return              { label: '주의',      color: '#FF3B30' };
+}
+
 export default function CompatibilityCard({
   profile, user, category, itemName, coupangUrl, itemType,
 }: Props) {
@@ -45,7 +52,9 @@ export default function CompatibilityCard({
     : null;
   const score = compat?.score ?? 0;
   const filled = compat ? Math.round(score / 20) : 0;
-  const isGood = score >= 71;
+  const isGood = score >= 65;
+
+  const { label: scoreLabel, color: scoreLabelColor } = getScoreLabel(score);
 
   const handleOpen = () => {
     if (!user) { router.push('/(auth)/login' as any); return; }
@@ -63,6 +72,13 @@ export default function CompatibilityCard({
     }
   };
 
+  /** verdict 텍스트 */
+  const verdictText = score >= 80
+    ? `나와 잘 맞는 ${noun}에요! 🎉`
+    : score >= 65
+    ? `괜찮은 ${noun}이에요 👍`
+    : `신중하게 고려해보세요 🤔`;
+
   return (
     <>
       {/* 미니 카드 */}
@@ -71,10 +87,19 @@ export default function CompatibilityCard({
         {compat ? (
           <>
             <Text style={s.miniScore}>{score}%</Text>
+            {/* 점수 레이블 배지 */}
+            <View style={[s.miniLabelBadge, { backgroundColor: scoreLabelColor }]}>
+              <Text style={s.miniLabelTxt}>{scoreLabel}</Text>
+            </View>
             <Text style={s.miniHearts}>{hearts(filled)}</Text>
           </>
         ) : (
-          <Text style={s.miniHint}>{!user ? '로그인 후 확인 ›' : '분석 후 확인 ›'}</Text>
+          <View style={s.miniHintWrap}>
+            <Text style={s.miniHintIcon}>{!user ? '✨' : '🔍'}</Text>
+            <Text style={s.miniHint}>
+              {!user ? '로그인 후\n나만의 점수 확인 ✨' : '피부분석 후\n궁합 점수 확인 ✨'}
+            </Text>
+          </View>
         )}
       </TouchableOpacity>
 
@@ -95,6 +120,10 @@ export default function CompatibilityCard({
               <View style={s.scoreRow}>
                 <Text style={s.bigHearts}>{hearts(filled)}</Text>
                 <Text style={s.bigScore}>{score}%</Text>
+                {/* 모달 점수 레이블 배지 */}
+                <View style={[s.modalLabelBadge, { backgroundColor: scoreLabelColor }]}>
+                  <Text style={s.modalLabelTxt}>{scoreLabel}</Text>
+                </View>
               </View>
 
               {/* 피부타입 분석 */}
@@ -129,9 +158,7 @@ export default function CompatibilityCard({
                   {'피부타입·얼굴형 분석을 바탕으로\n'}
                   <Text style={s.resultPct}>{score}%</Text>로 산정되었습니다.
                 </Text>
-                <Text style={s.verdict}>
-                  {isGood ? `나와 잘 맞는 ${noun}에요! 🎉` : `크게 추천하지 않아요 😢`}
-                </Text>
+                <Text style={s.verdict}>{verdictText}</Text>
                 {!isGood && (
                   <Text style={s.otherSuggest}>다른 {noun}를 보시겠습니까?</Text>
                 )}
@@ -169,7 +196,13 @@ const s = StyleSheet.create({
   miniTitle:  { fontSize: 10, fontWeight: '700', color: Colors.primary, textAlign: 'center' },
   miniScore:  { fontSize: 22, fontWeight: '900', color: Colors.primary },
   miniHearts: { fontSize: 10, letterSpacing: 1 },
-  miniHint:   { fontSize: 10, color: Colors.sub, textAlign: 'center', lineHeight: 15 },
+
+  miniLabelBadge: { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
+  miniLabelTxt:   { fontSize: 9, fontWeight: '700', color: '#fff' },
+
+  miniHintWrap: { alignItems: 'center', gap: 2 },
+  miniHintIcon: { fontSize: 14 },
+  miniHint:     { fontSize: 10, color: Colors.sub, textAlign: 'center', lineHeight: 15 },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet:   { backgroundColor: Colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '88%' },
@@ -185,6 +218,9 @@ const s = StyleSheet.create({
   scoreRow:  { alignItems: 'center', gap: 4, marginVertical: 4 },
   bigHearts: { fontSize: 26, letterSpacing: 3 },
   bigScore:  { fontSize: 54, fontWeight: '900', color: Colors.primary, lineHeight: 62 },
+
+  modalLabelBadge: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 5, marginTop: 2 },
+  modalLabelTxt:   { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
 
   analysisBox:   { backgroundColor: Colors.bg, borderRadius: 14, padding: 14, gap: 8 },
   analysisTitle: { fontSize: 13, fontWeight: '700', color: Colors.text },
