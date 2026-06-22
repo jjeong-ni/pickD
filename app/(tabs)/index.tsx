@@ -569,6 +569,29 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      {/* 재미로 해보기 - 신이 나를 만들 때 */}
+      <TouchableOpacity
+        style={[styles.godGameBanner, { marginHorizontal: hPad }]}
+        onPress={() => router.push('/god-game' as any)}
+        activeOpacity={0.88}
+      >
+        <LinearGradient
+          colors={['#1D0A40', '#2D1B5A', '#0E1B40']}
+          style={styles.godGameGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.godGameLeft}>
+            <View style={styles.godGameBadge}>
+              <Text style={styles.godGameBadgeTxt}>✨ 재미 테스트 NEW</Text>
+            </View>
+            <Text style={styles.godGameTitle}>신이 나를 만들 때 🧪</Text>
+            <Text style={styles.godGameDesc}>실험실에서 재료 5개 골라 내 성격 분석하기</Text>
+          </View>
+          <Text style={styles.godGameEmoji}>🧑‍🔬</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+
       <View style={{ height: 32 }} />
     </ScrollView>
 
@@ -988,4 +1011,20 @@ const styles = StyleSheet.create({
     paddingVertical: 16, paddingHorizontal: 40, width: '100%', alignItems: 'center',
   },
   popupBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+
+  // 신이 나를 만들 때 배너
+  godGameBanner: { marginTop: 20, marginBottom: 8, borderRadius: 20, overflow: 'hidden' },
+  godGameGradient: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 20, paddingHorizontal: 22, borderRadius: 20,
+  },
+  godGameLeft: { gap: 6, flex: 1 },
+  godGameBadge: {
+    backgroundColor: 'rgba(155,127,224,0.45)', borderRadius: 20,
+    paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start',
+  },
+  godGameBadgeTxt: { color: '#D4BFFF', fontSize: 10, fontWeight: '800' },
+  godGameTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+  godGameDesc: { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
+  godGameEmoji: { fontSize: 52, marginLeft: 8 },
 });
