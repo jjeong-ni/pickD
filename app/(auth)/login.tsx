@@ -5,7 +5,9 @@ import {
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Linking from 'expo-linking';
 import { supabase } from '../../lib/supabase';
+import { reportMutationError } from '../../lib/mutate';
 import { Colors, HEADER_TOP } from '../../constants/colors';
 import { GlassCard } from '../../components/GlassCard';
 
@@ -41,10 +43,19 @@ export default function LoginScreen() {
   const handlePasswordReset = async () => {
     if (!isValidEmail(resetEmail)) return;
     setResetLoading(true);
-    await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined,
-    });
+    // ★ 네이티브에서는 window 가 없어 redirectTo 가 undefined 로 가고, 그러면 Supabase 가
+    //   프로젝트 Site URL(= 웹)로 보낸다. 앱에서 요청했는데 메일은 웹으로 떨어지는 것이다.
+    //   Linking.createURL 은 Expo Go(exp://…)와 빌드본(pickdi://…)의 차이를 알아서 처리한다.
+    const redirectTo = Platform.OS === 'web' && typeof window !== 'undefined'
+      ? `${window.location.origin}/reset-password`
+      : Linking.createURL('/reset-password');
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, { redirectTo });
     setResetLoading(false);
+    // ★ 전에는 결과를 보지 않고 무조건 '보냈어요'를 띄웠다. 실패해도 성공으로 보였다.
+    if (resetError) {
+      reportMutationError('재설정 메일 보내기', resetError.message);
+      return;
+    }
     setResetSent(true);
   };
 
