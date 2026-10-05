@@ -268,6 +268,51 @@ function getRuleBasedResponse(
   return null;
 }
 
+async function fetchDiarySummary(
+  supabaseClient: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<string> {
+  const since = new Date();
+  since.setDate(since.getDate() - 6);
+  const { data } = await supabaseClient
+    .from('skin_diary')
+    .select('diary_date, moisture, oiliness, trouble, sensitivity, notes')
+    .eq('user_id', userId)
+    .gte('diary_date', since.toISOString().split('T')[0])
+    .order('diary_date', { ascending: false })
+    .limit(7);
+
+  if (!data || data.length === 0) return '';
+
+  const avg = (key: string) => {
+    const vals = data.map((d: any) => d[key]).filter((v: any) => v !== null) as number[];
+    return vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : null;
+  };
+  const lines = [`최근 ${data.length}일 스킨 다이어리 평균 (1=나쁨, 5=좋음):`];
+  const m = avg('moisture'); if (m) lines.push(`- 수분감: ${m}`);
+  const o = avg('oiliness'); if (o) lines.push(`- 유분감: ${o}`);
+  const t = avg('trouble'); if (t) lines.push(`- 트러블: ${t}`);
+  const s = avg('sensitivity'); if (s) lines.push(`- 민감도: ${s}`);
+  const lastNotes = data.find((d: any) => d.notes)?.notes;
+  if (lastNotes) lines.push(`- 최근 메모: "${lastNotes.slice(0, 50)}"`);
+  return lines.join('\n');
+}
+
+async function fetchRecentHistory(
+  supabaseClient: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<{ role: string; content: string }[]> {
+  const { data } = await supabaseClient
+    .from('chat_logs')
+    .select('role, content')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (!data || data.length === 0) return [];
+  return (data as { role: string; content: string }[]).reverse();
+}
+
 async function fetchRagContext(
   supabase: ReturnType<typeof createClient>,
   userMessage: string,
@@ -306,6 +351,8 @@ async function callClaudeWithRag(
   messages: { role: string; content: string }[],
   profile: Profile | undefined,
   ragContext: string,
+  diarySummary: string,
+  recentHistory: { role: string; content: string }[],
 ): Promise<{ reply: string; tokensUsed: number }> {
   const profileNote = [
     profile?.skin_type ? `피부타입: ${profile.skin_type}` : '',
@@ -320,9 +367,16 @@ async function callClaudeWithRag(
 응답은 반드시 한국어로, 200자 이내로 핵심만 간결하게 작성하세요.
 의학적 시술은 반드시 전문의 상담을 권고하고, 과도한 효과 주장은 삼가세요.
 ${profileNote ? `\n사용자 프로필: ${profileNote}` : ''}
+${diarySummary ? `\n[이 사용자의 최근 피부 상태 데이터 - 답변 시 자연스럽게 반영하세요]\n${diarySummary}` : ''}
 ${ragContext ? `\n픽디 DB 참고 데이터:\n${ragContext}` : ''}`;
 
-  const apiMessages = messages.map(m => ({ role: m.role, content: m.content }));
+  // 최근 히스토리(메모리)를 현재 메시지 앞에 주입 (중복 제거)
+  const currentContent = messages.map(m => m.content).join('');
+  const historyToInject = recentHistory.filter(h => !currentContent.includes(h.content.slice(0, 30)));
+  const apiMessages = [
+    ...historyToInject.slice(-6).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+    ...messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+  ];
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -418,16 +472,20 @@ serve(async (req) => {
     let usedClaude = false;
     let tokensUsed = 0;
 
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+
     if (ruleReply !== null) {
       reply = ruleReply;
     } else if (ANTHROPIC_API_KEY()) {
-      // Claude fallback with DB RAG
-      const serviceClient = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      );
-      const ragContext = await fetchRagContext(serviceClient, userMsg);
-      const result = await callClaudeWithRag(messages, profile, ragContext);
+      const [ragContext, diarySummary, recentHistory] = await Promise.all([
+        fetchRagContext(serviceClient, userMsg),
+        fetchDiarySummary(serviceClient, user.id),
+        fetchRecentHistory(serviceClient, user.id),
+      ]);
+      const result = await callClaudeWithRag(messages, profile, ragContext, diarySummary, recentHistory);
       reply = result.reply;
       tokensUsed = result.tokensUsed;
       usedClaude = true;
@@ -439,10 +497,6 @@ serve(async (req) => {
     }
 
     // 대화 로그 기록 (비동기, 응답 지연 없음)
-    const serviceClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
     logChat(
       serviceClient,
       user.id,

@@ -8,7 +8,58 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';
+
+// ─── 내 피부 맞춤 인사이트 ────────────────────────────────────────────────────
+
+interface PersonalNote {
+  type: 'good' | 'caution' | 'tip';
+  text: string;
+}
+
+function getPersonalizedNotes(
+  result: IngredientResult,
+  skinType?: string,
+  baumannCode?: string,
+  concerns?: string[],
+): PersonalNote[] {
+  const notes: PersonalNote[] = [];
+  const bc = (baumannCode ?? '').toUpperCase();
+  const sc = concerns ?? [];
+
+  // 민감성 피부 → 향료 계열 경고 강화
+  if ((skinType === '민감성' || bc.includes('S')) && result.caution.some((c) => ['향료(합성)', '리모넨', '리나롤', '유제놀'].includes(c))) {
+    notes.push({ type: 'caution', text: '민감성 피부엔 향료 성분이 자극이 될 수 있어요. 패치테스트 후 사용하세요.' });
+  }
+
+  // 건성 피부 → 알코올 경고 강화
+  if ((skinType === '건성' || bc.includes('D')) && result.caution.some((c) => ['알코올(변성)', '변성알코올', 'SD알코올', '에탄올(고농도)'].includes(c))) {
+    notes.push({ type: 'caution', text: '건성 피부엔 변성 알코올이 더 건조하게 만들 수 있어요. 저알코올 제품을 찾아보세요.' });
+  }
+
+  // 지성 피부 → 미네랄오일/페트롤라툼 경고
+  if ((skinType === '지성' || bc.includes('O')) && result.avoid.some((a) => ['미네랄오일', '페트롤라툼'].includes(a))) {
+    notes.push({ type: 'caution', text: '지성 피부엔 미네랄오일·페트롤라툼이 모공을 막을 수 있어요. 오일-프리 제품을 추천해요.' });
+  }
+
+  // 여드름·트러블 고민 → 히알루론산·나이아신아마이드 추천
+  if (sc.some((c) => ['여드름', '트러블', '모공'].includes(c)) && result.good.includes('나이아신아마이드')) {
+    notes.push({ type: 'good', text: '나이아신아마이드는 트러블·모공 고민에 특히 잘 맞아요. 이 제품 잘 고르셨어요 👍' });
+  }
+
+  // 색소침착·기미 고민 → 비타민C 추천
+  if (sc.some((c) => ['색소침착', '기미', '잡티', '칙칙함'].includes(c)) && (result.good.includes('비타민C') || result.good.includes('아스코빅애씨드'))) {
+    notes.push({ type: 'good', text: '비타민C는 색소침착·기미 케어에 효과적이에요. 자외선 차단제와 함께 쓰면 더 좋아요.' });
+  }
+
+  // 일반 팁: 레티놀 + 민감성
+  if (skinType === '민감성' && result.good.some((g) => ['레티놀', '레티닐'].includes(g))) {
+    notes.push({ type: 'tip', text: '레티놀은 효과가 좋지만 민감성 피부엔 처음엔 격일 사용을 추천해요.' });
+  }
+
+  return notes;
+}
 
 interface IngredientResult {
   good: string[];
@@ -89,6 +140,7 @@ function analyzeIngredients(text: string): IngredientResult {
 }
 
 export default function IngredientAnalysisScreen() {
+  const { profile } = useAuth();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<IngredientResult | null>(null);
@@ -215,6 +267,24 @@ export default function IngredientAnalysisScreen() {
         {/* 결과 */}
         {result && (
           <View style={styles.resultSection}>
+            {/* 내 피부 맞춤 인사이트 */}
+            {profile && (() => {
+              const notes = getPersonalizedNotes(result, profile.skin_type ?? undefined, profile.baumann_code ?? undefined, profile.concerns ?? undefined);
+              if (notes.length === 0) return null;
+              return (
+                <View style={styles.personalCard}>
+                  <Text style={styles.personalTitle}>✨ 내 피부엔 이렇게</Text>
+                  {notes.map((n, idx) => (
+                    <View key={idx} style={[styles.personalNote, n.type === 'good' ? styles.personalNoteGood : n.type === 'caution' ? styles.personalNoteCaution : styles.personalNoteTip]}>
+                      <Text style={styles.personalNoteText}>
+                        {n.type === 'good' ? '👍 ' : n.type === 'caution' ? '⚠️ ' : '💡 '}{n.text}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              );
+            })()}
+
             {result.good.length > 0 && (
               <View style={[styles.resultCard, styles.resultGood]}>
                 <Text style={styles.resultTitle}>✅ 좋은 성분 ({result.good.length})</Text>
@@ -313,6 +383,16 @@ const styles = StyleSheet.create({
   },
   analyzeBtnTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
   resultSection: { gap: 10 },
+  personalCard: {
+    backgroundColor: Colors.white, borderRadius: 14, padding: 14, gap: 8,
+    borderWidth: 1.5, borderColor: Colors.primary,
+  },
+  personalTitle: { fontSize: 14, fontWeight: '800', color: Colors.primary, marginBottom: 2 },
+  personalNote: { borderRadius: 10, padding: 10 },
+  personalNoteGood: { backgroundColor: 'rgba(39,174,96,0.08)' },
+  personalNoteCaution: { backgroundColor: 'rgba(245,166,35,0.08)' },
+  personalNoteTip: { backgroundColor: Colors.primaryLight },
+  personalNoteText: { fontSize: 13, color: Colors.text, lineHeight: 19 },
   resultCard: {
     backgroundColor: Colors.white, borderRadius: 14, padding: 14, gap: 10,
     borderWidth: 1, borderColor: Colors.border,

@@ -10,6 +10,31 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';
 
+// ─── 다이어리 트렌드 분석 ─────────────────────────────────────────────────────
+
+interface DiaryAvg {
+  moisture: number | null;
+  oiliness: number | null;
+  trouble: number | null;
+  sensitivity: number | null;
+  days: number;
+}
+
+function getWeeklyTip(avg: DiaryAvg): { emoji: string; text: string } | null {
+  if (avg.days < 3) return null; // 데이터 부족
+  if (avg.trouble !== null && avg.trouble > 3.2)
+    return { emoji: '🔴', text: '트러블 수치가 높아요. 아젤라산·살리실산 세럼을 PM 루틴에 추가해보세요.' };
+  if (avg.sensitivity !== null && avg.sensitivity > 3.5)
+    return { emoji: '🌡️', text: '피부가 예민한 한 주예요. 새 제품 사용을 자제하고 진정 케어에 집중해보세요.' };
+  if (avg.moisture !== null && avg.moisture < 2.4)
+    return { emoji: '💧', text: '수분이 부족해요. 슬리핑 팩을 주 3회로 늘리거나 앰플 레이어링을 추가해보세요.' };
+  if (avg.oiliness !== null && avg.oiliness > 3.8)
+    return { emoji: '✨', text: '피지가 많은 한 주예요. PM 루틴에 BHA 토너나 논코메도제닉 보습제를 써보세요.' };
+  if (avg.moisture !== null && avg.moisture > 3.8 && avg.trouble !== null && avg.trouble < 1.5)
+    return { emoji: '🌸', text: '이번 주 피부 상태가 좋아요! 지금 루틴을 꾸준히 유지해보세요.' };
+  return null;
+}
+
 type Step = { id: string; category: string; product: string; tip: string };
 
 const DEFAULT_ROUTINES: Record<string, { am: Step[]; pm: Step[] }> = {
@@ -99,9 +124,38 @@ export default function RoutineScreen() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [saving, setSaving] = useState(false);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [weeklyTip, setWeeklyTip] = useState<{ emoji: string; text: string } | null>(null);
 
   const skinType = profile?.skin_type ?? '중성';
   const defaultRoutine = DEFAULT_ROUTINES[skinType] ?? DEFAULT_ROUTINES['중성'];
+
+  // ─── 다이어리 7일치 분석 ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+    const since = new Date();
+    since.setDate(since.getDate() - 6);
+    const sinceStr = since.toISOString().split('T')[0];
+    supabase
+      .from('skin_diary')
+      .select('moisture, oiliness, trouble, sensitivity')
+      .eq('user_id', user.id)
+      .gte('diary_date', sinceStr)
+      .then(({ data }) => {
+        if (!data || data.length === 0) return;
+        const avg = (key: keyof typeof data[0]) => {
+          const vals = data.map((d) => d[key]).filter((v): v is number => v !== null);
+          return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+        };
+        const tip = getWeeklyTip({
+          moisture: avg('moisture'),
+          oiliness: avg('oiliness'),
+          trouble: avg('trouble'),
+          sensitivity: avg('sensitivity'),
+          days: data.length,
+        });
+        setWeeklyTip(tip);
+      });
+  }, [user]);
 
   useEffect(() => {
     const saved = profile?.routine as any;
@@ -174,6 +228,12 @@ export default function RoutineScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {weeklyTip && (
+          <View style={styles.weeklyTipCard}>
+            <Text style={styles.weeklyTipHeader}>📊 이번 주 스킨 다이어리 분석</Text>
+            <Text style={styles.weeklyTipText}>{weeklyTip.emoji} {weeklyTip.text}</Text>
+          </View>
+        )}
         {steps.map((step, idx) => (
           <View key={step.id} style={styles.stepCard}>
             <View style={styles.stepNumWrap}>
@@ -251,6 +311,13 @@ const styles = StyleSheet.create({
   stepCategory: { fontSize: 11, fontWeight: '700', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
   stepProduct: { fontSize: 15, fontWeight: '700', color: Colors.text },
   stepTip: { fontSize: 12, color: Colors.sub, lineHeight: 18 },
+  weeklyTipCard: {
+    backgroundColor: Colors.primaryLight,
+    borderRadius: 14, padding: 14, gap: 6,
+    borderWidth: 1.5, borderColor: Colors.border,
+  },
+  weeklyTipHeader: { fontSize: 12, fontWeight: '700', color: Colors.primary },
+  weeklyTipText: { fontSize: 13.5, color: Colors.text, lineHeight: 20 },
   noteCard: {
     backgroundColor: Colors.white, borderRadius: 14, padding: 14, gap: 8,
     borderWidth: 1, borderColor: Colors.border, marginTop: 4,

@@ -14,7 +14,7 @@ import { Post } from '../../types';
 
 type PostWithVoteCount = Post & { quizVoteCount?: number };
 
-const CATEGORIES = ['전체', '후기', '질문', '정보', '비교', '퀴즈'];
+const CATEGORIES = ['전체', '후기', '질문', '정보', '비교', '퀴즈', '스킨트윈'];
 
 const VIRTUAL_NAMES = ['피부미인', '뷰티고수', '피부천재', '스킨케어러', '미용러버', '피부요정', '뷰티스타', '관리러버', '피부빛나', '뷰티천재', '피부사랑', '미용전문'];
 function virtualNick(uid: string): string {
@@ -52,7 +52,7 @@ function isSpamPost(title: string, body: string): boolean {
 }
 
 export default function CommunityScreen() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { refreshKey } = usePostStore();
   const { hPad } = useResponsive();
   const [category, setCategory] = useState('전체');
@@ -60,19 +60,56 @@ export default function CommunityScreen() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
+  const [skinTwinBaumannMap, setSkinTwinBaumannMap] = useState<Record<string, string>>({});
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     setFetchError(false);
     try {
-      let q = supabase
-        .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(30);
-      if (category !== '전체') q = q.eq('category', category);
-      const { data } = await q;
-      const fetchedPosts: PostWithVoteCount[] = data ?? [];
+      let fetchedPosts: PostWithVoteCount[] = [];
+
+      if (category === '스킨트윈') {
+        const myCode = profile?.baumann_code ?? '';
+        const matchPrefix = myCode.slice(0, 2).toUpperCase();
+        const { data: twinProfiles } = await supabase
+          .from('profiles')
+          .select('user_id, baumann_code')
+          .ilike('baumann_code', `${matchPrefix}%`)
+          .limit(100);
+
+        const baumannMap: Record<string, string> = {};
+        const twinIds: string[] = [];
+        for (const p of twinProfiles ?? []) {
+          if (p.user_id !== user?.id) {
+            twinIds.push(p.user_id);
+            baumannMap[p.user_id] = p.baumann_code ?? '';
+          }
+        }
+        setSkinTwinBaumannMap(baumannMap);
+
+        if (twinIds.length === 0) {
+          setPosts([]);
+          setLoading(false);
+          return;
+        }
+
+        const { data } = await supabase
+          .from('posts')
+          .select('*')
+          .in('user_id', twinIds)
+          .order('created_at', { ascending: false })
+          .limit(30);
+        fetchedPosts = data ?? [];
+      } else {
+        let q = supabase
+          .from('posts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(30);
+        if (category !== '전체') q = q.eq('category', category);
+        const { data } = await q;
+        fetchedPosts = data ?? [];
+      }
 
       // Fetch nicknames separately (avoids FK dependency)
       if (fetchedPosts.length > 0) {
@@ -123,7 +160,7 @@ export default function CommunityScreen() {
     } finally {
       setLoading(false);
     }
-  }, [category]);
+  }, [category, profile?.baumann_code, user?.id]);
 
   useEffect(() => {
     fetchPosts();
@@ -169,6 +206,16 @@ export default function CommunityScreen() {
         ))}
       </ScrollView>
 
+      {category === '스킨트윈' && (
+        <View style={styles.skinTwinBanner}>
+          <Text style={styles.skinTwinBannerText}>
+            🧬 {profile?.baumann_code
+              ? `${profile.baumann_code} 피부 트윈들의 게시글이에요`
+              : '나와 비슷한 바우만 피부타입 사용자들의 게시글'}
+          </Text>
+        </View>
+      )}
+
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>
       ) : fetchError ? (
@@ -189,9 +236,15 @@ export default function CommunityScreen() {
           ListHeaderComponent={<NoticeSection />}
           ListEmptyComponent={() => (
             <View style={styles.center}>
-              <Text style={styles.emptyIcon}>📝</Text>
-              <Text style={styles.emptyText}>아직 게시글이 없어요</Text>
-              {user && (
+              <Text style={styles.emptyIcon}>{category === '스킨트윈' ? '🧬' : '📝'}</Text>
+              <Text style={styles.emptyText}>
+                {category === '스킨트윈'
+                  ? profile?.baumann_code
+                    ? `아직 ${profile.baumann_code} 타입 트윈이 없어요`
+                    : '피부 분석 후 스킨트윈을 만나보세요'
+                  : '아직 게시글이 없어요'}
+              </Text>
+              {user && category !== '스킨트윈' && (
                 <TouchableOpacity style={styles.writeEmptyBtn} onPress={() => router.push('/post/create')}>
                   <Text style={styles.writeEmptyBtnText}>첫 글 작성하기</Text>
                 </TouchableOpacity>
@@ -250,6 +303,11 @@ export default function CommunityScreen() {
                 <View style={spam && !revealed ? styles.blurred : undefined}>
                   <View style={styles.postHeader}>
                     <Text style={styles.categoryBadge}>{item.category}</Text>
+                    {category === '스킨트윈' && skinTwinBaumannMap[item.user_id] && (
+                      <View style={styles.skinTypeBadge}>
+                        <Text style={styles.skinTypeBadgeText}>🧬 {skinTwinBaumannMap[item.user_id]}</Text>
+                      </View>
+                    )}
                     <Text style={styles.postDate}>
                       {new Date(item.created_at).toLocaleDateString('ko-KR')}
                     </Text>
@@ -419,4 +477,14 @@ const styles = StyleSheet.create({
   },
   quizStatusText: { fontSize: 12, fontWeight: '600', color: '#7C5CEB' },
   quizStatusTextClosed: { color: '#27AE60' },
+  skinTwinBanner: {
+    backgroundColor: Colors.primaryLight, paddingVertical: 8, paddingHorizontal: 16,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  skinTwinBannerText: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+  skinTypeBadge: {
+    backgroundColor: 'rgba(255,107,157,0.12)', borderRadius: 8,
+    paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: Colors.primaryLight,
+  },
+  skinTypeBadgeText: { fontSize: 10, fontWeight: '700', color: Colors.primary },
 });
