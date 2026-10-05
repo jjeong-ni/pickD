@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, View } from 'react-native';
@@ -6,9 +6,30 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 
+/**
+ * 비밀번호 재설정은 **로그아웃 상태로 들어온다.**
+ * 루트 게이트가 그걸 모르면 두 번 가로챈다 —
+ *   ① 세션이 없다고 welcome 으로 쫓아내고,
+ *   ② 복구 토큰으로 세션이 서는 순간 SIGNED_IN 으로 보고 (tabs) 로 끌고 간다.
+ * 그러면 새 비밀번호를 입력할 화면이 뜨지조차 못한다. 그래서 이 경로만 비켜준다.
+ */
+const RECOVERY_PATH = '/reset-password';
+function isRecoveryPath(p?: string | null): boolean {
+  if (p && p.startsWith(RECOVERY_PATH)) return true;
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    if (window.location.pathname.startsWith(RECOVERY_PATH)) return true;
+    // 메일 링크가 해시로 떨어지는 경우도 있다
+    if (window.location.hash.includes('type=recovery')) return true;
+  }
+  return false;
+}
+
 export default function RootLayout() {
   const { setSession, fetchProfile } = useAuth();
   const pathname = usePathname();
+  // 구독 콜백은 마운트 시점 값에 묶이므로, 현재 경로를 ref 로 따로 들고 있어야 한다.
+  const pathRef = useRef(pathname);
+  useEffect(() => { pathRef.current = pathname; }, [pathname]);
 
   // Fix: aria-hidden warning on web — blur focused element when route changes
   // (React Navigation sets aria-hidden="true" on inactive screens, which conflicts
@@ -32,7 +53,7 @@ export default function RootLayout() {
       setSession(session);
       if (session?.user) {
         fetchProfile(session.user.id);
-      } else if (!isDemoUrl) {
+      } else if (!isDemoUrl && !isRecoveryPath(pathRef.current)) {
         router.replace('/(auth)/welcome');
       }
     });
@@ -43,7 +64,8 @@ export default function RootLayout() {
         setSession(session);
         if (event === 'SIGNED_IN' && session?.user) {
           fetchProfile(session.user.id);
-          router.replace('/(tabs)');
+          // 복구 화면에서 선 세션이면 끌고 가지 않는다 — 비밀번호를 아직 안 바꿨다.
+          if (!isRecoveryPath(pathRef.current)) router.replace('/(tabs)');
         } else if (event === 'SIGNED_OUT') {
           router.replace('/(auth)/welcome');
         } else if (session?.user) {
@@ -60,6 +82,7 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="reset-password" options={{ presentation: 'card' }} />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="treatment/[id]" options={{ presentation: 'card' }} />
         <Stack.Screen name="device/[id]" options={{ presentation: 'card' }} />

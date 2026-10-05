@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 import { APP_URL } from '../../constants/app';
 import { useAuth } from '../../hooks/useAuth';
-import { useCompare } from '../../hooks/useCompare';
+import { useCompare, MAX_COMPARE_ITEMS } from '../../hooks/useCompare';
 import { Device, Treatment } from '../../types';
 import MediaGallery from '../../components/MediaGallery';
 import CompatibilityCard from '../../components/CompatibilityCard';
@@ -66,7 +66,7 @@ export default function DeviceDetailScreen() {
   const handleAddCompare = async () => {
     if (!user) { router.push('/(auth)/login' as any); return; }
     if (!device) return;
-    if (items.length >= 3) {
+    if (items.length >= MAX_COMPARE_ITEMS) {
       Alert.alert(
         '비교함이 가득 찼어요 😅',
         '비교 항목은 최대 3개까지 담을 수 있어요.\n기존 항목을 제거한 뒤 다시 시도해주세요.',
