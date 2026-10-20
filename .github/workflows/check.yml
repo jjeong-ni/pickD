@@ -1,0 +1,34 @@
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # 기존 화면 코드에 React Compiler 규칙 위반 46건이 남아 있어 당분간 경고만 한다.
+      # 0건이 되면 continue-on-error 를 지워 차단 단계로 올린다.
+      - name: Lint (non-blocking)
+        run: npm run lint
+        continue-on-error: true
