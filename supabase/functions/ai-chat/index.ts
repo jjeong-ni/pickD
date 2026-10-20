@@ -1,5 +1,21 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  buildCatalogIndex,
+  buildSystemBlocks,
+  DEVICE_COLUMNS,
+  extractCitations,
+  formatCatalog,
+  TREATMENT_COLUMNS,
+} from '../_shared/catalog.ts';
+import type {
+  Catalog,
+  CatalogEntry,
+  CompareItem,
+  DeviceRow,
+  Profile,
+  TreatmentRow,
+} from '../_shared/catalog.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,15 +23,10 @@ const corsHeaders = {
 };
 
 const ANTHROPIC_API_KEY = () => Deno.env.get('ANTHROPIC_API_KEY') ?? '';
-const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
-
-interface Profile {
-  skin_type?: string;
-  baumann_code?: string;
-  face_shape?: string;
-  concerns?: string[];
-  age_group?: string;
-}
+// claude-haiku-4-5 → claude-haiku-5-5 (2026-10). 근거는 RAG_PLAN.md "버전 A 구현 메모" 참고.
+// 되돌리려면 코드 수정 없이 secret 만: supabase secrets set CLAUDE_MODEL=claude-haiku-4-5
+const CLAUDE_MODEL = Deno.env.get('CLAUDE_MODEL') ?? 'claude-haiku-5-5';
+const CHAT_ENGINE = (Deno.env.get('CHAT_ENGINE') ?? 'catalog') as 'catalog' | 'rules';
 
 function has(text: string, kws: string[]): boolean {
   return kws.some(k => text.includes(k));
@@ -268,62 +279,38 @@ function getRuleBasedResponse(
   return null;
 }
 
-async function fetchRagContext(
-  supabase: ReturnType<typeof createClient>,
-  userMessage: string,
-): Promise<string> {
-  const keywords = userMessage.slice(0, 100);
-  const [{ data: treatments }, { data: devices }] = await Promise.all([
-    supabase
-      .from('treatments')
-      .select('name, category, description, price_min, price_max, tags')
-      .or(`name.ilike.%${keywords}%,description.ilike.%${keywords}%,tags.cs.{${keywords}}`)
-      .limit(3),
-    supabase
-      .from('devices')
-      .select('name, brand, category, description, price, tags')
-      .or(`name.ilike.%${keywords}%,description.ilike.%${keywords}%`)
-      .limit(3),
-  ]);
+// ── 버전 A: 카탈로그 전체를 시스템 프롬프트에 넣고 prompt caching ─────────────
+// 시술·기기 74개(약 1.5만 토큰)는 검색할 필요 없이 통째로 넣는 쪽이 정확하고 단순하다.
+// 근거: RAG_PLAN.md §1. 리뷰·커뮤니티 글처럼 커지는 데이터는 버전 B/C(_shared/retrieval.ts)에서 다룬다.
 
-  const parts: string[] = [];
-  if (treatments && treatments.length > 0) {
-    parts.push('## 관련 시술');
-    treatments.forEach((t: any) => {
-      parts.push(`- ${t.name} (${t.category}): ${t.description?.slice(0, 80) ?? ''} | 가격: ${t.price_min}~${t.price_max}만원`);
-    });
-  }
-  if (devices && devices.length > 0) {
-    parts.push('## 관련 기기');
-    devices.forEach((d: any) => {
-      parts.push(`- ${d.name} (${d.brand}): ${d.description?.slice(0, 80) ?? ''} | 가격: ${d.price}만원`);
-    });
-  }
-  return parts.join('\n');
+let catalogCache: { at: number; text: string; index: CatalogEntry[] } | null = null;
+const CATALOG_TTL_MS = 5 * 60 * 1000;
+
+async function loadCatalog(
+  supabase: ReturnType<typeof createClient>,
+): Promise<{ text: string; index: CatalogEntry[] }> {
+  if (catalogCache && Date.now() - catalogCache.at < CATALOG_TTL_MS) return catalogCache;
+  const [t, d] = await Promise.all([
+    supabase.from('treatments').select(TREATMENT_COLUMNS),
+    supabase.from('devices').select(DEVICE_COLUMNS),
+  ]);
+  if (t.error) throw t.error;
+  if (d.error) throw d.error;
+  const catalog: Catalog = {
+    treatments: (t.data ?? []) as TreatmentRow[],
+    devices: (d.data ?? []) as DeviceRow[],
+  };
+  // 같은 데이터면 같은 텍스트 → 같은 캐시 prefix. 정렬은 formatCatalog 안에서 id 순으로 한다.
+  catalogCache = { at: Date.now(), text: formatCatalog(catalog), index: buildCatalogIndex(catalog) };
+  return catalogCache;
 }
 
-async function callClaudeWithRag(
+async function callClaudeWithCatalog(
   messages: { role: string; content: string }[],
-  profile: Profile | undefined,
-  ragContext: string,
-): Promise<{ reply: string; tokensUsed: number }> {
-  const profileNote = [
-    profile?.skin_type ? `피부타입: ${profile.skin_type}` : '',
-    profile?.baumann_code ? `바우만코드: ${profile.baumann_code}` : '',
-    profile?.face_shape ? `얼굴형: ${profile.face_shape}` : '',
-    profile?.concerns?.length ? `고민: ${profile.concerns.join(', ')}` : '',
-    profile?.age_group ? `연령대: ${profile.age_group}` : '',
-  ].filter(Boolean).join(' | ');
-
-  const systemPrompt = `당신은 픽디 뷰티 앱의 전문 AI 상담사입니다.
-한국 뷰티·시술·스킨케어 분야 전문가로서 친절하고 정확하게 답변하세요.
-응답은 반드시 한국어로, 200자 이내로 핵심만 간결하게 작성하세요.
-의학적 시술은 반드시 전문의 상담을 권고하고, 과도한 효과 주장은 삼가세요.
-${profileNote ? `\n사용자 프로필: ${profileNote}` : ''}
-${ragContext ? `\n픽디 DB 참고 데이터:\n${ragContext}` : ''}`;
-
-  const apiMessages = messages.map(m => ({ role: m.role, content: m.content }));
-
+  catalog: { text: string; index: CatalogEntry[] },
+  profile?: Profile,
+  compareItems?: CompareItem[],
+): Promise<{ reply: string; sources: CatalogEntry[]; tokensUsed: number }> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -333,16 +320,36 @@ ${ragContext ? `\n픽디 DB 참고 데이터:\n${ragContext}` : ''}`;
     },
     body: JSON.stringify({
       model: CLAUDE_MODEL,
-      max_tokens: 400,
-      system: systemPrompt,
-      messages: apiMessages,
+      // Haiku 5.5 는 thinking 이 기본으로 켜져 있고 그 토큰도 max_tokens 에 포함된다.
+      // 짧은 상담 답변이라 effort 를 low 로 낮추고, 사고+답변이 잘리지 않게 여유를 둔다.
+      max_tokens: 2048,
+      output_config: { effort: 'low' },
+      system: buildSystemBlocks(catalog.text, profile, compareItems),
+      messages: messages.map(m => ({ role: m.role, content: m.content })),
     }),
   });
 
   const data = await res.json();
-  const reply = data.content?.[0]?.text ?? '죄송해요, 잠시 후 다시 시도해주세요 😊';
-  const tokensUsed = (data.usage?.input_tokens ?? 0) + (data.usage?.output_tokens ?? 0);
-  return { reply, tokensUsed };
+  if (!res.ok) throw new Error(`anthropic ${res.status}: ${JSON.stringify(data?.error ?? data)}`);
+  if (data.stop_reason === 'refusal') throw new Error('anthropic refusal');
+
+  // 응답이 thinking 블록으로 시작할 수 있으므로 위치(content[0])가 아니라 type 으로 읽는다.
+  const text = (data.content ?? [])
+    .filter((b: { type: string }) => b.type === 'text')
+    .map((b: { text: string }) => b.text)
+    .join('');
+  if (!text.trim()) throw new Error(`anthropic empty text (stop_reason=${data.stop_reason})`);
+
+  const { reply, sources } = extractCitations(text, catalog.index);
+  const u = data.usage ?? {};
+  // 캐시 적중 여부는 cache_read_input_tokens 로 확인한다(0 이 계속되면 prefix 가 매번 바뀌는 것).
+  console.log('ai-chat usage', JSON.stringify({
+    input: u.input_tokens, cache_read: u.cache_read_input_tokens,
+    cache_write: u.cache_creation_input_tokens, output: u.output_tokens,
+  }));
+  const tokensUsed = (u.input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0)
+    + (u.cache_creation_input_tokens ?? 0) + (u.output_tokens ?? 0);
+  return { reply, sources, tokensUsed };
 }
 
 async function logChat(
@@ -368,6 +375,13 @@ function detectCategory(msg: string): string {
   if (has(msg, ['통증', '부작용', '회복', '다운타임'])) return '안전';
   if (has(msg, ['피부타입', '추천', '맞춤'])) return '추천';
   return '일반';
+}
+
+function welcomeReply(profile?: Profile): string {
+  const personalized = (profile?.skin_type || profile?.face_shape)
+    ? `\n\n${profile?.skin_type ? `${profile.skin_type} 피부` : ''}${profile?.skin_type && profile?.face_shape ? ' · ' : ''}${profile?.face_shape ? `${profile.face_shape} 얼굴형` : ''} 기반 맞춤 상담 가능해요!`
+    : '';
+  return `안녕하세요! 픽디 AI 상담사예요 ✨${personalized}\n\n아래 내용을 물어보세요:\n\n• 내 피부타입에 맞는 시술 추천\n• 리프팅 시술 비교 (울쎄라 vs 써마지)\n• 홈케어 기기·스킨케어 루틴 추천\n• 시술 통증·비용·회복기간\n• 시술 전 준비 / 시술 후 케어\n• 보톡스 / 필러 / 레이저 / 스킨부스터\n• 얼굴형별 시술·나이대별 추천\n• 피부 고민(여드름·흉터·색소·주름) 해결법\n• 눈 주위 시술·두피·탈모 관리\n• 임신·수유 중 안전 시술 정보\n\n궁금한 점을 편하게 물어보세요 😊`;
 }
 
 serve(async (req) => {
@@ -398,7 +412,7 @@ serve(async (req) => {
     const { messages, profile, compareItems, sessionId } = await req.json() as {
       messages: { role: 'user' | 'assistant'; content: string }[];
       profile?: Profile;
-      compareItems?: { name: string; type: string }[];
+      compareItems?: CompareItem[];
       sessionId?: string;
     };
 
@@ -410,39 +424,44 @@ serve(async (req) => {
 
     const userMsg = [...messages].reverse().find(m => m.role === 'user')?.content ?? '';
     const sid = sessionId ?? `${user.id}_${Date.now()}`;
-
-    // Rule-based engine (primary, no API cost)
-    const ruleReply = getRuleBasedResponse(messages, profile, compareItems);
-
-    let reply: string;
-    let usedClaude = false;
-    let tokensUsed = 0;
-
-    if (ruleReply !== null) {
-      reply = ruleReply;
-    } else if (ANTHROPIC_API_KEY()) {
-      // Claude fallback with DB RAG
-      const serviceClient = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      );
-      const ragContext = await fetchRagContext(serviceClient, userMsg);
-      const result = await callClaudeWithRag(messages, profile, ragContext);
-      reply = result.reply;
-      tokensUsed = result.tokensUsed;
-      usedClaude = true;
-    } else {
-      const personalized = (profile?.skin_type || profile?.face_shape)
-        ? `\n\n${profile?.skin_type ? `${profile.skin_type} 피부` : ''}${profile?.skin_type && profile?.face_shape ? ' · ' : ''}${profile?.face_shape ? `${profile.face_shape} 얼굴형` : ''} 기반 맞춤 상담 가능해요!`
-        : '';
-      reply = `안녕하세요! 픽디 AI 상담사예요 ✨${personalized}\n\n아래 내용을 물어보세요:\n\n• 내 피부타입에 맞는 시술 추천\n• 리프팅 시술 비교 (울쎄라 vs 써마지)\n• 홈케어 기기·스킨케어 루틴 추천\n• 시술 통증·비용·회복기간\n• 시술 전 준비 / 시술 후 케어\n• 보톡스 / 필러 / 레이저 / 스킨부스터\n• 얼굴형별 시술·나이대별 추천\n• 피부 고민(여드름·흉터·색소·주름) 해결법\n• 눈 주위 시술·두피·탈모 관리\n• 임신·수유 중 안전 시술 정보\n\n궁금한 점을 편하게 물어보세요 😊`;
-    }
-
-    // 대화 로그 기록 (비동기, 응답 지연 없음)
     const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
+
+    let reply: string | null = null;
+    let sources: CatalogEntry[] = [];
+    let usedClaude = false;
+    let tokensUsed = 0;
+    let engine: 'catalog' | 'rules' | 'welcome' = 'rules';
+
+    // CHAT_ENGINE=catalog(기본): 모든 질문을 카탈로그 근거로 Claude 가 답한다.
+    // CHAT_ENGINE=rules: 예전처럼 키워드 규칙 답변이 먼저, 매칭 없을 때만 Claude.
+    // 규칙 답변의 가격·회복기간은 하드코딩된 일반론이라 DB 값과 다르다 — 버전 A 가 고치려는 지점.
+    const ruleFirst = CHAT_ENGINE === 'rules';
+    if (ruleFirst) reply = getRuleBasedResponse(messages, profile, compareItems);
+
+    if (reply === null && ANTHROPIC_API_KEY()) {
+      try {
+        const catalog = await loadCatalog(serviceClient);
+        const result = await callClaudeWithCatalog(messages, catalog, profile, compareItems);
+        reply = result.reply;
+        sources = result.sources;
+        tokensUsed = result.tokensUsed;
+        usedClaude = true;
+        engine = 'catalog';
+      } catch (e) {
+        // Claude·DB 장애 시 규칙 답변으로 내려간다(빈 화면보다 낫다).
+        console.error('ai-chat catalog path failed:', e);
+      }
+    }
+    if (reply === null && !ruleFirst) reply = getRuleBasedResponse(messages, profile, compareItems);
+    if (reply === null) {
+      reply = welcomeReply(profile);
+      engine = 'welcome';
+    }
+
+    // 대화 로그 기록 (비동기, 응답 지연 없음)
     logChat(
       serviceClient,
       user.id,
@@ -454,7 +473,8 @@ serve(async (req) => {
       tokensUsed,
     ).catch(() => null);
 
-    return new Response(JSON.stringify({ reply, sessionId: sid }), {
+    // sources·engine 은 추가 필드다. 지금 앱(app/ai-chat.tsx)은 reply 만 읽으므로 하위호환.
+    return new Response(JSON.stringify({ reply, sessionId: sid, sources, engine }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
