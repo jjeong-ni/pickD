@@ -132,7 +132,7 @@ export default function AccountScreen() {
               />
             </View>
           ) : (
-            <InfoRow label="닉네임" value={profile?.nickname ?? '-'} />
+            <InfoRow label="닉네임" value={profile?.nickname?.trim() || '미설정 — 수정에서 입력해주세요'} />
           )}
           {isEditing ? (
             <View style={styles.editRow}>

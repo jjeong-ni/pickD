@@ -284,7 +284,7 @@ export default function ReviewsScreen() {
               <View key={r.id} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
                   <Text style={styles.reviewNickname}>
-                    {(r as any).profile?.nickname || virtualNick((r as any).user_id)}
+                    {(r as any).profile?.nickname?.trim() || virtualNick((r as any).user_id)}
                   </Text>
                   <View style={styles.reviewMeta}>
                     <Text style={styles.reviewRating}>{'⭐'.repeat(r.rating)}</Text>

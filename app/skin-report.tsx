@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
+import { displayName as nameOf } from '../lib/displayName';
 import { Colors, HEADER_TOP } from '../constants/colors';
 import { REPORT_COST } from '../constants/app';
 
@@ -531,7 +532,7 @@ export default function SkinReportScreen() {
   const skinType = demoProfile?.skin_type ?? profile?.skin_type ?? '';
   const ageGroup = demoProfile?.age_group ?? profile?.age_group ?? '';
   const concerns: string[] = demoProfile?.concerns ?? profile?.concerns ?? [];
-  const displayName = demoProfile?.nickname ?? profile?.nickname ?? user?.email?.split('@')[0] ?? '회원';
+  const displayName = demo ? (demoProfile?.nickname ?? '회원') : nameOf(profile?.nickname, user?.email);
   const facePhotoUrl = demo ? null : (profile?.face_photo_url ?? profile?.avatar_url ?? null);
   const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 

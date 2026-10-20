@@ -1,11 +1,12 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Platform,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Platform,
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
+import { notify, reportMutationError } from '../lib/mutate';
 import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';
 
@@ -246,13 +247,13 @@ export default function FaceAnalysisScreen() {
     const { error } = await supabase.from('profiles').update({ face_shape: result }).eq('user_id', user.id);
     setSaving(false);
     if (error) {
-      Alert.alert('저장 실패', '프로필 저장 중 문제가 발생했어요. 다시 시도해주세요.');
+      reportMutationError('프로필 저장', '다시 시도해주세요.');
       return;
     }
     await fetchProfile(user.id);
-    Alert.alert('저장 완료', `${result} 분석 결과가 프로필에 저장되었어요!`, [
-      { text: '확인', onPress: () => router.back() },
-    ]);
+    // Alert 버튼 콜백은 웹에서 안 불린다 — 안내만 띄우고 바로 돌아간다.
+    notify('저장 완료', `${result} 분석 결과가 프로필에 저장됐어요!`);
+    router.back();
   };
 
   const handleRetake = () => {
@@ -280,7 +281,7 @@ export default function FaceAnalysisScreen() {
         } else {
           // 카메라 권한 없으면 갤러리 fallback
           const libPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (!libPerm.granted) { Alert.alert('권한 필요', '카메라 또는 갤러리 접근 권한이 필요해요.'); return; }
+          if (!libPerm.granted) { notify('권한 필요', '카메라 또는 갤러리 접근 권한이 필요해요.'); return; }
           res = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'] as any, quality: 0.7, base64: true,
             allowsEditing: true, aspect: [1, 1],

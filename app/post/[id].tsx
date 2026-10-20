@@ -319,7 +319,7 @@ export default function PostDetailScreen() {
             </Text>
           </View>
           <Text style={styles.title}>{post.title}</Text>
-          <Text style={styles.author}>👤 {(post as any).profile?.nickname ?? virtualNick((post as any).user_id ?? '')}</Text>
+          <Text style={styles.author}>👤 {(post as any).profile?.nickname?.trim() || virtualNick((post as any).user_id ?? '')}</Text>
 
           {/* Before/After 이미지 */}
           {!isQuiz && ((post as any).image_url || (post as any).before_image_url) && (
@@ -465,7 +465,7 @@ export default function PostDetailScreen() {
             comments.map((c) => (
               <View key={c.id} style={styles.commentCard}>
                 <Text style={styles.commentNickname}>
-                  {c.profile?.nickname ?? virtualNick(c.user_id)}
+                  {c.profile?.nickname?.trim() || virtualNick(c.user_id)}
                 </Text>
                 <Text style={styles.commentBody}>{c.body}</Text>
                 <Text style={styles.commentDate}>
