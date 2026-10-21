@@ -113,7 +113,7 @@ export default function CompatibilityCard({
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
               <Text style={s.emoji}>💕</Text>
-              <Text style={s.nickLine}>{profile?.nickname ?? ''}님과</Text>
+              <Text style={s.nickLine}>{profile?.nickname?.trim() || '회원'}님과</Text>
               <Text style={s.itemLine} numberOfLines={2}>{itemName}</Text>
               <Text style={s.subLine}>의 궁합은?</Text>
 

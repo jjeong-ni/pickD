@@ -5,11 +5,13 @@
  */
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  ActivityIndicator, Alert, Dimensions,
+  ActivityIndicator, Dimensions,
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '../lib/supabase';
+import { notify, reportMutationError } from '../lib/mutate';
+import { estimateSkinAge } from '../lib/skinReport';
 import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';
 
@@ -464,6 +466,7 @@ export default function SkinAnalysisScreen() {
         baumann_code: result.code,
         skin_metrics: result.metrics,
         skin_dehydration: result.dehydration,
+        skin_age: estimateSkinAge(result.metrics, profile?.age_group),
       }).eq('user_id', user.id),
       supabase.from('skin_analysis_history').insert({
         user_id: user.id,
@@ -475,15 +478,13 @@ export default function SkinAnalysisScreen() {
     ]);
     setSaving(false);
     if (error) {
-      Alert.alert('저장 실패', '프로필 저장 중 문제가 발생했어요. 다시 시도해주세요.');
+      reportMutationError('프로필 저장', '다시 시도해주세요.');
       return;
     }
     await fetchProfile(user.id);
-    Alert.alert(
-      '저장 완료 ✅',
-      `${result.type} 타입(${result.code}) 결과가 프로필에 저장되었어요!\n리포트에서 상세 분석을 확인해보세요 📋`,
-      [{ text: '확인', onPress: () => router.back() }],
-    );
+    // Alert 버튼 콜백은 웹에서 안 불린다 — 안내만 띄우고 바로 돌아간다.
+    notify('저장 완료 ✅', `${result.type} 타입(${result.code}) 결과가 저장됐어요. 리포트에서 확인해보세요 📋`);
+    router.back();
   };
 
   const handleRetake = () => {

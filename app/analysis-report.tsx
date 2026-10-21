@@ -1,10 +1,12 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Alert, Platform,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform,
 } from 'react-native';
+import { Alert } from '../lib/alert';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';
+import { displayName } from '../lib/displayName';
+import { ageFromGroup, estimateSkinAge, overallScore, strengthsAndConcerns } from '../lib/skinReport';
 
 // ─── 얼굴형 데이터 ───────────────────────────────────────────────────────────
 
@@ -277,6 +279,12 @@ export default function AnalysisReportScreen() {
   const skinInfo = skinType ? SKIN_DATA[skinType] : null;
   const ageComment = getAgeComment(faceShape, skinType, ageGroup);
 
+  // Focuskin 리포트 첫 장: 종합 점수 · 피부 나이 · 강점/관리 포인트
+  const realAge = ageFromGroup(ageGroup);
+  const skinAge = estimateSkinAge(skinMetrics, ageGroup) ?? profile?.skin_age ?? null;
+  const score = skinMetrics ? overallScore(skinMetrics) : null;
+  const highlights = skinMetrics ? strengthsAndConcerns(skinMetrics) : null;
+
   const handleDownload = () => {
     if (Platform.OS === 'web') {
       try {
@@ -333,7 +341,7 @@ export default function AnalysisReportScreen() {
           <>
             {/* ── 리포트 헤더 카드 ── */}
             <View style={styles.reportHeader}>
-              <Text style={styles.reportName}>{profile?.nickname ?? '내'}님의 맞춤 리포트</Text>
+              <Text style={styles.reportName}>{displayName(profile?.nickname, user?.email)}님의 맞춤 리포트</Text>
               <View style={styles.reportTypes}>
                 {faceInfo && (
                   <View style={styles.reportTypePill}>
@@ -448,6 +456,53 @@ export default function AnalysisReportScreen() {
                     </View>
                   </View>
                 </View>
+
+                {/* 종합 진단 요약 (Focuskin 리포트 1페이지 형식) */}
+                {score != null && (
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>🩺 종합 피부 진단</Text>
+                    <View style={styles.summaryRow}>
+                      <View style={styles.summaryCell}>
+                        <Text style={styles.summaryValue}>{score}<Text style={styles.summaryUnit}>점</Text></Text>
+                        <Text style={styles.summaryLabel}>피부 점수</Text>
+                      </View>
+                      <View style={styles.summaryDivider} />
+                      <View style={styles.summaryCell}>
+                        {skinAge != null ? (
+                          <>
+                            <Text style={styles.summaryValue}>{skinAge}<Text style={styles.summaryUnit}>세</Text></Text>
+                            <Text style={styles.summaryLabel}>추정 피부 나이</Text>
+                            {realAge != null && (
+                              <Text style={[styles.summaryDelta, {
+                                color: skinAge < realAge ? Colors.success : skinAge > realAge ? Colors.danger : Colors.sub,
+                              }]}>
+                                {skinAge < realAge ? `또래보다 ${realAge - skinAge}살 어려요`
+                                  : skinAge > realAge ? `또래보다 ${skinAge - realAge}살 많아요`
+                                  : '또래 평균이에요'}
+                              </Text>
+                            )}
+                          </>
+                        ) : (
+                          <TouchableOpacity onPress={() => router.push('/profile-setup' as any)}>
+                            <Text style={styles.summaryValue}>?</Text>
+                            <Text style={styles.summaryLabel}>연령대를 입력하면{'\n'}피부 나이를 알려드려요</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                    {highlights && (highlights.strengths.length > 0 || highlights.concerns.length > 0) && (
+                      <View style={styles.highlightBox}>
+                        {highlights.strengths.length > 0 && (
+                          <Text style={styles.highlightGood}>👍 강점: {highlights.strengths.join(' · ')}</Text>
+                        )}
+                        {highlights.concerns.length > 0 && (
+                          <Text style={styles.highlightBad}>🎯 집중 관리: {highlights.concerns.join(' · ')}</Text>
+                        )}
+                      </View>
+                    )}
+                    <Text style={styles.cardSubNote}>퀴즈 답변 기반 추정치예요. 피부진단기 측정값과 다를 수 있어요.</Text>
+                  </View>
+                )}
 
                 {/* Baumann 4축 분류 */}
                 {baumannCode && baumannCode.length === 4 && (
@@ -762,6 +817,18 @@ const styles = StyleSheet.create({
     textAlign: 'center', lineHeight: 28,
   },
   axisBadgeDesc: { fontSize: 12, color: Colors.text, fontWeight: '600' },
+
+  // 종합 진단 요약
+  summaryRow: { flexDirection: 'row', alignItems: 'stretch', paddingVertical: 6 },
+  summaryCell: { flex: 1, alignItems: 'center', gap: 2 },
+  summaryDivider: { width: 1, backgroundColor: Colors.border, marginHorizontal: 8 },
+  summaryValue: { fontSize: 32, fontWeight: '900', color: Colors.text, textAlign: 'center', letterSpacing: -1 },
+  summaryUnit: { fontSize: 14, fontWeight: '700', color: Colors.sub },
+  summaryLabel: { fontSize: 12, color: Colors.sub, fontWeight: '600', textAlign: 'center', lineHeight: 17 },
+  summaryDelta: { fontSize: 11, fontWeight: '700', marginTop: 2 },
+  highlightBox: { backgroundColor: Colors.bg, borderRadius: 10, padding: 12, gap: 4 },
+  highlightGood: { fontSize: 13, color: Colors.success, fontWeight: '600' },
+  highlightBad: { fontSize: 13, color: Colors.danger, fontWeight: '600' },
 
   // 6대 지표
   metricRow: { marginTop: 12 },
