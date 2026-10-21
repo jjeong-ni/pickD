@@ -1,7 +1,8 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal, TextInput,
-  ActivityIndicator, Alert, ScrollView,
+  ActivityIndicator, ScrollView,
 } from 'react-native';
+import { Alert } from '../lib/alert';
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';

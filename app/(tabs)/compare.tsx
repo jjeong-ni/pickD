@@ -1,7 +1,8 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  ActivityIndicator, Alert, Modal, Share, Platform,
+  ActivityIndicator, Modal, Share, Platform,
 } from 'react-native';
+import { Alert } from '../../lib/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';

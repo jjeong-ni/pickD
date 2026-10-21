@@ -1,7 +1,8 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform, Alert, Image,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform, Image,
   ActivityIndicator,
 } from 'react-native';
+import { Alert } from '../../lib/alert';
 import { router } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';

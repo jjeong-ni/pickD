@@ -1,7 +1,8 @@
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
-  ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image,
+  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image,
 } from 'react-native';
+import { Alert } from '../../lib/alert';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';

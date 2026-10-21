@@ -1,7 +1,7 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Alert, ActivityIndicator,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator,
 } from 'react-native';
+import { Alert } from '../lib/alert';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';

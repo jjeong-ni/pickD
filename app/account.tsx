@@ -1,7 +1,8 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  TextInput, Alert, ActivityIndicator, Modal,
+  TextInput, ActivityIndicator, Modal,
 } from 'react-native';
+import { Alert } from '../lib/alert';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -132,7 +133,7 @@ export default function AccountScreen() {
               />
             </View>
           ) : (
-            <InfoRow label="닉네임" value={profile?.nickname ?? '-'} />
+            <InfoRow label="닉네임" value={profile?.nickname?.trim() || '미설정 — 수정에서 입력해주세요'} />
           )}
           {isEditing ? (
             <View style={styles.editRow}>

@@ -127,6 +127,15 @@ export function setMutationReporter(fn: MutationReporter | null) {
   reporter = fn ?? defaultReporter;
 }
 
+/**
+ * 실패가 아닌 일반 안내(저장 완료 등). 같은 통로를 탄다 — 웹은 토스트, 네이티브는 Alert.
+ * `Alert.alert(제목, 문구, [{ onPress }])` 처럼 버튼 콜백에 다음 동작을 걸면
+ * 웹에서는 콜백이 영영 안 불린다. 다음 동작은 호출부에서 바로 실행할 것.
+ */
+export function notify(title: string, message = '') {
+  reporter(title, message);
+}
+
 /** 롤백 없이 실패만 알릴 때. */
 export function reportMutationError(what: string, detail?: string) {
   reporter(`${what} 실패`, detail?.trim() || '잠시 후 다시 시도해주세요.');
