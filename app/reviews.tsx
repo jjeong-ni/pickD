@@ -1,7 +1,8 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  ActivityIndicator, Image, Modal, TextInput, Alert, Platform, FlatList,
+  ActivityIndicator, Image, Modal, TextInput, Platform, FlatList,
 } from 'react-native';
+import { Alert } from '../lib/alert';
 
 const SKIN_TYPE_FILTERS = ['전체', '건성', '지성', '복합성', '민감성', '중성'] as const;
 type SkinTypeFilter = typeof SKIN_TYPE_FILTERS[number];

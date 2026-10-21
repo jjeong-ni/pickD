@@ -1,7 +1,7 @@
 import {
-  View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator,
+  View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
+import { Alert } from '../lib/alert';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';

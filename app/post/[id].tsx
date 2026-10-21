@@ -1,7 +1,8 @@
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, Image,
+  TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, Image,
 } from 'react-native';
+import { Alert } from '../../lib/alert';
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';

@@ -1,7 +1,8 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
-  Platform, Linking, Alert,
+  Platform, Linking,
 } from 'react-native';
+import { Alert } from '../lib/alert';
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { WebView } from 'react-native-webview';

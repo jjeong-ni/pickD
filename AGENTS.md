@@ -62,11 +62,14 @@ class Alert { static alert() {} }
 ```
 
 import 는 성공하고 호출도 되는데 **빈 함수다.** 웹 배포본에서는 조용하다.
-새 코드에서 사용자에게 뭔가 알려야 하면 `lib/mutate.ts` 의 `reportMutationError()`
-를 써라 — 네이티브는 Alert, 웹은 DOM 토스트로 알아서 갈라진다.
+
+**`Alert` 는 `react-native` 가 아니라 `lib/alert.ts` 에서 import 한다.** 호출 모양은 똑같다.
+네이티브는 원래 Alert 그대로, 웹은 버튼 0~1개면 토스트, 2개면 `window.confirm`
+([확인] = 취소가 아닌 버튼, [취소] = `style: 'cancel'` 버튼)으로 간다.
+실패 안내는 `lib/mutate.ts` 의 `reportMutationError()`, 일반 안내는 `notify()` 도 된다.
 
 > 교훈: 크로스 플랫폼에서 **존재한다 ≠ 동작한다.** 빈 껍데기 구현이 흔하다.
-> 기존 `Alert.alert` 호출부 40여 곳은 아직 안 고쳤다 (화면마다 맥락이 달라 일괄 치환은 위험).
+> 버튼 3개 이상인 Alert 는 웹에서 첫 두 개만 의미가 있다 — 그런 화면은 모달을 직접 만들 것.
 
 ### 쓰기는 `lib/mutate.ts` 를 통과시킨다
 

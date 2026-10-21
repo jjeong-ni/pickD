@@ -1,7 +1,7 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Alert, Platform,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform,
 } from 'react-native';
+import { Alert } from '../lib/alert';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';

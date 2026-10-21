@@ -1,7 +1,8 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  TextInput, Alert, ActivityIndicator, Modal,
+  TextInput, ActivityIndicator, Modal,
 } from 'react-native';
+import { Alert } from '../lib/alert';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
