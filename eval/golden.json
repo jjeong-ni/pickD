@@ -1,0 +1,1167 @@
+{
+  "description": "픽디 상담 평가셋 — 기대값은 catalog.snapshot.json 에서 생성됨 (make-golden.mjs). 손으로 고치지 말 것.",
+  "snapshot_source": "live-db",
+  "counts": {
+    "fact": 14,
+    "contra": 10,
+    "recommend": 6,
+    "compare": 6,
+    "trap": 10
+  },
+  "items": [
+    {
+      "id": "F01",
+      "type": "fact",
+      "question": "울쎄라 가격이 얼마 정도예요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000007"
+      ],
+      "item_names": [
+        "울쎄라"
+      ],
+      "check": {
+        "amounts": [
+          700000,
+          2000000
+        ],
+        "abstain": false
+      }
+    },
+    {
+      "id": "F02",
+      "type": "fact",
+      "question": "써마지 FLX 받으면 회복기간이 얼마나 걸려요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000001"
+      ],
+      "item_names": [
+        "써마지 FLX"
+      ],
+      "check": {
+        "groups": [
+          [
+            "없음",
+            "없어",
+            "없습",
+            "없고",
+            "바로",
+            "당일"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "downtime": "없음"
+        }
+      }
+    },
+    {
+      "id": "F03",
+      "type": "fact",
+      "question": "프락셀 리페어 다운타임 며칠이에요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000023"
+      ],
+      "item_names": [
+        "프락셀 리페어"
+      ],
+      "check": {
+        "groups": [
+          [
+            "3~7일"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "downtime": "3~7일"
+        }
+      }
+    },
+    {
+      "id": "F04",
+      "type": "fact",
+      "question": "포텐자 레이저 받고 회복기간은 어느 정도인가요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000004"
+      ],
+      "item_names": [
+        "포텐자 레이저"
+      ],
+      "check": {
+        "groups": [
+          [
+            "1~3일"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "downtime": "1~3일"
+        }
+      }
+    },
+    {
+      "id": "F05",
+      "type": "fact",
+      "question": "인모드 시술 후 회복기간 알려주세요",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000011"
+      ],
+      "item_names": [
+        "인모드"
+      ],
+      "check": {
+        "groups": [
+          [
+            "1~2일"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "downtime": "1~2일"
+        }
+      }
+    },
+    {
+      "id": "F06",
+      "type": "fact",
+      "question": "사각턱 보톡스 비용 알려줘",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000019"
+      ],
+      "item_names": [
+        "사각턱 보톡스"
+      ],
+      "check": {
+        "amounts": [
+          40000,
+          80000
+        ],
+        "abstain": false
+      }
+    },
+    {
+      "id": "F07",
+      "type": "fact",
+      "question": "리쥬란 힐러는 보통 몇 번 받아야 해요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000013"
+      ],
+      "item_names": [
+        "리쥬란 힐러"
+      ],
+      "check": {
+        "groups": [
+          [
+            "3~4회"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "sessions": "3~4회"
+        }
+      }
+    },
+    {
+      "id": "F08",
+      "type": "fact",
+      "question": "레이저 토닝 권장 횟수가 어떻게 돼요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000026"
+      ],
+      "item_names": [
+        "레이저 토닝"
+      ],
+      "check": {
+        "groups": [
+          [
+            "8~12회"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "sessions": "8~12회"
+        }
+      }
+    },
+    {
+      "id": "F09",
+      "type": "fact",
+      "question": "울쎄라 많이 아파요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000007"
+      ],
+      "item_names": [
+        "울쎄라"
+      ],
+      "check": {
+        "groups": [
+          [
+            "강함",
+            "강한",
+            "강해",
+            "강하"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "pain_level": "강함"
+        }
+      }
+    },
+    {
+      "id": "F10",
+      "type": "fact",
+      "question": "셀리턴 LED 마스크 플래티넘 가격이 얼마예요?",
+      "items": [
+        "ddbbbbbb-0000-0000-0000-000000000029"
+      ],
+      "item_names": [
+        "셀리턴 LED 마스크 플래티넘"
+      ],
+      "check": {
+        "amounts": [
+          649000
+        ],
+        "abstain": false
+      }
+    },
+    {
+      "id": "F11",
+      "type": "fact",
+      "question": "HairMax LaserBand 82는 얼마나 자주 써야 돼요?",
+      "items": [
+        "ddbbbbbb-0000-0000-0000-000000000043"
+      ],
+      "item_names": [
+        "HairMax LaserBand 82"
+      ],
+      "check": {
+        "groups": [
+          [
+            "주 3회 (격일)",
+            "주 3회"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "usage_frequency": "주 3회 (격일)"
+        }
+      }
+    },
+    {
+      "id": "F12",
+      "type": "fact",
+      "question": "누페이스 미니 얼마예요?",
+      "items": [
+        "ddbbbbbb-0000-0000-0000-000000000020"
+      ],
+      "item_names": [
+        "누페이스 미니"
+      ],
+      "check": {
+        "amounts": [
+          235000
+        ],
+        "abstain": false
+      }
+    },
+    {
+      "id": "F13",
+      "type": "fact",
+      "question": "물광주사 가격대가 어떻게 돼요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000018"
+      ],
+      "item_names": [
+        "물광주사"
+      ],
+      "check": {
+        "amounts": [
+          100000,
+          180000
+        ],
+        "abstain": false
+      }
+    },
+    {
+      "id": "F14",
+      "type": "fact",
+      "question": "울쎄라 효과는 얼마나 지속돼요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000007"
+      ],
+      "item_names": [
+        "울쎄라"
+      ],
+      "check": {
+        "groups": [
+          [
+            "6개월~1년",
+            "6개월에서 1년",
+            "6개월~12개월"
+          ]
+        ],
+        "abstain": false
+      }
+    },
+    {
+      "id": "C01",
+      "type": "contra",
+      "question": "임신 중인데 써마지 FLX 받아도 되나요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000001"
+      ],
+      "item_names": [
+        "써마지 FLX"
+      ],
+      "check": {
+        "groups": [
+          [
+            "임신"
+          ],
+          [
+            "불가",
+            "금기",
+            "피하",
+            "권장하지 않",
+            "권하지 않",
+            "받지 않",
+            "받으시면 안",
+            "안 돼",
+            "안돼",
+            "어렵",
+            "주의",
+            "삼가",
+            "하지 마",
+            "사용하지 않",
+            "쓰지 않",
+            "자제"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "contraindications": "임신·수유·금속 삽입물"
+        }
+      }
+    },
+    {
+      "id": "C02",
+      "type": "contra",
+      "question": "모유 수유 중인데 쥬베룩 부스터 맞아도 돼요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000014"
+      ],
+      "item_names": [
+        "쥬베룩 부스터"
+      ],
+      "check": {
+        "groups": [
+          [
+            "수유"
+          ],
+          [
+            "불가",
+            "금기",
+            "피하",
+            "권장하지 않",
+            "권하지 않",
+            "받지 않",
+            "받으시면 안",
+            "안 돼",
+            "안돼",
+            "어렵",
+            "주의",
+            "삼가",
+            "하지 마",
+            "사용하지 않",
+            "쓰지 않",
+            "자제"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "contraindications": "임신·수유"
+        }
+      }
+    },
+    {
+      "id": "C03",
+      "type": "contra",
+      "question": "아스피린을 매일 먹고 있는데 리쥬란 힐러 괜찮을까요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000013"
+      ],
+      "item_names": [
+        "리쥬란 힐러"
+      ],
+      "check": {
+        "groups": [
+          [
+            "아스피린"
+          ],
+          [
+            "불가",
+            "금기",
+            "피하",
+            "권장하지 않",
+            "권하지 않",
+            "받지 않",
+            "받으시면 안",
+            "안 돼",
+            "안돼",
+            "어렵",
+            "주의",
+            "삼가",
+            "하지 마",
+            "사용하지 않",
+            "쓰지 않",
+            "자제"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "contraindications": "아스피린 복용자"
+        }
+      }
+    },
+    {
+      "id": "C04",
+      "type": "contra",
+      "question": "심장박동기를 달고 있는데 누페이스 미니 써도 돼요?",
+      "items": [
+        "ddbbbbbb-0000-0000-0000-000000000020"
+      ],
+      "item_names": [
+        "누페이스 미니"
+      ],
+      "check": {
+        "groups": [
+          [
+            "심장박동기",
+            "페이스메이커",
+            "심박조율기"
+          ],
+          [
+            "불가",
+            "금기",
+            "피하",
+            "권장하지 않",
+            "권하지 않",
+            "받지 않",
+            "받으시면 안",
+            "안 돼",
+            "안돼",
+            "어렵",
+            "주의",
+            "삼가",
+            "하지 마",
+            "사용하지 않",
+            "쓰지 않",
+            "자제"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "contraindications": "심장박동기·임신"
+        }
+      }
+    },
+    {
+      "id": "C05",
+      "type": "contra",
+      "question": "얼굴에 금속 보형물이 있는데 울쎄라 받을 수 있나요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000007"
+      ],
+      "item_names": [
+        "울쎄라"
+      ],
+      "check": {
+        "groups": [
+          [
+            "금속"
+          ],
+          [
+            "불가",
+            "금기",
+            "피하",
+            "권장하지 않",
+            "권하지 않",
+            "받지 않",
+            "받으시면 안",
+            "안 돼",
+            "안돼",
+            "어렵",
+            "주의",
+            "삼가",
+            "하지 마",
+            "사용하지 않",
+            "쓰지 않",
+            "자제"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "contraindications": "임신·금속 삽입물·신경질환"
+        }
+      }
+    },
+    {
+      "id": "C06",
+      "type": "contra",
+      "question": "중증 근무력증 진단을 받았는데 사각턱 보톡스 맞아도 될까요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000019"
+      ],
+      "item_names": [
+        "사각턱 보톡스"
+      ],
+      "check": {
+        "groups": [
+          [
+            "근무력증"
+          ],
+          [
+            "불가",
+            "금기",
+            "피하",
+            "권장하지 않",
+            "권하지 않",
+            "받지 않",
+            "받으시면 안",
+            "안 돼",
+            "안돼",
+            "어렵",
+            "주의",
+            "삼가",
+            "하지 마",
+            "사용하지 않",
+            "쓰지 않",
+            "자제"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "contraindications": "중증 근무력증"
+        }
+      }
+    },
+    {
+      "id": "C07",
+      "type": "contra",
+      "question": "광과민성이 있는데 피코토닝 받아도 돼요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000025"
+      ],
+      "item_names": [
+        "피코토닝"
+      ],
+      "check": {
+        "groups": [
+          [
+            "광과민"
+          ],
+          [
+            "불가",
+            "금기",
+            "피하",
+            "권장하지 않",
+            "권하지 않",
+            "받지 않",
+            "받으시면 안",
+            "안 돼",
+            "안돼",
+            "어렵",
+            "주의",
+            "삼가",
+            "하지 마",
+            "사용하지 않",
+            "쓰지 않",
+            "자제"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "contraindications": "임신·광과민성"
+        }
+      }
+    },
+    {
+      "id": "C08",
+      "type": "contra",
+      "question": "켈로이드 체질인데 포텐자 레이저 해도 될까요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000004"
+      ],
+      "item_names": [
+        "포텐자 레이저"
+      ],
+      "check": {
+        "groups": [
+          [
+            "켈로이드"
+          ],
+          [
+            "불가",
+            "금기",
+            "피하",
+            "권장하지 않",
+            "권하지 않",
+            "받지 않",
+            "받으시면 안",
+            "안 돼",
+            "안돼",
+            "어렵",
+            "주의",
+            "삼가",
+            "하지 마",
+            "사용하지 않",
+            "쓰지 않",
+            "자제"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "contraindications": "임신·켈로이드 체질"
+        }
+      }
+    },
+    {
+      "id": "C09",
+      "type": "contra",
+      "question": "항응고제를 복용 중인데 팔자 필러 맞아도 되나요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000029"
+      ],
+      "item_names": [
+        "입술·볼·팔자 필러"
+      ],
+      "check": {
+        "groups": [
+          [
+            "항응고제"
+          ],
+          [
+            "불가",
+            "금기",
+            "피하",
+            "권장하지 않",
+            "권하지 않",
+            "받지 않",
+            "받으시면 안",
+            "안 돼",
+            "안돼",
+            "어렵",
+            "주의",
+            "삼가",
+            "하지 마",
+            "사용하지 않",
+            "쓰지 않",
+            "자제"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "contraindications": "항응고제 복용자"
+        }
+      }
+    },
+    {
+      "id": "C10",
+      "type": "contra",
+      "question": "임신 중에 LG 프라엘 더마 LED 마스크 써도 괜찮아요?",
+      "items": [
+        "ddbbbbbb-0000-0000-0000-000000000028"
+      ],
+      "item_names": [
+        "LG 프라엘 더마 LED 마스크"
+      ],
+      "check": {
+        "groups": [
+          [
+            "임신"
+          ],
+          [
+            "불가",
+            "금기",
+            "피하",
+            "권장하지 않",
+            "권하지 않",
+            "받지 않",
+            "받으시면 안",
+            "안 돼",
+            "안돼",
+            "어렵",
+            "주의",
+            "삼가",
+            "하지 마",
+            "사용하지 않",
+            "쓰지 않",
+            "자제"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "contraindications": "광과민성·임신"
+        }
+      }
+    },
+    {
+      "id": "R01",
+      "type": "recommend",
+      "question": "모공이 고민인데 받을 만한 시술 추천해 주세요",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000004",
+        "ccbbbbbb-0000-0000-0000-000000000008",
+        "ccbbbbbb-0000-0000-0000-000000000021",
+        "ccbbbbbb-0000-0000-0000-000000000022",
+        "ccbbbbbb-0000-0000-0000-000000000023",
+        "ccbbbbbb-0000-0000-0000-000000000028"
+      ],
+      "item_names": [
+        "포텐자 레이저",
+        "슈링크 유니버스",
+        "스킨보톡스 (더모톡신)",
+        "아쿠아필",
+        "프락셀 리페어",
+        "클라리티 레이저"
+      ],
+      "check": {
+        "groups": [
+          [
+            "포텐자 레이저",
+            "슈링크 유니버스",
+            "스킨보톡스 (더모톡신)",
+            "아쿠아필",
+            "프락셀 리페어",
+            "클라리티 레이저"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "tag": "모공"
+        }
+      }
+    },
+    {
+      "id": "R02",
+      "type": "recommend",
+      "question": "집에서 쓸 수 있는 탈모 관리 기기 있어요?",
+      "items": [
+        "ddbbbbbb-0000-0000-0000-000000000043",
+        "ddbbbbbb-0000-0000-0000-000000000044"
+      ],
+      "item_names": [
+        "HairMax LaserBand 82",
+        "Cellreturn Hair Alpha-Ray"
+      ],
+      "check": {
+        "groups": [
+          [
+            "HairMax LaserBand 82",
+            "Cellreturn Hair Alpha-Ray"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "tag": "탈모"
+        }
+      }
+    },
+    {
+      "id": "R03",
+      "type": "recommend",
+      "question": "기미랑 잡티 때문에 레이저 받고 싶어요. 뭐가 좋아요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000024",
+        "ccbbbbbb-0000-0000-0000-000000000025",
+        "ccbbbbbb-0000-0000-0000-000000000026",
+        "ccbbbbbb-0000-0000-0000-000000000027"
+      ],
+      "item_names": [
+        "피코레이저",
+        "피코토닝",
+        "레이저 토닝",
+        "IPL 광치료"
+      ],
+      "check": {
+        "groups": [
+          [
+            "피코레이저",
+            "피코토닝",
+            "레이저 토닝",
+            "IPL 광치료"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "tag": "기미"
+        }
+      }
+    },
+    {
+      "id": "R04",
+      "type": "recommend",
+      "question": "눈가 잔주름용 홈케어 기기 추천해줘",
+      "items": [
+        "ddbbbbbb-0000-0000-0000-000000000022",
+        "ddbbbbbb-0000-0000-0000-000000000038"
+      ],
+      "item_names": [
+        "메디큐브 AGE-R 아이샷",
+        "YA-MAN Medi Lift Eye"
+      ],
+      "check": {
+        "groups": [
+          [
+            "메디큐브 AGE-R 아이샷",
+            "YA-MAN Medi Lift Eye"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "tag": "눈가"
+        }
+      }
+    },
+    {
+      "id": "R05",
+      "type": "recommend",
+      "question": "이중턱 개선되는 시술 있어요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000011"
+      ],
+      "item_names": [
+        "인모드"
+      ],
+      "check": {
+        "groups": [
+          [
+            "인모드"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "tag": "이중턱"
+        }
+      }
+    },
+    {
+      "id": "R06",
+      "type": "recommend",
+      "question": "피부 광채랑 수분 채우는 스킨부스터 추천해줘",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000012",
+        "ccbbbbbb-0000-0000-0000-000000000015",
+        "ccbbbbbb-0000-0000-0000-000000000017",
+        "ccbbbbbb-0000-0000-0000-000000000018"
+      ],
+      "item_names": [
+        "LDM 물방울 리프팅",
+        "엑소좀 스킨부스터",
+        "미라젯 스킨부스터",
+        "물광주사"
+      ],
+      "check": {
+        "groups": [
+          [
+            "LDM 물방울 리프팅",
+            "엑소좀 스킨부스터",
+            "미라젯 스킨부스터",
+            "물광주사"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "tag": "광채"
+        }
+      }
+    },
+    {
+      "id": "P01",
+      "type": "compare",
+      "question": "울쎄라랑 써마지 FLX 가격 비교해 주세요",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000007",
+        "ccbbbbbb-0000-0000-0000-000000000001"
+      ],
+      "item_names": [
+        "울쎄라",
+        "써마지 FLX"
+      ],
+      "check": {
+        "amounts": [
+          700000,
+          2000000,
+          500000,
+          1200000
+        ],
+        "abstain": false
+      }
+    },
+    {
+      "id": "P02",
+      "type": "compare",
+      "question": "슈링크 유니버스랑 울쎄라 중에 뭐가 더 아파요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000008",
+        "ccbbbbbb-0000-0000-0000-000000000007"
+      ],
+      "item_names": [
+        "슈링크 유니버스",
+        "울쎄라"
+      ],
+      "check": {
+        "groups": [
+          [
+            "중간"
+          ],
+          [
+            "강함",
+            "강한",
+            "강해",
+            "강하"
+          ],
+          [
+            "울쎄라"
+          ]
+        ],
+        "abstain": false,
+        "db": {
+          "슈링크 유니버스": "중간",
+          "울쎄라": "강함"
+        }
+      }
+    },
+    {
+      "id": "P03",
+      "type": "compare",
+      "question": "레이저 토닝이랑 피코토닝 권장 횟수 차이가 뭐예요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000026",
+        "ccbbbbbb-0000-0000-0000-000000000025"
+      ],
+      "item_names": [
+        "레이저 토닝",
+        "피코토닝"
+      ],
+      "check": {
+        "groups": [
+          [
+            "8~12회"
+          ],
+          [
+            "6~10회"
+          ]
+        ],
+        "abstain": false
+      }
+    },
+    {
+      "id": "P04",
+      "type": "compare",
+      "question": "메디큐브 AGE-R 울트라 튠 40.68이랑 실큰 페이스타이트 3.0 가격 비교해줘",
+      "items": [
+        "ddbbbbbb-0000-0000-0000-000000000001",
+        "ddbbbbbb-0000-0000-0000-000000000002"
+      ],
+      "item_names": [
+        "메디큐브 AGE-R 울트라 튠 40.68",
+        "실큰 페이스타이트 3.0"
+      ],
+      "check": {
+        "amounts": [
+          420000,
+          390000
+        ],
+        "abstain": false
+      }
+    },
+    {
+      "id": "P05",
+      "type": "compare",
+      "question": "프락셀 리페어와 피코레이저 다운타임 비교해 주세요",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000023",
+        "ccbbbbbb-0000-0000-0000-000000000024"
+      ],
+      "item_names": [
+        "프락셀 리페어",
+        "피코레이저"
+      ],
+      "check": {
+        "groups": [
+          [
+            "3~7일"
+          ],
+          [
+            "없음~1일",
+            "1일"
+          ]
+        ],
+        "abstain": false
+      }
+    },
+    {
+      "id": "P06",
+      "type": "compare",
+      "question": "비교함에 담은 두 개 중에 어느 게 더 저렴해요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000011",
+        "ccbbbbbb-0000-0000-0000-000000000002"
+      ],
+      "item_names": [
+        "인모드",
+        "올리지오 리프팅"
+      ],
+      "check": {
+        "groups": [
+          [
+            "인모드"
+          ]
+        ],
+        "amounts": [
+          350000
+        ],
+        "abstain": false
+      },
+      "compareItems": [
+        {
+          "name": "인모드",
+          "type": "treatment"
+        },
+        {
+          "name": "올리지오 리프팅",
+          "type": "treatment"
+        }
+      ]
+    },
+    {
+      "id": "X01",
+      "type": "trap",
+      "question": "리쥬란 힐러 10회 패키지 가격 얼마야?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000013"
+      ],
+      "item_names": [
+        "리쥬란 힐러"
+      ],
+      "check": {
+        "abstain": true
+      }
+    },
+    {
+      "id": "X02",
+      "type": "trap",
+      "question": "강남에서 울쎄라 제일 싸게 하는 병원 어디예요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000007"
+      ],
+      "item_names": [
+        "울쎄라"
+      ],
+      "check": {
+        "abstain": true
+      }
+    },
+    {
+      "id": "X03",
+      "type": "trap",
+      "question": "써마지 FLX 600샷 가격은 얼마예요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000001"
+      ],
+      "item_names": [
+        "써마지 FLX"
+      ],
+      "check": {
+        "abstain": true
+      }
+    },
+    {
+      "id": "X04",
+      "type": "trap",
+      "question": "올리지오 리프팅 다음 달 이벤트 가격 있어요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000002"
+      ],
+      "item_names": [
+        "올리지오 리프팅"
+      ],
+      "check": {
+        "abstain": true
+      }
+    },
+    {
+      "id": "X05",
+      "type": "trap",
+      "question": "슈링크 유니버스는 1회에 보통 몇 샷 쏴요?",
+      "items": [
+        "ccbbbbbb-0000-0000-0000-000000000008"
+      ],
+      "item_names": [
+        "슈링크 유니버스"
+      ],
+      "check": {
+        "abstain": true
+      }
+    },
+    {
+      "id": "X06",
+      "type": "trap",
+      "question": "울트라포머 MPT 가격 알려줘",
+      "items": [],
+      "item_names": [],
+      "check": {
+        "abstain": true
+      }
+    },
+    {
+      "id": "X07",
+      "type": "trap",
+      "question": "덴서티 리프팅 회복기간은 어떻게 돼요?",
+      "items": [],
+      "item_names": [],
+      "check": {
+        "abstain": true
+      }
+    },
+    {
+      "id": "X08",
+      "type": "trap",
+      "question": "LG 프라엘 더마 LED 마스크 배터리 한 번 충전하면 몇 번 써요?",
+      "items": [
+        "ddbbbbbb-0000-0000-0000-000000000028"
+      ],
+      "item_names": [
+        "LG 프라엘 더마 LED 마스크"
+      ],
+      "check": {
+        "abstain": true
+      }
+    },
+    {
+      "id": "X09",
+      "type": "trap",
+      "question": "메디큐브 AGE-R 울트라 튠 40.68 정품 보증기간이 몇 년이에요?",
+      "items": [
+        "ddbbbbbb-0000-0000-0000-000000000001"
+      ],
+      "item_names": [
+        "메디큐브 AGE-R 울트라 튠 40.68"
+      ],
+      "check": {
+        "abstain": true
+      }
+    },
+    {
+      "id": "X10",
+      "type": "trap",
+      "question": "보톡스 맞고 몇 시간 뒤에 세수해도 돼요?",
+      "items": [],
+      "item_names": [],
+      "check": {
+        "abstain": true
+      }
+    }
+  ]
+}
