@@ -1,6 +1,6 @@
 {
   "description": "픽디 상담 평가셋 — 기대값은 catalog.snapshot.json 에서 생성됨 (make-golden.mjs). 손으로 고치지 말 것.",
-  "snapshot_source": "supabase/migrations/016_update_products.sql + supabase/migrations/024_add_website_url_and_new_products.sql",
+  "snapshot_source": "live-db",
   "counts": {
     "fact": 14,
     "contra": 10,

@@ -1,6 +1,6 @@
 {
-  "source": "supabase/migrations/016_update_products.sql + supabase/migrations/024_add_website_url_and_new_products.sql",
-  "generated_at": "2026-10-20T19:26:12.144Z",
+  "source": "live-db",
+  "generated_at": "2026-10-21T09:05:50.541Z",
   "treatments": [
     {
       "id": "ccbbbbbb-0000-0000-0000-000000000001",
@@ -23,7 +23,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "1회",
       "side_effects": "일시적 홍조·부종",
       "contraindications": "임신·수유·금속 삽입물"
@@ -49,7 +49,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "1~3회",
       "side_effects": "일시적 홍조",
       "contraindications": "임신·금속 삽입물"
@@ -75,7 +75,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "1~2회",
       "side_effects": "일시적 붓기·홍조",
       "contraindications": "임신·금속 삽입물"
@@ -101,7 +101,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "1~3일",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "2~4회",
       "side_effects": "일시적 점상 출혈",
       "contraindications": "임신·켈로이드 체질"
@@ -127,7 +127,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "1~2회",
       "side_effects": "일시적 홍조",
       "contraindications": "임신·금속 삽입물"
@@ -153,7 +153,7 @@
       "review_count": 100,
       "pain_level": "약함~중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "2~4회",
       "side_effects": "일시적 홍조",
       "contraindications": "임신·금속 삽입물"
@@ -179,7 +179,7 @@
       "review_count": 100,
       "pain_level": "강함",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "1회",
       "side_effects": "일시적 부종·저림",
       "contraindications": "임신·금속 삽입물·신경질환"
@@ -205,7 +205,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "1~2회",
       "side_effects": "일시적 홍조",
       "contraindications": "임신·금속 삽입물"
@@ -230,7 +230,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "1~2회",
       "side_effects": "일시적 붓기",
       "contraindications": "임신·금속 삽입물"
@@ -256,7 +256,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "2~4회",
       "side_effects": "일시적 홍조",
       "contraindications": "임신·금속 삽입물"
@@ -282,7 +282,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "1~2일",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "1~3회",
       "side_effects": "일시적 붓기·점상 출혈",
       "contraindications": "임신·금속 삽입물"
@@ -308,7 +308,7 @@
       "review_count": 100,
       "pain_level": "약함",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "4~6회",
       "side_effects": "거의 없음",
       "contraindications": "초음파 민감 피부"
@@ -334,7 +334,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "3~4회",
       "side_effects": "일시적 멍·부종",
       "contraindications": "아스피린 복용자"
@@ -360,7 +360,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "2~4회",
       "side_effects": "일시적 구진·부종",
       "contraindications": "임신·수유"
@@ -386,7 +386,7 @@
       "review_count": 100,
       "pain_level": "약함~중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "2~4회",
       "side_effects": "일시적 홍조",
       "contraindications": "면역 억제 치료 중"
@@ -412,7 +412,7 @@
       "review_count": 100,
       "pain_level": "약함~중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "3~5회",
       "side_effects": "일시적 멍",
       "contraindications": "콜라겐 알레르기 주의"
@@ -438,7 +438,7 @@
       "review_count": 100,
       "pain_level": "약함",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "4~6회",
       "side_effects": "거의 없음",
       "contraindications": "개방성 상처"
@@ -464,7 +464,7 @@
       "review_count": 100,
       "pain_level": "약함~중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "4~8회",
       "side_effects": "일시적 멍·부종",
       "contraindications": "히알루론산 알레르기"
@@ -490,7 +490,7 @@
       "review_count": 100,
       "pain_level": "약함",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "1회 (6개월 유지)",
       "side_effects": "일시적 씹기 불편",
       "contraindications": "중증 근무력증"
@@ -515,7 +515,7 @@
       "review_count": 100,
       "pain_level": "약함",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "1회 (4~6개월 유지)",
       "side_effects": "눈썹 처짐 주의",
       "contraindications": "중증 근무력증"
@@ -541,7 +541,7 @@
       "review_count": 100,
       "pain_level": "약함~중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "2~4회",
       "side_effects": "일시적 붉음",
       "contraindications": "중증 근무력증"
@@ -567,7 +567,7 @@
       "review_count": 100,
       "pain_level": "없음",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "월 1~2회",
       "side_effects": "거의 없음",
       "contraindications": "개방성 상처·활성 여드름"
@@ -593,7 +593,7 @@
       "review_count": 100,
       "pain_level": "중간~강함",
       "downtime": "3~7일",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "2~3회",
       "side_effects": "딱지·박리",
       "contraindications": "임신·광과민성"
@@ -619,7 +619,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "없음~1일",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "3~5회",
       "side_effects": "일시적 홍조·딱지",
       "contraindications": "임신·광과민성"
@@ -645,7 +645,7 @@
       "review_count": 100,
       "pain_level": "약함",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "6~10회",
       "side_effects": "일시적 홍조",
       "contraindications": "임신·광과민성"
@@ -671,7 +671,7 @@
       "review_count": 100,
       "pain_level": "약함",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "8~12회",
       "side_effects": "일시적 홍조",
       "contraindications": "임신·광과민성"
@@ -697,7 +697,7 @@
       "review_count": 100,
       "pain_level": "약함~중간",
       "downtime": "없음~2일",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "4~6회",
       "side_effects": "일시적 홍조·딱지",
       "contraindications": "임신·광과민성"
@@ -723,7 +723,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "없음",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "3~5회",
       "side_effects": "일시적 홍조",
       "contraindications": "임신·광과민성"
@@ -749,7 +749,7 @@
       "review_count": 100,
       "pain_level": "약함~중간",
       "downtime": "없음~2일",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "1회 (12~18개월 유지)",
       "side_effects": "일시적 멍·부종",
       "contraindications": "항응고제 복용자"
@@ -775,7 +775,7 @@
       "review_count": 100,
       "pain_level": "중간",
       "downtime": "없음~2일",
-      "duration": null,
+      "duration": "정보 없음",
       "sessions": "2~3회 (6주 간격)",
       "side_effects": "일시적 멍·부종·결절",
       "contraindications": "임신·수유·자가면역질환"

@@ -6,7 +6,7 @@
 | 파일 | 역할 |
 |---|---|
 | `build-snapshot.mjs` | 시술·기기 카탈로그 → `catalog.snapshot.json` (정답지 원본) |
-| `catalog.snapshot.json` | DB 값 스냅샷. 지금은 마이그레이션 016 + 024 파싱본 |
+| `catalog.snapshot.json` | DB 값 스냅샷. 라이브 DB 기준 (2026-10-21, 읽기 전용 조회) |
 | `make-golden.mjs` | 질문 템플릿 + 스냅샷 값 → `golden.json` |
 | `golden.json` | 46문항 (사실 14 · 금기 10 · 추천 6 · 비교 6 · 함정 10). **손으로 고치지 말 것** |
 | `run.mjs` | 버전별 파이프라인으로 답 생성 → `results/*.json` |
@@ -44,6 +44,9 @@ node eval/grade.mjs (Get-ChildItem eval/results/*.json | Sort-Object LastWriteTi
 | 오거절 | DB 에 답이 있는데 모른다고 한 비율 — Abstention 만 올리는 "다 모른다고 하기" 꼼수를 잡는다 |
 | 인용 재현율 | 정답 아이템을 답 끝 `근거:` 줄에 댄 비율 |
 | Hit@5 | (버전 B·C) 정답 아이템이 검색 top-5 에 든 비율. `run.mjs` 가 `retrieved` 를 남기면 자동 계산 |
+
+Groundedness·Abstention 은 혼자 보면 속는다 — "전부 모른다"고 답하는 모델도 둘 다 100% 가 나온다.
+반드시 **오거절·정답률과 같이** 본다 (확인: 전부 거절하는 가짜 모델 = 정답률 21.7%, 오거절 100%).
 
 채점은 문자열 규칙이라 **표현이 다르면 오답이 될 수 있다**("일주일 정도" ≠ "3~7일").
 리포트의 "틀린 문항"에 실제 답이 찍히니 금기형·추천형은 눈으로 한 번 확인한다.
