@@ -1,0 +1,12 @@
+node_modules/
+dist/
+web-build/
+.expo/
+coverage/
+ios/
+android/
+package-lock.json
+# Deno 런타임 — 앱과 다른 규칙으로 돈다
+supabase/functions/
+supabase/**/*.sql
+*.sql

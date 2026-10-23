@@ -1,7 +1,9 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    // TS 6 부터 @types/* 를 자동으로 읽지 않는다 — 테스트 전역(describe/it/expect)을 명시한다
+    "types": ["jest"]
   },
   "include": [
     "**/*.ts",

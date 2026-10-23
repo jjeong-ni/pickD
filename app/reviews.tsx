@@ -13,15 +13,10 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors, HEADER_TOP } from '../constants/colors';
 import { Review } from '../types';
+import { mergeReviewProfiles, reviewAuthorIds, virtualNick } from '../lib/reviewProfiles';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const REVIEW_PAGE_SIZE = 20;
-const VIRTUAL_NAMES = ['피부미인', '뷰티고수', '피부천재', '스킨케어러', '미용러버', '피부요정', '뷰티스타', '관리러버', '피부빛나', '뷰티천재', '피부사랑', '미용전문'];
-function virtualNick(uid: string): string {
-  let n = 0;
-  for (let i = 0; i < uid.length; i++) n = (n * 31 + uid.charCodeAt(i)) >>> 0;
-  return VIRTUAL_NAMES[n % VIRTUAL_NAMES.length];
-}
 
 export default function ReviewsScreen() {
   const { itemId, itemType, itemName } = useLocalSearchParams<{
@@ -61,19 +56,16 @@ export default function ReviewsScreen() {
       .order('created_at', { ascending: false })
       .range(from, from + REVIEW_PAGE_SIZE - 1);
 
-    const userIds = [...new Set((reviewRows ?? []).map((r: any) => r.user_id))];
-    let profileMap: Record<string, any> = {};
+    const userIds = reviewAuthorIds(reviewRows);
+    let profileRows: any[] = [];
     if (userIds.length > 0) {
-      const { data: profileRows } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('user_id, nickname, skin_type')
         .in('user_id', userIds);
-      profileMap = Object.fromEntries((profileRows ?? []).map((p: any) => [p.user_id, p]));
+      profileRows = data ?? [];
     }
-    const merged = (reviewRows ?? []).map((r: any) => ({
-      ...r,
-      profile: profileMap[r.user_id] ?? { nickname: virtualNick(r.user_id) },
-    }));
+    const merged = mergeReviewProfiles(reviewRows, profileRows);
     setReviews(prev => page === 1 ? merged : [...prev, ...merged]);
     setReviewTotal(count ?? 0);
     setReviewPage(page);

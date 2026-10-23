@@ -27,8 +27,14 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Test
+        run: npm test -- --ci
+
       # 기존 화면 코드에 React Compiler 규칙 위반 46건이 남아 있어 당분간 경고만 한다.
       # 0건이 되면 continue-on-error 를 지워 차단 단계로 올린다.
       - name: Lint (non-blocking)
         run: npm run lint
         continue-on-error: true
+
+      # prettier(npm run format:check)는 일부러 넣지 않았다 — 기존 코드를 일괄 포맷하지 않았기 때문에
+      # 지금 넣으면 무조건 실패한다. 파일을 고칠 때마다 조금씩 맞춰 가다가, 0건이 되면 여기 추가한다.
