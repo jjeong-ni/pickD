@@ -2,7 +2,8 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
-import { useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRef, useState, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -39,7 +40,39 @@ export default function AiChatScreen() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        let sid = await AsyncStorage.getItem('ai_chat_session_id');
+        if (!sid) {
+          sid = `${Date.now()}`;
+          await AsyncStorage.setItem('ai_chat_session_id', sid);
+        }
+        setSessionId(sid);
+
+        if (!user?.id) return;
+        const { data } = await supabase
+          .from('chat_logs')
+          .select('role, content')
+          .eq('user_id', user.id)
+          .eq('session_id', sid)
+          .order('created_at', { ascending: true })
+          .limit(20);
+
+        if (data && data.length > 0) {
+          setMessages(prev => {
+            const existing = new Set(prev.map(m => m.content));
+            const fresh = (data as Message[]).filter(m => !existing.has(m.content));
+            return fresh.length > 0 ? [...prev, ...fresh] : prev;
+          });
+        }
+      } catch {}
+    };
+    init();
+  }, [user?.id]);
 
   // context 파라미터로 비교 아이템 전달 가능
   let compareItems: { name: string; type: string }[] = [];
@@ -69,6 +102,7 @@ export default function AiChatScreen() {
           },
           body: JSON.stringify({
             messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+            sessionId: sessionId ?? undefined,
             profile: profile ? {
               skin_type: profile.skin_type,
               baumann_code: profile.baumann_code,
@@ -83,6 +117,10 @@ export default function AiChatScreen() {
 
       const json = await res.json();
       const reply = json.reply ?? '죄송해요, 잠시 후 다시 시도해주세요.';
+      if (json.sessionId && json.sessionId !== sessionId) {
+        setSessionId(json.sessionId);
+        AsyncStorage.setItem('ai_chat_session_id', json.sessionId).catch(() => null);
+      }
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
     } catch {
       setMessages((prev) => [...prev, {
@@ -114,7 +152,7 @@ export default function AiChatScreen() {
           <Text style={styles.headerTitle}>픽디 AI 상담</Text>
           <View style={styles.onlineBadge}>
             <View style={styles.onlineDot} />
-            <Text style={styles.onlineText}>온라인</Text>
+            <Text style={styles.onlineText}>3중 AI 검토 시스템</Text>
           </View>
         </View>
         <View style={{ width: 40 }} />
@@ -135,10 +173,17 @@ export default function AiChatScreen() {
                 <Text style={styles.avatarEmoji}>✨</Text>
               </View>
             )}
-            <View style={[styles.bubble, msg.role === 'user' ? styles.bubbleUser : styles.bubbleAI]}>
-              <Text style={[styles.bubbleText, msg.role === 'user' && styles.bubbleTextUser]}>
-                {msg.content}
-              </Text>
+            <View style={[styles.bubbleWrap, msg.role === 'user' && styles.bubbleWrapUser]}>
+              <View style={[styles.bubble, msg.role === 'user' ? styles.bubbleUser : styles.bubbleAI]}>
+                <Text style={[styles.bubbleText, msg.role === 'user' && styles.bubbleTextUser]}>
+                  {msg.content}
+                </Text>
+              </View>
+              {msg.role === 'assistant' && i > 0 && (
+                <View style={styles.reviewBadge}>
+                  <Text style={styles.reviewBadgeText}>🛡️ 의료·UX AI 검토됨</Text>
+                </View>
+              )}
             </View>
           </View>
         ))}
@@ -225,7 +270,7 @@ const styles = StyleSheet.create({
   },
   avatarEmoji: { fontSize: 16 },
   bubble: {
-    maxWidth: '78%', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10,
+    borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10,
   },
   bubbleAI: {
     backgroundColor: Colors.white,
@@ -272,4 +317,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1, borderTopColor: Colors.border,
   },
   disclaimerText: { fontSize: 10, color: Colors.sub, textAlign: 'center' },
+
+  bubbleWrap: { maxWidth: '78%', gap: 4, alignSelf: 'flex-start' },
+  bubbleWrapUser: { alignSelf: 'flex-end' },
+  reviewBadge: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 8, paddingVertical: 3,
+    alignSelf: 'flex-start',
+  },
+  reviewBadgeText: { fontSize: 10, color: Colors.sub, fontWeight: '500' },
 });
